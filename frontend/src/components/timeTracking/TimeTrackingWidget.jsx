@@ -2,63 +2,95 @@ import { useState, useEffect } from 'react'
 import { useProjects } from '../../context/ProjectContext'
 import { FiPlay, FiPause, FiClock, FiStopCircle } from 'react-icons/fi'
 
-const TimeTrackingWidget = ({ activeTimeEntry }) => {
-  const { projects, tasks, stopTimeTracking, startTimeTracking } = useProjects()
+const TimeTrackingWidget = () => {
+  const {
+    projects,
+    tasks,
+    timeEntries,
+    stopTimeTracking,
+    startTimeTracking,
+    pauseTimeTracking,
+    resumeTimeTracking,
+    loading
+  } = useProjects()
+
+  // Find the active entry from the context state
+  const activeTimeEntry = timeEntries.find(entry => entry.endTime === null)
+
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-  
+
   // Find task and project if there's an active time entry
   const task = activeTimeEntry ? tasks.find(t => t.id === activeTimeEntry.taskId) : null
   const project = task ? projects.find(p => p.id === task.projectId) : null
-  
-  // Timer effect
+
+  // Timer effect - Calculate elapsed time based on context data
   useEffect(() => {
     let interval = null
-    
-    if (activeTimeEntry && !isPaused) {
-      const startTime = new Date(activeTimeEntry.startTime).getTime()
-      
-      interval = setInterval(() => {
-        const now = new Date().getTime()
-        const elapsed = Math.floor((now - startTime) / 1000)
-        setElapsedTime(elapsed)
-      }, 1000)
+
+    if (activeTimeEntry) {
+      const calculateElapsed = () => {
+        let currentElapsedTime = parseFloat(activeTimeEntry.totalPausedDuration) || 0;
+        if (!activeTimeEntry.isPaused && activeTimeEntry.lastResumedAt) {
+          const now = new Date().getTime();
+          const lastResume = new Date(activeTimeEntry.lastResumedAt).getTime();
+          currentElapsedTime += (now - lastResume) / 1000;
+        }
+        setElapsedTime(Math.floor(currentElapsedTime));
+      };
+
+      calculateElapsed(); // Calculate once immediately
+
+      // If it's running, update every second
+      if (!activeTimeEntry.isPaused) {
+        interval = setInterval(calculateElapsed, 1000);
+      }
+    } else {
+      setElapsedTime(0); // Reset if no active timer
     }
-    
+
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [activeTimeEntry, isPaused])
-  
+    // Depend on activeTimeEntry properties that change timer status
+  }, [activeTimeEntry?.id, activeTimeEntry?.isPaused, activeTimeEntry?.lastResumedAt, activeTimeEntry?.totalPausedDuration])
+
   // Format time as HH:MM:SS
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
     const s = seconds % 60
-    
+
     return [
       h.toString().padStart(2, '0'),
       m.toString().padStart(2, '0'),
       s.toString().padStart(2, '0')
     ].join(':')
   }
-  
+
   // Handle stop tracking
   const handleStopTracking = async () => {
     if (activeTimeEntry) {
+      // No need for local state change, context update will trigger re-render
       await stopTimeTracking(activeTimeEntry.id)
     }
   }
-  
-  // Handle pause/resume (this would need backend support in a real app)
-  const handlePauseResume = () => {
-    setIsPaused(!isPaused)
+
+  // Handle pause/resume using context functions
+  const handlePauseResume = async () => {
+    if (!activeTimeEntry) return;
+
+    if (activeTimeEntry.isPaused) {
+      await resumeTimeTracking(activeTimeEntry.id);
+    } else {
+      await pauseTimeTracking(activeTimeEntry.id);
+    }
+    // No need to call setIsPaused, context update handles it
   }
-  
+
   return (
     <div className="card h-full flex flex-col">
       <h2 className="text-lg font-medium text-secondary-900 mb-4">Time Tracking</h2>
-      
+
       {activeTimeEntry ? (
         <div className="flex-1 flex flex-col">
           <div className="p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200">
@@ -71,7 +103,7 @@ const TimeTrackingWidget = ({ activeTimeEntry }) => {
                 <p className="text-xs text-secondary-500">{project?.name || 'Unknown Project'}</p>
               </div>
             </div>
-            
+
             <div className="text-center py-3">
               <div className="text-3xl font-semibold text-secondary-900 font-mono">
                 {formatTime(elapsedTime)}
@@ -80,13 +112,14 @@ const TimeTrackingWidget = ({ activeTimeEntry }) => {
                 Started at {new Date(activeTimeEntry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
-            
+
             <div className="flex space-x-2 mt-2">
               <button
                 onClick={handlePauseResume}
                 className="flex-1 btn bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50 flex items-center justify-center"
+                disabled={loading || !activeTimeEntry} // Disable if loading or no active entry
               >
-                {isPaused ? (
+                {activeTimeEntry?.isPaused ? (
                   <>
                     <FiPlay className="mr-1.5 h-4 w-4" />
                     Resume
@@ -98,17 +131,18 @@ const TimeTrackingWidget = ({ activeTimeEntry }) => {
                   </>
                 )}
               </button>
-              
+
               <button
                 onClick={handleStopTracking}
                 className="flex-1 btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center"
+                disabled={loading || !activeTimeEntry} // Disable if loading or no active entry
               >
                 <FiStopCircle className="mr-1.5 h-4 w-4" />
                 Stop
               </button>
             </div>
           </div>
-          
+
           <div className="mt-4 flex-1">
             <h3 className="text-sm font-medium text-secondary-900 mb-2">Recent Time Entries</h3>
             <div className="text-center py-8 bg-secondary-50 rounded-lg">

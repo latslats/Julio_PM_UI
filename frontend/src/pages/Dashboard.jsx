@@ -172,7 +172,7 @@ const Dashboard = () => {
 
         {/* Time Tracking Widget */}
         <div className="lg:col-span-1">
-          <TimeTrackingWidget activeTimeEntry={activeTimeEntry} />
+          <TimeTrackingWidget />
         </div>
       </div>
 

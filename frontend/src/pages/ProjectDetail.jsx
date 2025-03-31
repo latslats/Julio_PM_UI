@@ -34,96 +34,58 @@ const ProjectDetail = () => {
   
   useEffect(() => {
     if (!loading) {
-      const foundProject = projects.find(p => p.id === id) || {
-        id: 'demo1',
-        name: 'Website Redesign',
-        description: 'Complete overhaul of the company website with modern design and improved user experience.',
-        client: 'Acme Corporation',
-        color: '#0ea5e9',
-        startDate: '2025-03-01',
-        dueDate: '2025-04-15',
-        status: 'in-progress',
-        totalHours: 45
-      }
-      
+      const foundProject = projects.find(p => p.id === id)
       setProject(foundProject)
-      setEditableProject(foundProject)
-      
-      // Get tasks for this project
-      const filteredTasks = tasks.filter(task => task.projectId === id) || [
-        {
-          id: 'task1',
-          projectId: 'demo1',
-          title: 'Design homepage mockup',
-          description: 'Create wireframes and visual design for the homepage',
-          status: 'completed',
-          priority: 'high',
-          dueDate: '2025-03-10',
-          estimatedHours: 8
-        },
-        {
-          id: 'task2',
-          projectId: 'demo1',
-          title: 'Implement responsive navigation',
-          description: 'Create mobile-friendly navigation menu',
-          status: 'in-progress',
-          priority: 'medium',
-          dueDate: '2025-03-15',
-          estimatedHours: 6
-        },
-        {
-          id: 'task3',
-          projectId: 'demo1',
-          title: 'Optimize images',
-          description: 'Compress and optimize all website images',
-          status: 'not-started',
-          priority: 'low',
-          dueDate: '2025-03-20',
-          estimatedHours: 4
-        }
-      ]
-      
-      setProjectTasks(filteredTasks)
-      
-      // Calculate stats
-      const completed = filteredTasks.filter(task => task.status === 'completed').length
-      const inProgress = filteredTasks.filter(task => task.status === 'in-progress').length
-      const totalHours = filteredTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
-      
-      setStats({
-        totalTasks: filteredTasks.length,
-        completedTasks: completed,
-        inProgressTasks: inProgress,
-        totalHours
-      })
+      if (foundProject) {
+        setEditableProject({ ...foundProject }) // Set editable copy
+        
+        // Get tasks for this project
+        const filteredTasks = tasks.filter(task => task.projectId === id)
+        setProjectTasks(filteredTasks)
+        
+        // Calculate stats
+        const completed = filteredTasks.filter(task => task.status === 'completed').length
+        const inProgress = filteredTasks.filter(task => task.status === 'in-progress').length
+        const totalHours = filteredTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
+        
+        setStats({
+          totalTasks: filteredTasks.length,
+          completedTasks: completed,
+          inProgressTasks: inProgress,
+          totalHours
+        })
+      } else {
+        // Project not found, reset tasks and stats
+        setProjectTasks([])
+        setStats({
+          totalTasks: 0,
+          completedTasks: 0,
+          inProgressTasks: 0,
+          totalHours: 0
+        })
+      }
     }
   }, [id, projects, tasks, loading])
   
   const handleDeleteProject = async () => {
-    if (id !== 'demo1') {
-      const result = await deleteProject(id)
-      if (result.success) {
-        navigate('/projects')
-      }
-    } else {
-      // For demo purposes
-      setShowDeleteConfirm(false)
+    const result = await deleteProject(id)
+    if (result.success) {
       navigate('/projects')
     }
   }
   
   const handleOpenEditModal = () => {
-    setEditableProject(project)
+    setEditableProject({ ...project }) // Ensure we edit a copy
     setShowEditProjectModal(true)
   }
 
   const handleUpdateProject = async (e) => {
     e.preventDefault()
-    if (!editableProject || id === 'demo1') return
+    if (!editableProject) return
 
     const result = await updateProject(id, editableProject)
     if (result.success) {
-      setProject(result.project)
+      setProject(result.data) // Use data returned from context API call
       setShowEditProjectModal(false)
     } else {
       // Handle error (e.g., show a notification)
@@ -131,7 +93,8 @@ const ProjectDetail = () => {
     }
   }
 
-  if (loading || !project) {
+  // Loading state
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -139,7 +102,20 @@ const ProjectDetail = () => {
           <p className="mt-3 text-secondary-600">Loading project details...</p>
         </div>
       </div>
-    )
+    );
+  }
+
+  // Project Not Found state
+  if (!project) {
+    return (
+      <div className="text-center py-16">
+        <h2 className="text-xl font-semibold text-secondary-800 mb-2">Project Not Found</h2>
+        <p className="text-secondary-600 mb-4">The project you are looking for does not exist.</p>
+        <Link to="/projects" className="btn btn-primary">
+          Go Back to Projects
+        </Link>
+      </div>
+    );
   }
   
   return (
@@ -171,7 +147,6 @@ const ProjectDetail = () => {
           <button 
             onClick={handleOpenEditModal}
             className="btn btn-secondary flex items-center"
-            disabled={id === 'demo1'}
           >
             <FiEdit2 className="mr-1.5 h-4 w-4" />
             Edit
@@ -179,7 +154,6 @@ const ProjectDetail = () => {
           <button 
             onClick={() => setShowDeleteConfirm(true)}
             className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center"
-            disabled={id === 'demo1'}
           >
             <FiTrash2 className="mr-1.5 h-4 w-4" />
             Delete

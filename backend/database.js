@@ -63,12 +63,26 @@ const initializeDatabase = async () => {
         "taskId" VARCHAR(255) NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         "startTime" TIMESTAMPTZ NOT NULL,
         "endTime" TIMESTAMPTZ,
-        duration NUMERIC(10, 2), -- Consider storing duration as INTERVAL or in seconds
+        duration NUMERIC(10, 2), -- Final duration in seconds
         notes TEXT,
+        "isPaused" BOOLEAN DEFAULT false NOT NULL,          -- Track pause state
+        "lastResumedAt" TIMESTAMPTZ,                       -- When the timer last started/resumed
+        "totalPausedDuration" NUMERIC(12, 2) DEFAULT 0 NOT NULL, -- Accumulates paused time in seconds
         "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('Checked/created time_entries table.');
+
+    // Add columns if they don't exist (for existing databases)
+    // Normally, you'd use migration tools for this in production
+    try {
+      await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "isPaused" BOOLEAN DEFAULT false NOT NULL');
+      await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "lastResumedAt" TIMESTAMPTZ');
+      await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "totalPausedDuration" NUMERIC(12, 2) DEFAULT 0 NOT NULL');
+      console.log('Checked/added columns for pause functionality to time_entries.');
+    } catch (alterErr) {
+      console.error('Error adding columns to time_entries (may already exist):', alterErr.message);
+    }
 
   } catch (err) {
     console.error('Error initializing database tables:', err.stack);

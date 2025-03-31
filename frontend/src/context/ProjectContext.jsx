@@ -1,8 +1,8 @@
 import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 
-// Define the base URL for the API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api'
+// Define the base URL for the API - Use relative path for proxy
+const API_BASE_URL = '/api' // Rely on Nginx proxy in Docker
 
 const ProjectContext = createContext()
 
@@ -154,12 +154,16 @@ export const ProjectProvider = ({ children }) => {
 
   // --- Time Tracking ---
   const startTimeTracking = async (taskId) => {
+    // Optional: Check if another timer is already running and stop it?
+    // const runningTimer = timeEntries.find(te => te.endTime === null);
+    // if (runningTimer) { await stopTimeTracking(runningTimer.id); }
+
     const result = await apiRequest(`${API_BASE_URL}/time-entries/start`, {
       method: 'POST',
       body: JSON.stringify({ taskId }),
     });
     if (result.success) {
-      setTimeEntries(prev => [result.data, ...prev])
+      setTimeEntries(prev => [result.data, ...prev.filter(te => te.endTime !== null)]) // Add new, remove any other potentially active ones just in case
     }
     return result
   }
@@ -169,11 +173,32 @@ export const ProjectProvider = ({ children }) => {
       method: 'PUT',
     });
     if (result.success) {
+      // Replace the entry with the updated one from the server
       setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
     }
     return result
   }
   
+  const pauseTimeTracking = async (timeEntryId) => {
+    const result = await apiRequest(`${API_BASE_URL}/time-entries/pause/${timeEntryId}`, {
+      method: 'PUT',
+    });
+    if (result.success) {
+      setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
+    }
+    return result;
+  };
+
+  const resumeTimeTracking = async (timeEntryId) => {
+    const result = await apiRequest(`${API_BASE_URL}/time-entries/resume/${timeEntryId}`, {
+      method: 'PUT',
+    });
+    if (result.success) {
+      setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
+    }
+    return result;
+  };
+
   const deleteTimeEntry = async (id) => {
     const result = await apiRequest(`${API_BASE_URL}/time-entries/${id}`, {
         method: 'DELETE',
@@ -251,6 +276,8 @@ export const ProjectProvider = ({ children }) => {
       deleteTask,
       startTimeTracking,
       stopTimeTracking,
+      pauseTimeTracking,
+      resumeTimeTracking,
       deleteTimeEntry, // Provide deleteTimeEntry
       projectStats,
       totalTrackedHours,
