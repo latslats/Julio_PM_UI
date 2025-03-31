@@ -10,6 +10,19 @@ services:
     restart: unless-stopped
     container_name: taskflow-frontend
 
+  postgres:
+    image: postgres:16-alpine # Use a specific version
+    container_name: taskflow-postgres
+    environment:
+      POSTGRES_DB: taskflow_db
+      POSTGRES_USER: taskflow_user
+      POSTGRES_PASSWORD: taskflow_password # Use a more secure password in production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Optional: Expose port for direct access if needed
+    restart: unless-stopped
+
   taskflow-backend:
     build:
       context: ./backend
@@ -19,11 +32,16 @@ services:
     volumes:
       - ./backend:/app # Mount host code for development (hot-reloading)
       - /app/node_modules # Exclude host node_modules, use container's
-      - sqlite_data:/app/data # Mount volume for persistent database
     working_dir: /app
-    command: npm start # Command to run the app
+    command: npm start
     restart: unless-stopped
     container_name: taskflow-backend
+    environment:
+      DATABASE_URL: postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow_db
+      NODE_ENV: development # Or production as needed
+      PORT: 5001
+    depends_on:
+      - postgres # Ensure postgres starts before backend
 
 volumes:
-  sqlite_data:
+  postgres_data:

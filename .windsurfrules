@@ -29,7 +29,7 @@ This is an **web application that allows users to manage their projects and task
 ## Tech Stack
 - **Frontend**: React.js
 - **Backend**: Node.js with Express
-- **Database**: SQLite
+- **Database**: PostgreSQL
 - **Containerization**: Docker
 - **Styling**: Tailwind CSS (via CDN)
 

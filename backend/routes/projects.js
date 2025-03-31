@@ -1,36 +1,46 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../database.js');
+const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto'); // For generating unique IDs
 
+// Helper function for consistent error handling
+const handleDatabaseError = (err, res, next) => {
+  console.error('Database Error:', err.stack);
+  // Avoid sending detailed DB errors to client in production
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+  return next(err);
+};
+
 // GET /api/projects - Get all projects
-router.get('/', (req, res, next) => {
-  const sql = "SELECT * FROM projects ORDER BY createdAt DESC";
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      return next(err); // Pass error to the global error handler
-    }
-    res.json(rows);
-  });
+router.get('/', async (req, res, next) => {
+  const sql = 'SELECT * FROM projects ORDER BY "createdAt" DESC'; // Use quotes for camelCase
+  try {
+    const result = await pool.query(sql);
+    res.json(result.rows);
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
 });
 
 // GET /api/projects/:id - Get a single project by ID
-router.get('/:id', (req, res, next) => {
-  const sql = "SELECT * FROM projects WHERE id = ?";
+router.get('/:id', async (req, res, next) => {
+  const sql = 'SELECT * FROM projects WHERE id = $1'; // Use $1 placeholder
   const params = [req.params.id];
-  db.get(sql, params, (err, row) => {
-    if (err) {
-      return next(err);
-    }
-    if (!row) {
+  try {
+    const result = await pool.query(sql, params);
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    res.json(row);
-  });
+    res.json(result.rows[0]);
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
 });
 
 // POST /api/projects - Create a new project
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   const { name, description, client, color, startDate, dueDate } = req.body;
   const errors = [];
   if (!name) {
@@ -40,51 +50,51 @@ router.post('/', (req, res, next) => {
     return res.status(400).json({ errors });
   }
 
-  const id = crypto.randomUUID(); // Generate a unique ID
-  const sql = `INSERT INTO projects (id, name, description, client, color, startDate, dueDate) 
-               VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  const params = [id, name, description, client, color || '#0ea5e9', startDate, dueDate];
+  const id = crypto.randomUUID();
+  // Use quotes for camelCase column names
+  const sql = `INSERT INTO projects (id, name, description, client, color, "startDate", "dueDate") 
+               VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`; // Use RETURNING * to get the inserted row
+  // Ensure dates are null or valid ISO strings for TIMESTAMPTZ
+  const params = [
+    id,
+    name,
+    description || null,
+    client || null,
+    color || '#0ea5e9',
+    startDate || null, 
+    dueDate || null
+  ];
 
-  db.run(sql, params, function (err) { // Use function() to access this.lastID
-    if (err) {
-      return next(err);
-    }
-    // Return the newly created project
-    res.status(201).json({ 
-      id: id,
-      name: name,
-      description: description,
-      client: client,
-      color: color || '#0ea5e9',
-      startDate: startDate,
-      dueDate: dueDate,
-      status: 'in-progress', // Default status
-      createdAt: new Date().toISOString()
-    });
-  });
+  try {
+    const result = await pool.query(sql, params);
+    res.status(201).json(result.rows[0]); // Return the created project from RETURNING
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
 });
 
 // PUT /api/projects/:id - Update an existing project
-router.put('/:id', (req, res, next) => {
+router.put('/:id', async (req, res, next) => {
   const { name, description, client, color, startDate, dueDate, status } = req.body;
   const id = req.params.id;
 
-  // Basic validation: ensure name is present if provided
   if (req.body.hasOwnProperty('name') && !name) {
       return res.status(400).json({ message: "Project name cannot be empty" });
   }
 
-  // Construct the update query dynamically based on provided fields
+  // Construct the update query dynamically
   const fields = [];
   const params = [];
+  let paramIndex = 1;
 
-  if (req.body.hasOwnProperty('name')) { fields.push("name = ?"); params.push(name); }
-  if (req.body.hasOwnProperty('description')) { fields.push("description = ?"); params.push(description); }
-  if (req.body.hasOwnProperty('client')) { fields.push("client = ?"); params.push(client); }
-  if (req.body.hasOwnProperty('color')) { fields.push("color = ?"); params.push(color); }
-  if (req.body.hasOwnProperty('startDate')) { fields.push("startDate = ?"); params.push(startDate); }
-  if (req.body.hasOwnProperty('dueDate')) { fields.push("dueDate = ?"); params.push(dueDate); }
-  if (req.body.hasOwnProperty('status')) { fields.push("status = ?"); params.push(status); }
+  // Use quotes for camelCase column names
+  if (req.body.hasOwnProperty('name')) { fields.push(`name = $${paramIndex++}`); params.push(name); }
+  if (req.body.hasOwnProperty('description')) { fields.push(`description = $${paramIndex++}`); params.push(description); }
+  if (req.body.hasOwnProperty('client')) { fields.push(`client = $${paramIndex++}`); params.push(client); }
+  if (req.body.hasOwnProperty('color')) { fields.push(`color = $${paramIndex++}`); params.push(color); }
+  if (req.body.hasOwnProperty('startDate')) { fields.push(`"startDate" = $${paramIndex++}`); params.push(startDate || null); }
+  if (req.body.hasOwnProperty('dueDate')) { fields.push(`"dueDate" = $${paramIndex++}`); params.push(dueDate || null); }
+  if (req.body.hasOwnProperty('status')) { fields.push(`status = $${paramIndex++}`); params.push(status); }
 
   if (fields.length === 0) {
       return res.status(400).json({ message: "No fields provided for update" });
@@ -92,40 +102,33 @@ router.put('/:id', (req, res, next) => {
 
   params.push(id); // Add id for the WHERE clause
 
-  const sql = `UPDATE projects SET ${fields.join(', ')} WHERE id = ?`;
+  const sql = `UPDATE projects SET ${fields.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
 
-  db.run(sql, params, function (err) {
-    if (err) {
-      return next(err);
-    }
-    if (this.changes === 0) {
+  try {
+    const result = await pool.query(sql, params);
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Project not found or no changes made' });
     }
-    // Fetch and return the updated project
-    db.get("SELECT * FROM projects WHERE id = ?", [id], (err, row) => {
-      if (err) {
-        return next(err);
-      }
-      res.json(row);
-    });
-  });
+    res.json(result.rows[0]); // Return the updated project
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
 });
 
 // DELETE /api/projects/:id - Delete a project
-router.delete('/:id', (req, res, next) => {
-  const sql = 'DELETE FROM projects WHERE id = ?';
+router.delete('/:id', async (req, res, next) => {
+  const sql = 'DELETE FROM projects WHERE id = $1';
   const params = [req.params.id];
 
-  db.run(sql, params, function (err) {
-    if (err) {
-      return next(err);
-    }
-    if (this.changes === 0) {
+  try {
+    const result = await pool.query(sql, params);
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    // Also delete associated tasks and time entries (handled by FOREIGN KEY ON DELETE CASCADE)
     res.status(200).json({ message: 'Project deleted successfully' });
-  });
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
 });
 
 module.exports = router;

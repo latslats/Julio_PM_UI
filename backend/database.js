@@ -1,63 +1,89 @@
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 
-// Use a file-based database named 'taskflow.db'
-const DBSOURCE = 'taskflow.db';
+// Check if DATABASE_URL is set, otherwise throw an error
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set.');
+}
 
-const db = new sqlite3.Database(DBSOURCE, (err) => {
-  if (err) {
-    // Cannot open database
-    console.error(err.message);
-    throw err;
-  } else {
-    console.log('Connected to the SQLite database.');
-    // Create tables if they don't exist
-    db.serialize(() => {
-      // Projects Table
-      db.run(`CREATE TABLE IF NOT EXISTS projects (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        client TEXT,
-        color TEXT,
-        startDate TEXT,
-        dueDate TEXT,
-        status TEXT DEFAULT 'in-progress',
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`, (err) => {
-        if (err) console.error("Error creating projects table: ", err.message);
-      });
-
-      // Tasks Table
-      db.run(`CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        projectId TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        status TEXT DEFAULT 'not-started',
-        priority TEXT DEFAULT 'medium',
-        dueDate TEXT,
-        estimatedHours REAL,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
-      )`, (err) => {
-        if (err) console.error("Error creating tasks table: ", err.message);
-      });
-
-      // Time Entries Table
-      db.run(`CREATE TABLE IF NOT EXISTS time_entries (
-        id TEXT PRIMARY KEY,
-        taskId TEXT NOT NULL,
-        startTime DATETIME NOT NULL,
-        endTime DATETIME,
-        duration REAL, -- Store duration in minutes or seconds for easier calculation
-        notes TEXT,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (taskId) REFERENCES tasks (id) ON DELETE CASCADE
-      )`, (err) => {
-        if (err) console.error("Error creating time_entries table: ", err.message);
-      });
-    });
-  }
+// Create a connection pool using the DATABASE_URL environment variable
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Add SSL configuration if required for your PostgreSQL setup (e.g., cloud providers)
+  // ssl: {
+  //   rejectUnauthorized: false // Use only for development/testing if needed
+  // }
 });
 
-module.exports = db;
+// Function to initialize the database tables
+const initializeDatabase = async () => {
+  const client = await pool.connect();
+  try {
+    console.log('Connected to the PostgreSQL database.');
+
+    // Use TEXT for IDs if they are UUIDs or similar strings, VARCHAR otherwise.
+    // Using VARCHAR(255) as a safe default if unsure.
+    // Using TIMESTAMPTZ for dates to include timezone information.
+
+    // Projects Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        client VARCHAR(255),
+        color VARCHAR(7),
+        "startDate" TIMESTAMPTZ, -- Use quotes for camelCase column names
+        "dueDate" TIMESTAMPTZ,
+        status VARCHAR(50) DEFAULT 'in-progress',
+        "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Checked/created projects table.');
+
+    // Tasks Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id VARCHAR(255) PRIMARY KEY,
+        "projectId" VARCHAR(255) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(50) DEFAULT 'not-started',
+        priority VARCHAR(50) DEFAULT 'medium',
+        "dueDate" TIMESTAMPTZ,
+        "estimatedHours" NUMERIC(10, 2),
+        "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Checked/created tasks table.');
+
+    // Time Entries Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS time_entries (
+        id VARCHAR(255) PRIMARY KEY,
+        "taskId" VARCHAR(255) NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        "startTime" TIMESTAMPTZ NOT NULL,
+        "endTime" TIMESTAMPTZ,
+        duration NUMERIC(10, 2), -- Consider storing duration as INTERVAL or in seconds
+        notes TEXT,
+        "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Checked/created time_entries table.');
+
+  } catch (err) {
+    console.error('Error initializing database tables:', err.stack);
+    // Decide if the application should exit if DB init fails
+    // process.exit(1);
+  } finally {
+    client.release(); // Release the client back to the pool
+  }
+};
+
+// Initialize the database on application start
+initializeDatabase().catch(err => {
+  console.error('Failed to initialize database connection pool:', err.stack);
+  // process.exit(1); // Optionally exit if pool connection fails critically
+});
+
+// Export the pool for querying
+module.exports = pool;
