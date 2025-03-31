@@ -1,0 +1,2845 @@
+This file is a merged representation of a subset of the codebase, containing files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where empty lines have been removed.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching these patterns are excluded: **.xml, **.db, docs/**, frontend/node_modules/**
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Empty lines have been removed from all files
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+<additional_info>
+
+</additional_info>
+
+</file_summary>
+
+<directory_structure>
+backend/
+  Dockerfile
+  package.json
+frontend/
+  src/
+    components/
+      layouts/
+        MainLayout.jsx
+      navigation/
+        Header.jsx
+        Sidebar.jsx
+      projects/
+        ProjectCard.jsx
+      tasks/
+        TaskItem.jsx
+      timeTracking/
+        TimeTrackingWidget.jsx
+    context/
+      ProjectContext.jsx
+    pages/
+      Dashboard.jsx
+      NotFound.jsx
+      ProjectDetail.jsx
+      Projects.jsx
+      Reports.jsx
+      TimeTracking.jsx
+    App.jsx
+    index.css
+    main.jsx
+  Dockerfile
+  index.html
+  nginx.conf
+  package.json
+  postcss.config.js
+  tailwind.config.js
+  vite.config.js
+.clinerules
+.windsurfrules
+docker-compose.yml
+project.spec
+README.md
+repomix.config.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="repomix.config.json">
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "parsableStyle": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "compress": false,
+    "topFilesLength": 5,
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": ["**.xml", "**.db", "docs/**", "frontend/node_modules/**"]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}
+</file>
+
+<file path="backend/Dockerfile">
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["npm", "run", "dev"]
+</file>
+
+<file path="backend/package.json">
+{
+  "name": "taskflow-backend",
+  "version": "1.0.0",
+  "description": "Backend for TaskFlow project management application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sqlite3": "^5.1.6",
+    "sequelize": "^6.33.0",
+    "dotenv": "^16.3.1",
+    "helmet": "^7.0.0",
+    "morgan": "^1.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+</file>
+
+<file path="frontend/src/components/layouts/MainLayout.jsx">
+import { Outlet } from 'react-router-dom'
+import Sidebar from '../navigation/Sidebar'
+import Header from '../navigation/Header'
+import { useState } from 'react'
+const MainLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
+      <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+export default MainLayout
+</file>
+
+<file path="frontend/src/components/navigation/Header.jsx">
+import { useState } from 'react'
+import { FiMenu, FiSearch } from 'react-icons/fi'
+const Header = ({ toggleSidebar }) => {
+  return (
+    <header className="bg-white shadow-soft z-10">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center">
+          <button 
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 focus:outline-none"
+          >
+            <FiMenu className="h-6 w-6" />
+          </button>
+          <div className="ml-4 relative max-w-xs w-full hidden md:block">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiSearch className="h-5 w-5 text-secondary-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                className="block w-full pl-10 pr-3 py-2 border border-secondary-200 rounded-lg text-sm placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary-400 to-accent-400"></div>
+        </div>
+      </div>
+    </header>
+  )
+}
+export default Header
+</file>
+
+<file path="frontend/src/components/navigation/Sidebar.jsx">
+import { NavLink } from 'react-router-dom'
+import { FiHome, FiFolder, FiClock, FiBarChart2, FiSettings, FiX } from 'react-icons/fi'
+const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const navItems = [
+    { name: 'Dashboard', path: '/', icon: <FiHome className="w-5 h-5" /> },
+    { name: 'Projects', path: '/projects', icon: <FiFolder className="w-5 h-5" /> },
+    { name: 'Time Tracking', path: '/time-tracking', icon: <FiClock className="w-5 h-5" /> },
+    { name: 'Reports', path: '/reports', icon: <FiBarChart2 className="w-5 h-5" /> },
+    { name: 'Settings', path: '/settings', icon: <FiSettings className="w-5 h-5" /> },
+  ]
+  return (
+    <>
+      {/* Mobile sidebar backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+          onClick={toggleSidebar}
+        ></div>
+      )}
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-medium transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          {/* Sidebar header */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-secondary-100">
+            <div className="flex items-center">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary-500 to-accent-500"></div>
+              <span className="ml-2 text-xl font-semibold text-secondary-900">TaskFlow</span>
+            </div>
+            <button 
+              onClick={toggleSidebar}
+              className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 focus:outline-none lg:hidden"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Navigation */}
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-secondary-700 hover:bg-secondary-50'
+                  }`
+                }
+              >
+                <span className="mr-3">{item.icon}</span>
+                <span>{item.name}</span>
+              </NavLink>
+            ))}
+          </nav>
+          {/* Sidebar footer */}
+          <div className="p-4 border-t border-secondary-100">
+            <div className="bg-secondary-50 rounded-xl p-3">
+              <h3 className="text-sm font-medium text-secondary-900">Need help?</h3>
+              <p className="mt-1 text-xs text-secondary-600">
+                Check our documentation or contact support for assistance.
+              </p>
+              <button className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 focus:outline-none">
+                View Documentation
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}
+export default Sidebar
+</file>
+
+<file path="frontend/src/components/projects/ProjectCard.jsx">
+import { Link } from 'react-router-dom'
+import { FiClock, FiCheckCircle } from 'react-icons/fi'
+const ProjectCard = ({ project }) => {
+  // Calculate completion percentage
+  const totalTasks = project.totalTasks || 0
+  const completedTasks = project.completedTasks || 0
+  const completionPercentage = totalTasks > 0 
+    ? Math.round((completedTasks / totalTasks) * 100) 
+    : 0
+  return (
+    <Link 
+      to={`/projects/${project.id}`}
+      className="card card-hover border border-secondary-100 flex flex-col"
+    >
+      <div className="flex items-center mb-3">
+        <div 
+          className="w-10 h-10 rounded-lg flex items-center justify-center"
+          style={{ 
+            backgroundColor: project.color ? `${project.color}20` : '#e0f2fe',
+            color: project.color || '#0ea5e9'
+          }}
+        >
+          {project.icon || '📋'}
+        </div>
+        <div className="ml-3">
+          <h3 className="font-medium text-secondary-900 truncate">{project.name}</h3>
+          <p className="text-xs text-secondary-500">{project.client || 'Personal Project'}</p>
+        </div>
+      </div>
+      <div className="mt-auto">
+        <div className="flex justify-between text-xs text-secondary-500 mb-1">
+          <span>Progress</span>
+          <span>{completionPercentage}%</span>
+        </div>
+        <div className="w-full bg-secondary-100 rounded-full h-1.5">
+          <div 
+            className="h-1.5 rounded-full"
+            style={{ 
+              width: `${completionPercentage}%`,
+              backgroundColor: project.color || '#0ea5e9'
+            }}
+          ></div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-secondary-100 text-xs">
+        <div className="flex items-center text-secondary-500">
+          <FiClock className="mr-1" />
+          <span>{project.totalHours || 0} hrs</span>
+        </div>
+        <div className="flex items-center text-secondary-500">
+          <FiCheckCircle className="mr-1" />
+          <span>{completedTasks}/{totalTasks} tasks</span>
+        </div>
+      </div>
+    </Link>
+  )
+}
+export default ProjectCard
+</file>
+
+<file path="frontend/src/components/tasks/TaskItem.jsx">
+import { useState } from 'react'
+import { format, isPast, isToday } from 'date-fns'
+import { useProjects } from '../../context/ProjectContext'
+import { FiClock, FiPlay, FiSquare, FiCheck } from 'react-icons/fi'
+const TaskItem = ({ task }) => {
+  const { projects, updateTask, startTimeTracking, stopTimeTracking, timeEntries } = useProjects()
+  const [isTracking, setIsTracking] = useState(false)
+  // Find project this task belongs to
+  const project = projects.find(p => p.id === task.projectId) || {}
+  // Check if task has an active time entry
+  const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
+  // Format due date with visual indication if it's overdue or due today
+  const formatDueDate = () => {
+    if (!task.dueDate) return null
+    const dueDate = new Date(task.dueDate)
+    const isOverdue = isPast(dueDate) && !isToday(dueDate)
+    const isDueToday = isToday(dueDate)
+    return (
+      <span className={`text-xs ${isOverdue ? 'text-red-600' : isDueToday ? 'text-amber-600' : 'text-secondary-500'}`}>
+        {isOverdue ? 'Overdue: ' : isDueToday ? 'Today: ' : ''}
+        {format(dueDate, 'MMM d')}
+      </span>
+    )
+  }
+  // Handle task status toggle
+  const toggleTaskStatus = async () => {
+    const newStatus = task.status === 'completed' ? 'in-progress' : 'completed'
+    await updateTask(task.id, { ...task, status: newStatus })
+  }
+  // Handle time tracking
+  const toggleTimeTracking = async () => {
+    if (activeTimeEntry) {
+      await stopTimeTracking(activeTimeEntry.id)
+      setIsTracking(false)
+    } else {
+      await startTimeTracking(task.id)
+      setIsTracking(true)
+    }
+  }
+  return (
+    <div className="py-3 flex items-center justify-between">
+      <div className="flex items-center">
+        <button
+          onClick={toggleTaskStatus}
+          className={`flex-shrink-0 h-5 w-5 rounded-full border ${
+            task.status === 'completed'
+              ? 'bg-primary-500 border-primary-500 flex items-center justify-center'
+              : 'border-secondary-300'
+          }`}
+        >
+          {task.status === 'completed' && <FiCheck className="h-3 w-3 text-white" />}
+        </button>
+        <div className="ml-3">
+          <div className="flex items-center">
+            <p className={`text-sm font-medium ${
+              task.status === 'completed' ? 'text-secondary-500 line-through' : 'text-secondary-900'
+            }`}>
+              {task.title}
+            </p>
+            {task.priority === 'high' && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800">
+                High
+              </span>
+            )}
+          </div>
+          <div className="flex items-center mt-1 space-x-2">
+            <span className="text-xs text-secondary-500">
+              {project.name || 'Unknown Project'}
+            </span>
+            {formatDueDate()}
+            {task.estimatedHours && (
+              <span className="text-xs text-secondary-500 flex items-center">
+                <FiClock className="mr-1 h-3 w-3" />
+                {task.estimatedHours}h
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={toggleTimeTracking}
+        className={`p-2 rounded-lg ${
+          activeTimeEntry
+            ? 'text-red-600 hover:bg-red-50'
+            : 'text-primary-600 hover:bg-primary-50'
+        }`}
+        title={activeTimeEntry ? 'Stop tracking' : 'Start tracking'}
+      >
+        {activeTimeEntry ? <FiSquare className="h-5 w-5" /> : <FiPlay className="h-5 w-5" />}
+      </button>
+    </div>
+  )
+}
+export default TaskItem
+</file>
+
+<file path="frontend/src/components/timeTracking/TimeTrackingWidget.jsx">
+import { useState, useEffect } from 'react'
+import { useProjects } from '../../context/ProjectContext'
+import { FiPlay, FiPause, FiClock, FiStopCircle } from 'react-icons/fi'
+const TimeTrackingWidget = ({ activeTimeEntry }) => {
+  const { projects, tasks, stopTimeTracking, startTimeTracking } = useProjects()
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  // Find task and project if there's an active time entry
+  const task = activeTimeEntry ? tasks.find(t => t.id === activeTimeEntry.taskId) : null
+  const project = task ? projects.find(p => p.id === task.projectId) : null
+  // Timer effect
+  useEffect(() => {
+    let interval = null
+    if (activeTimeEntry && !isPaused) {
+      const startTime = new Date(activeTimeEntry.startTime).getTime()
+      interval = setInterval(() => {
+        const now = new Date().getTime()
+        const elapsed = Math.floor((now - startTime) / 1000)
+        setElapsedTime(elapsed)
+      }, 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [activeTimeEntry, isPaused])
+  // Format time as HH:MM:SS
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    return [
+      h.toString().padStart(2, '0'),
+      m.toString().padStart(2, '0'),
+      s.toString().padStart(2, '0')
+    ].join(':')
+  }
+  // Handle stop tracking
+  const handleStopTracking = async () => {
+    if (activeTimeEntry) {
+      await stopTimeTracking(activeTimeEntry.id)
+    }
+  }
+  // Handle pause/resume (this would need backend support in a real app)
+  const handlePauseResume = () => {
+    setIsPaused(!isPaused)
+  }
+  return (
+    <div className="card h-full flex flex-col">
+      <h2 className="text-lg font-medium text-secondary-900 mb-4">Time Tracking</h2>
+      {activeTimeEntry ? (
+        <div className="flex-1 flex flex-col">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-600">
+                <FiClock className="h-5 w-5" />
+              </div>
+              <div className="ml-3">
+                <h3 className="font-medium text-secondary-900 truncate">{task?.title || 'Unknown Task'}</h3>
+                <p className="text-xs text-secondary-500">{project?.name || 'Unknown Project'}</p>
+              </div>
+            </div>
+            <div className="text-center py-3">
+              <div className="text-3xl font-semibold text-secondary-900 font-mono">
+                {formatTime(elapsedTime)}
+              </div>
+              <p className="text-xs text-secondary-500 mt-1">
+                Started at {new Date(activeTimeEntry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={handlePauseResume}
+                className="flex-1 btn bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50 flex items-center justify-center"
+              >
+                {isPaused ? (
+                  <>
+                    <FiPlay className="mr-1.5 h-4 w-4" />
+                    Resume
+                  </>
+                ) : (
+                  <>
+                    <FiPause className="mr-1.5 h-4 w-4" />
+                    Pause
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleStopTracking}
+                className="flex-1 btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center"
+              >
+                <FiStopCircle className="mr-1.5 h-4 w-4" />
+                Stop
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 flex-1">
+            <h3 className="text-sm font-medium text-secondary-900 mb-2">Recent Time Entries</h3>
+            <div className="text-center py-8 bg-secondary-50 rounded-lg">
+              <p className="text-secondary-600 text-sm">Time entries will appear here</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-secondary-50 rounded-xl">
+          <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+            <FiClock className="h-8 w-8" />
+          </div>
+          <h3 className="text-secondary-900 font-medium mb-1">No active tracking</h3>
+          <p className="text-secondary-600 text-sm mb-4">
+            Start tracking time on any task to see it here
+          </p>
+          <button 
+            onClick={() => startTimeTracking('task5')} 
+            className="btn btn-primary flex items-center"
+          >
+            <FiPlay className="mr-1.5 h-4 w-4" />
+            Start Tracking
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+export default TimeTrackingWidget
+</file>
+
+<file path="frontend/src/context/ProjectContext.jsx">
+import { createContext, useContext, useState, useEffect } from 'react'
+const ProjectContext = createContext()
+export const useProjects = () => useContext(ProjectContext)
+export const ProjectProvider = ({ children }) => {
+  const [projects, setProjects] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [timeEntries, setTimeEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    // Load mock data immediately
+    loadMockData()
+  }, [])
+  const loadMockData = () => {
+    try {
+      setLoading(true)
+      // Mock projects data
+      const mockProjects = [
+        {
+          id: 'project1',
+          name: 'Website Redesign',
+          description: 'Complete overhaul of the company website with modern design and improved user experience.',
+          client: 'Acme Corporation',
+          color: '#0ea5e9',
+          startDate: '2025-03-01',
+          dueDate: '2025-04-15',
+          status: 'in-progress',
+          totalTasks: 12,
+          completedTasks: 5,
+          totalHours: 24
+        },
+        {
+          id: 'project2',
+          name: 'Mobile App Development',
+          description: 'Create a native mobile application for iOS and Android platforms.',
+          client: 'TechStart',
+          color: '#8b5cf6',
+          startDate: '2025-02-15',
+          dueDate: '2025-05-30',
+          status: 'in-progress',
+          totalTasks: 18,
+          completedTasks: 3,
+          totalHours: 16
+        },
+        {
+          id: 'project3',
+          name: 'Marketing Campaign',
+          description: 'Develop and execute a comprehensive marketing strategy for product launch.',
+          client: 'GreenLife',
+          color: '#10b981',
+          startDate: '2025-01-10',
+          dueDate: '2025-03-15',
+          status: 'completed',
+          totalTasks: 8,
+          completedTasks: 8,
+          totalHours: 32
+        },
+        {
+          id: 'project4',
+          name: 'E-commerce Platform',
+          description: 'Build an online store with product catalog, shopping cart, and payment processing.',
+          client: 'Fashion Forward',
+          color: '#f59e0b',
+          startDate: '2025-03-10',
+          dueDate: '2025-06-20',
+          status: 'not-started',
+          totalTasks: 15,
+          completedTasks: 0,
+          totalHours: 0
+        }
+      ]
+      // Mock tasks data
+      const mockTasks = [
+        {
+          id: 'task1',
+          projectId: 'project1',
+          title: 'Design homepage mockup',
+          description: 'Create wireframes and visual design for the homepage',
+          status: 'completed',
+          priority: 'high',
+          dueDate: '2025-03-10',
+          estimatedHours: 8
+        },
+        {
+          id: 'task2',
+          projectId: 'project1',
+          title: 'Implement responsive navigation',
+          description: 'Create mobile-friendly navigation menu',
+          status: 'in-progress',
+          priority: 'medium',
+          dueDate: '2025-03-15',
+          estimatedHours: 6
+        },
+        {
+          id: 'task3',
+          projectId: 'project1',
+          title: 'Optimize images',
+          description: 'Compress and optimize all website images',
+          status: 'not-started',
+          priority: 'low',
+          dueDate: '2025-03-20',
+          estimatedHours: 4
+        },
+        {
+          id: 'task4',
+          projectId: 'project2',
+          title: 'Design app UI',
+          description: 'Create UI design for all app screens',
+          status: 'completed',
+          priority: 'high',
+          dueDate: '2025-02-28',
+          estimatedHours: 12
+        },
+        {
+          id: 'task5',
+          projectId: 'project2',
+          title: 'Implement user authentication',
+          description: 'Create login, registration, and password reset functionality',
+          status: 'in-progress',
+          priority: 'high',
+          dueDate: '2025-03-10',
+          estimatedHours: 8
+        },
+        {
+          id: 'task6',
+          projectId: 'project3',
+          title: 'Create social media content',
+          description: 'Design and schedule posts for all platforms',
+          status: 'completed',
+          priority: 'medium',
+          dueDate: '2025-02-15',
+          estimatedHours: 6
+        }
+      ]
+      // Mock time entries data
+      const mockTimeEntries = [
+        {
+          id: 'entry1',
+          taskId: 'task1',
+          startTime: new Date(new Date().setHours(9, 30)).toISOString(),
+          endTime: new Date(new Date().setHours(11, 45)).toISOString(),
+          duration: 8100000, // 2h 15m in ms
+          notes: 'Completed initial design mockups'
+        },
+        {
+          id: 'entry2',
+          taskId: 'task2',
+          startTime: new Date(new Date().setHours(13, 0)).toISOString(),
+          endTime: new Date(new Date().setHours(15, 30)).toISOString(),
+          duration: 9000000, // 2h 30m in ms
+          notes: 'Implemented responsive navigation'
+        },
+        {
+          id: 'entry3',
+          taskId: 'task5',
+          startTime: new Date(new Date().setHours(16, 0)).toISOString(),
+          endTime: null, // Currently active
+          duration: null,
+          notes: 'Working on user authentication flow'
+        }
+      ]
+      setProjects(mockProjects)
+      setTasks(mockTasks)
+      setTimeEntries(mockTimeEntries)
+    } catch (error) {
+      console.error('Error loading mock data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  const createProject = async (projectData) => {
+    try {
+      // Create a new project with mock data
+      const newProject = {
+        id: `project${projects.length + 1}`,
+        ...projectData,
+        status: projectData.status || 'not-started',
+        totalTasks: 0,
+        completedTasks: 0,
+        totalHours: 0
+      }
+      setProjects([...projects, newProject])
+      return { success: true, project: newProject }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to create project'
+      }
+    }
+  }
+  const updateProject = async (id, projectData) => {
+    try {
+      // Update existing project
+      const updatedProject = { ...projects.find(p => p.id === id), ...projectData }
+      setProjects(projects.map(p => p.id === id ? updatedProject : p))
+      return { success: true, project: updatedProject }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to update project'
+      }
+    }
+  }
+  const deleteProject = async (id) => {
+    try {
+      // Remove project and associated tasks and time entries
+      setProjects(projects.filter(p => p.id !== id))
+      setTasks(tasks.filter(t => t.projectId !== id))
+      setTimeEntries(timeEntries.filter(te => !tasks.some(t => t.id === te.taskId && t.projectId === id)))
+      return { success: true }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to delete project'
+      }
+    }
+  }
+  const createTask = async (taskData) => {
+    try {
+      // Create a new task with mock data
+      const newTask = {
+        id: `task${tasks.length + 1}`,
+        ...taskData,
+        status: taskData.status || 'not-started'
+      }
+      setTasks([...tasks, newTask])
+      // Update project stats
+      const project = projects.find(p => p.id === newTask.projectId)
+      if (project) {
+        const updatedProject = {
+          ...project,
+          totalTasks: project.totalTasks + 1
+        }
+        setProjects(projects.map(p => p.id === project.id ? updatedProject : p))
+      }
+      return { success: true, task: newTask }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to create task'
+      }
+    }
+  }
+  const updateTask = async (id, taskData) => {
+    try {
+      // Get current task
+      const currentTask = tasks.find(t => t.id === id)
+      // Update task
+      const updatedTask = { ...currentTask, ...taskData }
+      setTasks(tasks.map(t => t.id === id ? updatedTask : t))
+      // Update project stats if status changed
+      if (currentTask && currentTask.status !== updatedTask.status) {
+        const project = projects.find(p => p.id === updatedTask.projectId)
+        if (project) {
+          const completedDelta = 
+            updatedTask.status === 'completed' ? 1 : 
+            currentTask.status === 'completed' ? -1 : 0
+          const updatedProject = {
+            ...project,
+            completedTasks: project.completedTasks + completedDelta
+          }
+          setProjects(projects.map(p => p.id === project.id ? updatedProject : p))
+        }
+      }
+      return { success: true, task: updatedTask }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to update task'
+      }
+    }
+  }
+  const deleteTask = async (id) => {
+    try {
+      // Get task before deleting
+      const taskToDelete = tasks.find(t => t.id === id)
+      // Remove task and associated time entries
+      setTasks(tasks.filter(t => t.id !== id))
+      setTimeEntries(timeEntries.filter(te => te.taskId !== id))
+      // Update project stats
+      if (taskToDelete) {
+        const project = projects.find(p => p.id === taskToDelete.projectId)
+        if (project) {
+          const updatedProject = {
+            ...project,
+            totalTasks: project.totalTasks - 1,
+            completedTasks: taskToDelete.status === 'completed' 
+              ? project.completedTasks - 1 
+              : project.completedTasks
+          }
+          setProjects(projects.map(p => p.id === project.id ? updatedProject : p))
+        }
+      }
+      return { success: true }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to delete task'
+      }
+    }
+  }
+  const startTimeTracking = async (taskId) => {
+    try {
+      // Create a new time entry
+      const newTimeEntry = {
+        id: `entry${timeEntries.length + 1}`,
+        taskId,
+        startTime: new Date().toISOString(),
+        endTime: null,
+        duration: null,
+        notes: ''
+      }
+      setTimeEntries([...timeEntries, newTimeEntry])
+      return { success: true, timeEntry: newTimeEntry }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to start time tracking'
+      }
+    }
+  }
+  const stopTimeTracking = async (timeEntryId) => {
+    try {
+      // Find time entry
+      const timeEntry = timeEntries.find(te => te.id === timeEntryId)
+      if (!timeEntry) {
+        throw new Error('Time entry not found')
+      }
+      // Calculate duration
+      const startTime = new Date(timeEntry.startTime)
+      const endTime = new Date()
+      const duration = endTime - startTime
+      // Update time entry
+      const updatedTimeEntry = {
+        ...timeEntry,
+        endTime: endTime.toISOString(),
+        duration
+      }
+      setTimeEntries(timeEntries.map(te => te.id === timeEntryId ? updatedTimeEntry : te))
+      return { success: true, timeEntry: updatedTimeEntry }
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Failed to stop time tracking'
+      }
+    }
+  }
+  const value = {
+    projects,
+    tasks,
+    timeEntries,
+    loading,
+    createProject,
+    updateProject,
+    deleteProject,
+    createTask,
+    updateTask,
+    deleteTask,
+    startTimeTracking,
+    stopTimeTracking,
+    refreshProjects: loadMockData
+  }
+  return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
+}
+</file>
+
+<file path="frontend/src/pages/Dashboard.jsx">
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { useProjects } from '../context/ProjectContext'
+import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus } from 'react-icons/fi'
+import { format } from 'date-fns'
+// Components
+import ProjectCard from '../components/projects/ProjectCard'
+import TaskItem from '../components/tasks/TaskItem'
+import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
+const Dashboard = () => {
+  const { projects, tasks, timeEntries, loading } = useProjects()
+  const [recentProjects, setRecentProjects] = useState([])
+  const [upcomingTasks, setUpcomingTasks] = useState([])
+  const [activeTimeEntry, setActiveTimeEntry] = useState(null)
+  const [stats, setStats] = useState({
+    totalProjects: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+    trackedHoursToday: 0
+  })
+  useEffect(() => {
+    if (!loading) {
+      // Get recent projects (last 4)
+      const sortedProjects = [...projects].sort((a, b) => 
+        new Date(b.updatedAt) - new Date(a.updatedAt)
+      ).slice(0, 4)
+      setRecentProjects(sortedProjects)
+      // Get upcoming tasks (due soon, not completed)
+      const now = new Date()
+      const upcoming = tasks
+        .filter(task => task.status !== 'completed' && task.dueDate && new Date(task.dueDate) >= now)
+        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+        .slice(0, 5)
+      setUpcomingTasks(upcoming)
+      // Find active time entry if any
+      const active = timeEntries.find(entry => entry.endTime === null)
+      setActiveTimeEntry(active)
+      // Calculate stats
+      const completed = tasks.filter(task => task.status === 'completed').length
+      const pending = tasks.filter(task => task.status !== 'completed').length
+      // Calculate hours tracked today
+      const today = new Date().setHours(0, 0, 0, 0)
+      const todayEntries = timeEntries.filter(entry => {
+        const entryDate = new Date(entry.startTime).setHours(0, 0, 0, 0)
+        return entryDate === today
+      })
+      const trackedMinutes = todayEntries.reduce((total, entry) => {
+        const start = new Date(entry.startTime)
+        const end = entry.endTime ? new Date(entry.endTime) : new Date()
+        return total + (end - start) / 60000 // convert ms to minutes
+      }, 0)
+      setStats({
+        totalProjects: projects.length,
+        completedTasks: completed,
+        pendingTasks: pending,
+        trackedHoursToday: Math.round(trackedMinutes / 6) / 10 // round to 1 decimal
+      })
+    }
+  }, [projects, tasks, timeEntries, loading])
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-secondary-900">Dashboard</h1>
+        <div className="text-sm text-secondary-500">
+          {format(new Date(), 'EEEE, MMMM d, yyyy')}
+        </div>
+      </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-primary-500/10">
+              <FiActivity className="h-6 w-6 text-primary-600" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-sm font-medium text-secondary-500">Active Projects</h3>
+              <p className="text-2xl font-semibold text-secondary-900">{stats.totalProjects}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-green-500/10">
+              <FiCheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-sm font-medium text-secondary-500">Completed Tasks</h3>
+              <p className="text-2xl font-semibold text-secondary-900">{stats.completedTasks}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-amber-500/10">
+              <FiAlertCircle className="h-6 w-6 text-amber-600" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-sm font-medium text-secondary-500">Pending Tasks</h3>
+              <p className="text-2xl font-semibold text-secondary-900">{stats.pendingTasks}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-200">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-accent-500/10">
+              <FiClock className="h-6 w-6 text-accent-600" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-sm font-medium text-secondary-500">Hours Today</h3>
+              <p className="text-2xl font-semibold text-secondary-900">{stats.trackedHoursToday}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Projects */}
+        <div className="lg:col-span-2">
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-secondary-900">Recent Projects</h2>
+              <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+                View All
+              </Link>
+            </div>
+            {recentProjects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recentProjects.map(project => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-secondary-50 rounded-lg">
+                <p className="text-secondary-600 mb-3">No projects yet</p>
+                <Link 
+                  to="/projects" 
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600"
+                >
+                  <FiPlus className="mr-2 h-4 w-4" />
+                  Create Project
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Time Tracking Widget */}
+        <div className="lg:col-span-1">
+          <TimeTrackingWidget activeTimeEntry={activeTimeEntry} />
+        </div>
+      </div>
+      {/* Upcoming Tasks */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-secondary-900">Upcoming Tasks</h2>
+          <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+            View All Tasks
+          </Link>
+        </div>
+        {upcomingTasks.length > 0 ? (
+          <div className="divide-y divide-secondary-100">
+            {upcomingTasks.map(task => (
+              <TaskItem key={task.id} task={task} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-secondary-50 rounded-lg">
+            <p className="text-secondary-600">No upcoming tasks</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+export default Dashboard
+</file>
+
+<file path="frontend/src/pages/NotFound.jsx">
+import { Link } from 'react-router-dom'
+import { FiArrowLeft } from 'react-icons/fi'
+const NotFound = () => {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-secondary-50 to-primary-50 p-4">
+      <div className="max-w-md w-full text-center">
+        <h1 className="text-9xl font-bold text-primary-400">404</h1>
+        <h2 className="text-2xl font-semibold text-secondary-900 mt-4">Page not found</h2>
+        <p className="text-secondary-600 mt-2">
+          The page you are looking for doesn't exist or has been moved.
+        </p>
+        <Link 
+          to="/"
+          className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600"
+        >
+          <FiArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Link>
+      </div>
+    </div>
+  )
+}
+export default NotFound
+</file>
+
+<file path="frontend/src/pages/ProjectDetail.jsx">
+import { useState, useEffect } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useProjects } from '../context/ProjectContext'
+import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX } from 'react-icons/fi'
+import { format } from 'date-fns'
+// Components
+import TaskItem from '../components/tasks/TaskItem'
+const ProjectDetail = () => {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { projects, tasks, loading, deleteProject, createTask } = useProjects()
+  const [project, setProject] = useState(null)
+  const [projectTasks, setProjectTasks] = useState([])
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    status: 'not-started',
+    priority: 'medium',
+    dueDate: '',
+    estimatedHours: 0
+  })
+  const [stats, setStats] = useState({
+    totalTasks: 0,
+    completedTasks: 0,
+    inProgressTasks: 0,
+    totalHours: 0
+  })
+  useEffect(() => {
+    if (!loading) {
+      const foundProject = projects.find(p => p.id === id) || {
+        id: 'demo1',
+        name: 'Website Redesign',
+        description: 'Complete overhaul of the company website with modern design and improved user experience.',
+        client: 'Acme Corporation',
+        color: '#0ea5e9',
+        startDate: '2025-03-01',
+        dueDate: '2025-04-15',
+        status: 'in-progress',
+        totalHours: 45
+      }
+      setProject(foundProject)
+      // Get tasks for this project
+      const filteredTasks = tasks.filter(task => task.projectId === id) || [
+        {
+          id: 'task1',
+          projectId: 'demo1',
+          title: 'Design homepage mockup',
+          description: 'Create wireframes and visual design for the homepage',
+          status: 'completed',
+          priority: 'high',
+          dueDate: '2025-03-10',
+          estimatedHours: 8
+        },
+        {
+          id: 'task2',
+          projectId: 'demo1',
+          title: 'Implement responsive navigation',
+          description: 'Create mobile-friendly navigation menu',
+          status: 'in-progress',
+          priority: 'medium',
+          dueDate: '2025-03-15',
+          estimatedHours: 6
+        },
+        {
+          id: 'task3',
+          projectId: 'demo1',
+          title: 'Optimize images',
+          description: 'Compress and optimize all website images',
+          status: 'not-started',
+          priority: 'low',
+          dueDate: '2025-03-20',
+          estimatedHours: 4
+        }
+      ]
+      setProjectTasks(filteredTasks)
+      // Calculate stats
+      const completed = filteredTasks.filter(task => task.status === 'completed').length
+      const inProgress = filteredTasks.filter(task => task.status === 'in-progress').length
+      const totalHours = filteredTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
+      setStats({
+        totalTasks: filteredTasks.length,
+        completedTasks: completed,
+        inProgressTasks: inProgress,
+        totalHours
+      })
+    }
+  }, [id, projects, tasks, loading])
+  const handleDeleteProject = async () => {
+    if (id !== 'demo1') {
+      const result = await deleteProject(id)
+      if (result.success) {
+        navigate('/projects')
+      }
+    } else {
+      // For demo purposes
+      setShowDeleteConfirm(false)
+      navigate('/projects')
+    }
+  }
+  if (loading || !project) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading project details...</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Link to="/projects" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900">
+            <FiChevronLeft className="mr-1 h-4 w-4" />
+            Back to Projects
+          </Link>
+          <h1 className="text-2xl font-semibold text-secondary-900 mt-1">{project.name}</h1>
+          <div className="flex items-center mt-1">
+            <span className="text-sm text-secondary-600">{project.client}</span>
+            <span className="mx-2 text-secondary-300">•</span>
+            <span 
+              className="px-2 py-0.5 text-xs rounded-full"
+              style={{ 
+                backgroundColor: `${project.color || '#0ea5e9'}20`,
+                color: project.color || '#0ea5e9'
+              }}
+            >
+              {project.status === 'completed' ? 'Completed' : project.status === 'in-progress' ? 'In Progress' : 'Not Started'}
+            </span>
+          </div>
+        </div>
+        <div className="flex space-x-2">
+          <button className="btn btn-secondary flex items-center">
+            <FiEdit2 className="mr-1.5 h-4 w-4" />
+            Edit
+          </button>
+          <button 
+            onClick={() => setShowDeleteConfirm(true)}
+            className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center"
+          >
+            <FiTrash2 className="mr-1.5 h-4 w-4" />
+            Delete
+          </button>
+        </div>
+      </div>
+      {/* Project Info */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 card">
+          <h2 className="text-lg font-medium text-secondary-900 mb-2">Description</h2>
+          <p className="text-secondary-700">
+            {project.description || 'No description provided.'}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+            <div>
+              <h3 className="text-xs font-medium text-secondary-500 uppercase">Start Date</h3>
+              <div className="flex items-center mt-1">
+                <FiCalendar className="h-4 w-4 text-secondary-400 mr-1.5" />
+                <span className="text-sm text-secondary-900">
+                  {project.startDate ? format(new Date(project.startDate), 'MMM d, yyyy') : 'Not set'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-medium text-secondary-500 uppercase">Due Date</h3>
+              <div className="flex items-center mt-1">
+                <FiCalendar className="h-4 w-4 text-secondary-400 mr-1.5" />
+                <span className="text-sm text-secondary-900">
+                  {project.dueDate ? format(new Date(project.dueDate), 'MMM d, yyyy') : 'Not set'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-medium text-secondary-500 uppercase">Estimated Hours</h3>
+              <div className="flex items-center mt-1">
+                <FiClock className="h-4 w-4 text-secondary-400 mr-1.5" />
+                <span className="text-sm text-secondary-900">{stats.totalHours} hours</span>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-medium text-secondary-500 uppercase">Completion</h3>
+              <div className="flex items-center mt-1">
+                <FiCheckCircle className="h-4 w-4 text-secondary-400 mr-1.5" />
+                <span className="text-sm text-secondary-900">
+                  {stats.totalTasks > 0 
+                    ? `${Math.round((stats.completedTasks / stats.totalTasks) * 100)}%` 
+                    : '0%'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-medium text-secondary-900 mb-4">Progress</h2>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-secondary-700">Overall Progress</span>
+                <span className="font-medium text-secondary-900">
+                  {stats.totalTasks > 0 
+                    ? `${Math.round((stats.completedTasks / stats.totalTasks) * 100)}%` 
+                    : '0%'}
+                </span>
+              </div>
+              <div className="w-full bg-secondary-100 rounded-full h-2">
+                <div 
+                  className="h-2 rounded-full" 
+                  style={{ 
+                    width: `${stats.totalTasks > 0 ? (stats.completedTasks / stats.totalTasks) * 100 : 0}%`,
+                    backgroundColor: project.color || '#0ea5e9'
+                  }}
+                ></div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="bg-secondary-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-secondary-900">{stats.completedTasks}</p>
+                <p className="text-xs text-secondary-500 mt-1">Completed</p>
+              </div>
+              <div className="bg-secondary-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-secondary-900">{stats.inProgressTasks}</p>
+                <p className="text-xs text-secondary-500 mt-1">In Progress</p>
+              </div>
+              <div className="bg-secondary-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-secondary-900">
+                  {stats.totalTasks - stats.completedTasks - stats.inProgressTasks}
+                </p>
+                <p className="text-xs text-secondary-500 mt-1">Not Started</p>
+              </div>
+              <div className="bg-secondary-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-semibold text-secondary-900">{stats.totalTasks}</p>
+                <p className="text-xs text-secondary-500 mt-1">Total Tasks</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Tasks */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-secondary-900">Tasks</h2>
+          <button 
+            onClick={() => setShowAddTaskModal(true)}
+            className="btn btn-primary flex items-center"
+          >
+            <FiPlus className="mr-1.5 h-4 w-4" />
+            Add Task
+          </button>
+        </div>
+        {projectTasks.length > 0 ? (
+          <div className="divide-y divide-secondary-100">
+            {projectTasks.map(task => (
+              <TaskItem key={task.id} task={task} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-secondary-50 rounded-lg">
+            <p className="text-secondary-600 mb-3">No tasks yet</p>
+            <button 
+              onClick={() => setShowAddTaskModal(true)}
+              className="btn btn-primary inline-flex items-center"
+            >
+              <FiPlus className="mr-1.5 h-4 w-4" />
+              Create Task
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Add Task Modal */}
+      {showAddTaskModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-secondary-100">
+              <h3 className="text-lg font-medium text-secondary-900">Add New Task</h3>
+              <button 
+                onClick={() => setShowAddTaskModal(false)}
+                className="text-secondary-500 hover:text-secondary-700"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const result = await createTask({
+                  ...newTask,
+                  projectId: id
+                })
+                if (result.success) {
+                  setShowAddTaskModal(false)
+                  setNewTask({
+                    title: '',
+                    description: '',
+                    status: 'not-started',
+                    priority: 'medium',
+                    dueDate: '',
+                    estimatedHours: 0
+                  })
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Task Title *
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                      className="input w-full h-24"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        id="status"
+                        value={newTask.status}
+                        onChange={(e) => setNewTask({...newTask, status: e.target.value})}
+                        className="input w-full"
+                      >
+                        <option value="not-started">Not Started</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="priority" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Priority
+                      </label>
+                      <select
+                        id="priority"
+                        value={newTask.priority}
+                        onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                        className="input w-full"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        id="dueDate"
+                        value={newTask.dueDate}
+                        onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="estimatedHours" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Estimated Hours
+                      </label>
+                      <input
+                        type="number"
+                        id="estimatedHours"
+                        min="0"
+                        step="0.5"
+                        value={newTask.estimatedHours}
+                        onChange={(e) => setNewTask({...newTask, estimatedHours: parseFloat(e.target.value) || 0})}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTaskModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-secondary-900 mb-2">Delete Project</h3>
+            <p className="text-secondary-600 mb-4">
+              Are you sure you want to delete this project? This action cannot be undone and all associated tasks and time entries will be deleted.
+            </p>
+            <div className="flex space-x-3 justify-end">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteProject}
+                className="btn bg-red-500 text-white hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+export default ProjectDetail
+</file>
+
+<file path="frontend/src/pages/Projects.jsx">
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useProjects } from '../context/ProjectContext'
+import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
+// Components
+import ProjectCard from '../components/projects/ProjectCard'
+const Projects = () => {
+  const { projects, loading, createProject } = useProjects()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    client: '',
+    color: '#0ea5e9',
+    startDate: '',
+    dueDate: ''
+  })
+  // Filter projects based on search term
+  const filteredProjects = projects.filter(project => 
+    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading projects...</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="btn btn-primary flex items-center"
+        >
+          <FiPlus className="mr-1.5 h-4 w-4" />
+          New Project
+        </button>
+      </div>
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiSearch className="h-5 w-5 text-secondary-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10 w-full"
+          />
+        </div>
+        <button className="btn btn-secondary flex items-center">
+          <FiFilter className="mr-1.5 h-4 w-4" />
+          Filter
+        </button>
+      </div>
+      {/* Projects Grid */}
+      {filteredProjects.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredProjects.map(project => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-secondary-50 rounded-xl">
+          <div className="w-16 h-16 mx-auto rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+            <FiPlus className="h-8 w-8" />
+          </div>
+          <h3 className="text-secondary-900 font-medium mb-1">No projects found</h3>
+          <p className="text-secondary-600 text-sm mb-4">
+            {searchTerm ? 'Try a different search term' : 'Create your first project to get started'}
+          </p>
+          {!searchTerm && (
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary inline-flex items-center"
+            >
+              <FiPlus className="mr-1.5 h-4 w-4" />
+              Create Project
+            </button>
+          )}
+        </div>
+      )}
+      {/* Sample data for demonstration */}
+      {filteredProjects.length === 0 && !searchTerm && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium text-secondary-900 mb-2">Sample Projects</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                id: 'sample1',
+                name: 'Website Redesign',
+                client: 'Acme Inc.',
+                color: '#0ea5e9',
+                totalTasks: 12,
+                completedTasks: 5,
+                totalHours: 24
+              },
+              {
+                id: 'sample2',
+                name: 'Mobile App Development',
+                client: 'TechStart',
+                color: '#8b5cf6',
+                totalTasks: 18,
+                completedTasks: 3,
+                totalHours: 16
+              },
+              {
+                id: 'sample3',
+                name: 'Marketing Campaign',
+                client: 'GreenLife',
+                color: '#10b981',
+                totalTasks: 8,
+                completedTasks: 8,
+                totalHours: 32
+              }
+            ].map(project => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Create Project Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-secondary-100">
+              <h3 className="text-lg font-medium text-secondary-900">Create New Project</h3>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-secondary-500 hover:text-secondary-700"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const result = await createProject(newProject)
+                if (result.success) {
+                  setShowCreateModal(false)
+                  setNewProject({
+                    name: '',
+                    description: '',
+                    client: '',
+                    color: '#0ea5e9',
+                    startDate: '',
+                    dueDate: ''
+                  })
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                      className="input w-full h-24"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="client" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Client
+                    </label>
+                    <input
+                      type="text"
+                      id="client"
+                      value={newProject.client}
+                      onChange={(e) => setNewProject({...newProject, client: e.target.value})}
+                      className="input w-full"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="color" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Color
+                    </label>
+                    <input
+                      type="color"
+                      id="color"
+                      value={newProject.color}
+                      onChange={(e) => setNewProject({...newProject, color: e.target.value})}
+                      className="h-10 w-full rounded-md border border-secondary-200 p-1"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        id="startDate"
+                        value={newProject.startDate}
+                        onChange={(e) => setNewProject({...newProject, startDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        id="dueDate"
+                        value={newProject.dueDate}
+                        onChange={(e) => setNewProject({...newProject, dueDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                  >
+                    Create Project
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+export default Projects
+</file>
+
+<file path="frontend/src/pages/Reports.jsx">
+import { useState } from 'react'
+import { useProjects } from '../context/ProjectContext'
+import { FiDownload, FiCalendar, FiPieChart, FiBarChart2, FiTrendingUp } from 'react-icons/fi'
+const Reports = () => {
+  const { projects, tasks, timeEntries, loading } = useProjects()
+  const [reportType, setReportType] = useState('time')
+  const [dateRange, setDateRange] = useState('week')
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading reports data...</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-secondary-900">Reports</h1>
+        <button className="btn btn-secondary flex items-center">
+          <FiDownload className="mr-1.5 h-4 w-4" />
+          Export
+        </button>
+      </div>
+      {/* Report Controls */}
+      <div className="card">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label htmlFor="report-type" className="block text-sm font-medium text-secondary-700 mb-1">
+              Report Type
+            </label>
+            <select
+              id="report-type"
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="input w-full"
+            >
+              <option value="time">Time Tracking</option>
+              <option value="projects">Project Progress</option>
+              <option value="tasks">Task Completion</option>
+              <option value="productivity">Productivity</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label htmlFor="date-range" className="block text-sm font-medium text-secondary-700 mb-1">
+              Date Range
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiCalendar className="h-5 w-5 text-secondary-400" />
+              </div>
+              <select
+                id="date-range"
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="input pl-10 w-full"
+              >
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="quarter">This Quarter</option>
+                <option value="year">This Year</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex-1">
+            <label htmlFor="group-by" className="block text-sm font-medium text-secondary-700 mb-1">
+              Group By
+            </label>
+            <select
+              id="group-by"
+              className="input w-full"
+            >
+              <option value="project">Project</option>
+              <option value="task">Task</option>
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      {/* Report Visualization */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-secondary-900">
+              {reportType === 'time' ? 'Time Tracked' : 
+               reportType === 'projects' ? 'Project Progress' : 
+               reportType === 'tasks' ? 'Task Completion' : 'Productivity'}
+            </h2>
+            <div className="flex space-x-2">
+              <button className={`p-1.5 rounded-lg ${
+                reportType === 'time' ? 'bg-primary-50 text-primary-600' : 'text-secondary-500 hover:bg-secondary-100'
+              }`}>
+                <FiBarChart2 className="h-5 w-5" />
+              </button>
+              <button className={`p-1.5 rounded-lg ${
+                reportType === 'projects' ? 'bg-primary-50 text-primary-600' : 'text-secondary-500 hover:bg-secondary-100'
+              }`}>
+                <FiTrendingUp className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          <div className="h-64 flex items-center justify-center bg-secondary-50 rounded-lg">
+            {/* Chart placeholder */}
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+                <FiBarChart2 className="h-8 w-8" />
+              </div>
+              <p className="text-secondary-600">Chart visualization will appear here</p>
+              <p className="text-sm text-secondary-500 mt-1">
+                {reportType === 'time' ? 'Hours tracked per project' : 
+                 reportType === 'projects' ? 'Project completion over time' : 
+                 reportType === 'tasks' ? 'Tasks completed vs. pending' : 'Productivity trends'}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-medium text-secondary-900 mb-4">Summary</h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-secondary-700 mb-2">
+                {reportType === 'time' ? 'Total Time Tracked' : 
+                 reportType === 'projects' ? 'Project Status' : 
+                 reportType === 'tasks' ? 'Task Status' : 'Productivity Score'}
+              </h3>
+              <div className="bg-secondary-50 rounded-lg p-4 text-center">
+                <p className="text-3xl font-semibold text-secondary-900">
+                  {reportType === 'time' ? '32h 15m' : 
+                   reportType === 'projects' ? '68%' : 
+                   reportType === 'tasks' ? '24/35' : '85%'}
+                </p>
+                <p className="text-sm text-secondary-500 mt-1">
+                  {reportType === 'time' ? 'This week' : 
+                   reportType === 'projects' ? 'Average completion' : 
+                   reportType === 'tasks' ? 'Tasks completed' : 'Efficiency score'}
+                </p>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-secondary-700 mb-2">
+                {reportType === 'time' ? 'Time Distribution' : 
+                 reportType === 'projects' ? 'Project Distribution' : 
+                 reportType === 'tasks' ? 'Task Priority' : 'Peak Hours'}
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: '#0ea5e9' }}
+                  ></div>
+                  <div className="ml-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-700">
+                        {reportType === 'time' ? 'Website Redesign' : 
+                         reportType === 'projects' ? 'In Progress' : 
+                         reportType === 'tasks' ? 'High Priority' : 'Morning (8-12)'}
+                      </span>
+                      <span className="font-medium text-secondary-900">
+                        {reportType === 'time' ? '12h 30m' : 
+                         reportType === 'projects' ? '4' : 
+                         reportType === 'tasks' ? '8' : '10h 15m'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-secondary-100 rounded-full h-1.5 mt-1">
+                      <div 
+                        className="h-1.5 rounded-full"
+                        style={{ width: '45%', backgroundColor: '#0ea5e9' }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: '#8b5cf6' }}
+                  ></div>
+                  <div className="ml-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-700">
+                        {reportType === 'time' ? 'Mobile App' : 
+                         reportType === 'projects' ? 'Completed' : 
+                         reportType === 'tasks' ? 'Medium Priority' : 'Afternoon (12-5)'}
+                      </span>
+                      <span className="font-medium text-secondary-900">
+                        {reportType === 'time' ? '8h 45m' : 
+                         reportType === 'projects' ? '2' : 
+                         reportType === 'tasks' ? '12' : '15h 30m'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-secondary-100 rounded-full h-1.5 mt-1">
+                      <div 
+                        className="h-1.5 rounded-full"
+                        style={{ width: '30%', backgroundColor: '#8b5cf6' }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: '#10b981' }}
+                  ></div>
+                  <div className="ml-2 flex-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-secondary-700">
+                        {reportType === 'time' ? 'Marketing' : 
+                         reportType === 'projects' ? 'Not Started' : 
+                         reportType === 'tasks' ? 'Low Priority' : 'Evening (5-8)'}
+                      </span>
+                      <span className="font-medium text-secondary-900">
+                        {reportType === 'time' ? '6h 15m' : 
+                         reportType === 'projects' ? '1' : 
+                         reportType === 'tasks' ? '15' : '6h 30m'}
+                      </span>
+                    </div>
+                    <div className="w-full bg-secondary-100 rounded-full h-1.5 mt-1">
+                      <div 
+                        className="h-1.5 rounded-full"
+                        style={{ width: '25%', backgroundColor: '#10b981' }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-secondary-700 mb-2">Insights</h3>
+              <div className="bg-secondary-50 rounded-lg p-3 text-sm text-secondary-700">
+                <p>
+                  {reportType === 'time' 
+                    ? 'Most time was spent on the Website Redesign project. Tuesday was your most productive day.'
+                    : reportType === 'projects'
+                    ? 'You completed 2 projects this month, which is 50% more than last month.'
+                    : reportType === 'tasks'
+                    ? 'You completed 8 high-priority tasks this week, a 33% improvement over last week.'
+                    : 'Your productivity peaks between 9-11 AM. Consider scheduling important tasks during this time.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Detailed Data */}
+      <div className="card">
+        <h2 className="text-lg font-medium text-secondary-900 mb-4">Detailed Data</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-secondary-200">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                  {reportType === 'time' ? 'Project/Task' : 
+                   reportType === 'projects' ? 'Project' : 
+                   reportType === 'tasks' ? 'Task' : 'Date'}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                  {reportType === 'time' ? 'Date' : 
+                   reportType === 'projects' ? 'Status' : 
+                   reportType === 'tasks' ? 'Status' : 'Hours'}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                  {reportType === 'time' ? 'Duration' : 
+                   reportType === 'projects' ? 'Progress' : 
+                   reportType === 'tasks' ? 'Due Date' : 'Productivity'}
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+                  {reportType === 'time' ? 'Notes' : 
+                   reportType === 'projects' ? 'Hours' : 
+                   reportType === 'tasks' ? 'Priority' : 'Tasks'}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-secondary-100">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <tr key={item} className="hover:bg-secondary-50">
+                  <td className="px-4 py-3 text-sm text-secondary-900">
+                    {reportType === 'time' ? 'Website Redesign - Homepage Design' : 
+                     reportType === 'projects' ? 'Website Redesign' : 
+                     reportType === 'tasks' ? 'Design homepage mockup' : 'Monday, Mar 24'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-secondary-700">
+                    {reportType === 'time' ? 'Mar 26, 2025' : 
+                     reportType === 'projects' ? 'In Progress' : 
+                     reportType === 'tasks' ? 'Completed' : '8h 15m'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-secondary-700">
+                    {reportType === 'time' ? '2h 15m' : 
+                     reportType === 'projects' ? '65%' : 
+                     reportType === 'tasks' ? 'Mar 10, 2025' : '92%'}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-secondary-700">
+                    {reportType === 'time' ? 'Completed initial mockups' : 
+                     reportType === 'projects' ? '45h' : 
+                     reportType === 'tasks' ? 'High' : '12'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+export default Reports
+</file>
+
+<file path="frontend/src/pages/TimeTracking.jsx">
+import { useState, useEffect } from 'react'
+import { useProjects } from '../context/ProjectContext'
+import { FiPlay, FiPause, FiClock, FiCalendar, FiFilter, FiSearch } from 'react-icons/fi'
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday } from 'date-fns'
+const TimeTracking = () => {
+  const { projects, tasks, timeEntries, loading, startTimeTracking } = useProjects()
+  const [activeTimeEntry, setActiveTimeEntry] = useState(null)
+  const [weekDays, setWeekDays] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  useEffect(() => {
+    if (!loading) {
+      // Find active time entry if any
+      const active = timeEntries.find(entry => entry.endTime === null)
+      setActiveTimeEntry(active)
+      // Get days of current week
+      const now = new Date()
+      const start = startOfWeek(now, { weekStartsOn: 1 }) // Start on Monday
+      const end = endOfWeek(now, { weekStartsOn: 1 }) // End on Sunday
+      const days = eachDayOfInterval({ start, end })
+      setWeekDays(days)
+    }
+  }, [timeEntries, loading])
+  // Sample time entries for demonstration
+  const demoTimeEntries = [
+    {
+      id: 'entry1',
+      taskId: 'task1',
+      startTime: new Date(new Date().setHours(9, 30)).toISOString(),
+      endTime: new Date(new Date().setHours(11, 45)).toISOString(),
+      duration: 8100000, // 2h 15m in ms
+      notes: 'Completed initial design mockups'
+    },
+    {
+      id: 'entry2',
+      taskId: 'task2',
+      startTime: new Date(new Date().setHours(13, 0)).toISOString(),
+      endTime: new Date(new Date().setHours(15, 30)).toISOString(),
+      duration: 9000000, // 2h 30m in ms
+      notes: 'Implemented responsive navigation'
+    },
+    {
+      id: 'entry3',
+      taskId: 'task3',
+      startTime: new Date(new Date().setHours(16, 0)).toISOString(),
+      endTime: new Date(new Date().setHours(17, 15)).toISOString(),
+      duration: 4500000, // 1h 15m in ms
+      notes: 'Optimized image assets'
+    }
+  ]
+  const allTimeEntries = timeEntries.length > 0 ? timeEntries : demoTimeEntries
+  // Format duration in hours and minutes
+  const formatDuration = (durationMs) => {
+    const hours = Math.floor(durationMs / 3600000)
+    const minutes = Math.floor((durationMs % 3600000) / 60000)
+    return `${hours}h ${minutes}m`
+  }
+  // Get task and project info for a time entry
+  const getEntryInfo = (entry) => {
+    const task = tasks.find(t => t.id === entry.taskId) || {
+      id: entry.taskId,
+      title: 'Sample Task',
+      projectId: 'demo1'
+    }
+    const project = projects.find(p => p.id === task.projectId) || {
+      id: 'demo1',
+      name: 'Website Redesign',
+      color: '#0ea5e9'
+    }
+    return { task, project }
+  }
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading time tracking data...</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-secondary-900">Time Tracking</h1>
+        <button 
+          onClick={() => startTimeTracking('task2')} 
+          className="btn btn-primary flex items-center"
+        >
+          <FiPlay className="mr-1.5 h-4 w-4" />
+          Start Timer
+        </button>
+      </div>
+      {/* Weekly Overview */}
+      <div className="card">
+        <h2 className="text-lg font-medium text-secondary-900 mb-4">Weekly Overview</h2>
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day, index) => {
+            const isCurrentDay = isToday(day)
+            // Calculate total hours for this day (demo data)
+            const hoursWorked = isCurrentDay ? 6 : index % 2 === 0 ? 8 : 7
+            return (
+              <div 
+                key={index}
+                className={`p-3 rounded-lg text-center ${
+                  isCurrentDay 
+                    ? 'bg-primary-50 border border-primary-200' 
+                    : 'bg-secondary-50'
+                }`}
+              >
+                <p className={`text-xs font-medium ${
+                  isCurrentDay ? 'text-primary-700' : 'text-secondary-500'
+                }`}>
+                  {format(day, 'EEE')}
+                </p>
+                <p className={`text-lg font-semibold ${
+                  isCurrentDay ? 'text-primary-700' : 'text-secondary-900'
+                }`}>
+                  {format(day, 'd')}
+                </p>
+                <p className={`text-xs mt-1 ${
+                  isCurrentDay ? 'text-primary-600' : 'text-secondary-600'
+                }`}>
+                  {hoursWorked}h
+                </p>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-4 pt-4 border-t border-secondary-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-secondary-50 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-secondary-500 uppercase mb-1">Today</h3>
+            <p className="text-2xl font-semibold text-secondary-900">6h 0m</p>
+          </div>
+          <div className="bg-secondary-50 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-secondary-500 uppercase mb-1">This Week</h3>
+            <p className="text-2xl font-semibold text-secondary-900">32h 15m</p>
+          </div>
+          <div className="bg-secondary-50 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-secondary-500 uppercase mb-1">This Month</h3>
+            <p className="text-2xl font-semibold text-secondary-900">126h 30m</p>
+          </div>
+        </div>
+      </div>
+      {/* Time Entries */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-secondary-900">Recent Time Entries</h2>
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiCalendar className="h-4 w-4 text-secondary-400" />
+              </div>
+              <select className="input pl-9 pr-8 py-1.5 text-sm">
+                <option>Today</option>
+                <option>Yesterday</option>
+                <option>This Week</option>
+                <option>Last Week</option>
+                <option>This Month</option>
+              </select>
+            </div>
+            <button className="p-1.5 rounded-lg text-secondary-500 hover:bg-secondary-100">
+              <FiFilter className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiSearch className="h-5 w-5 text-secondary-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search time entries..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10 w-full mb-4"
+          />
+        </div>
+        {allTimeEntries.length > 0 ? (
+          <div className="divide-y divide-secondary-100">
+            {allTimeEntries.map(entry => {
+              const { task, project } = getEntryInfo(entry)
+              return (
+                <div key={entry.id} className="py-4 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: project.color ? `${project.color}20` : '#e0f2fe',
+                        color: project.color || '#0ea5e9'
+                      }}
+                    >
+                      <FiClock className="h-5 w-5" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="font-medium text-secondary-900">{task.title}</h3>
+                      <div className="flex items-center text-xs text-secondary-500 mt-0.5">
+                        <span>{project.name}</span>
+                        <span className="mx-1.5">•</span>
+                        <span>
+                          {format(new Date(entry.startTime), 'h:mm a')} - {entry.endTime ? format(new Date(entry.endTime), 'h:mm a') : 'Running'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-secondary-900">
+                      {entry.endTime ? formatDuration(entry.duration || new Date(entry.endTime) - new Date(entry.startTime)) : 'Running'}
+                    </div>
+                    <div className="text-xs text-secondary-500 mt-0.5">
+                      {entry.notes || 'No notes'}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-secondary-50 rounded-lg">
+            <div className="w-16 h-16 mx-auto rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+              <FiClock className="h-8 w-8" />
+            </div>
+            <h3 className="text-secondary-900 font-medium mb-1">No time entries yet</h3>
+            <p className="text-secondary-600 text-sm mb-4">
+              Start tracking time on your tasks to see entries here
+            </p>
+            <button className="btn btn-primary inline-flex items-center">
+              <FiPlay className="mr-1.5 h-4 w-4" />
+              Start Timer
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+export default TimeTracking
+</file>
+
+<file path="frontend/src/App.jsx">
+import { Routes, Route } from 'react-router-dom'
+// Layouts
+import MainLayout from './components/layouts/MainLayout'
+// Pages
+import Dashboard from './pages/Dashboard'
+import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
+import TimeTracking from './pages/TimeTracking'
+import Reports from './pages/Reports'
+import NotFound from './pages/NotFound'
+const App = () => {
+  return (
+    <Routes>
+      {/* Main Routes - No Authentication Required */}
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="projects/:id" element={<ProjectDetail />} />
+        <Route path="time-tracking" element={<TimeTracking />} />
+        <Route path="reports" element={<Reports />} />
+      </Route>
+      {/* 404 Route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  )
+}
+export default App
+</file>
+
+<file path="frontend/src/index.css">
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-secondary-50 to-primary-50 min-h-screen font-sans text-secondary-800;
+  }
+}
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-soft p-4 transition-all duration-300;
+  }
+  .card-hover {
+    @apply hover:shadow-medium hover:translate-y-[-2px];
+  }
+  .btn {
+    @apply px-4 py-2 rounded-lg transition-all duration-200 font-medium;
+  }
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600;
+  }
+  .btn-secondary {
+    @apply bg-secondary-200 text-secondary-800 hover:bg-secondary-300;
+  }
+  .btn-accent {
+    @apply bg-accent-500 text-white hover:bg-accent-600;
+  }
+  .input {
+    @apply px-3 py-2 border border-secondary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent;
+  }
+}
+</file>
+
+<file path="frontend/src/main.jsx">
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import App from './App'
+import './index.css'
+import { ProjectProvider } from './context/ProjectContext'
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <ProjectProvider>
+        <App />
+      </ProjectProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
+)
+</file>
+
+<file path="frontend/Dockerfile">
+# Build stage
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+# Build the app
+RUN npm run build
+
+# Production stage with Nginx
+FROM nginx:alpine
+
+# Copy the build output to replace the default nginx contents
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy custom nginx config if needed
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+</file>
+
+<file path="frontend/index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskFlow | Project & Task Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="frontend/nginx.conf">
+server {
+    listen 80;
+    server_name localhost;
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+        root /usr/share/nginx/html;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000";
+    }
+
+    # Error pages
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "taskflow-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.16.0",
+    "axios": "^1.5.0",
+    "react-icons": "^4.11.0",
+    "date-fns": "^2.30.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "chart.js": "^4.4.0",
+    "react-chartjs-2": "^5.2.0"
+  },
+  "devDependencies": {
+    "vite": "^4.4.9",
+    "@vitejs/plugin-react": "^4.0.4",
+    "tailwindcss": "^3.3.3",
+    "postcss": "^8.4.29",
+    "autoprefixer": "^10.4.15"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
+</file>
+
+<file path="frontend/postcss.config.js">
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+</file>
+
+<file path="frontend/tailwind.config.js">
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+        },
+        secondary: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        accent: {
+          50: '#f5f3ff',
+          100: '#ede9fe',
+          200: '#ddd6fe',
+          300: '#c4b5fd',
+          400: '#a78bfa',
+          500: '#8b5cf6',
+          600: '#7c3aed',
+          700: '#6d28d9',
+          800: '#5b21b6',
+          900: '#4c1d95',
+        }
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.5rem',
+      },
+      boxShadow: {
+        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        'medium': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+      }
+    },
+  },
+  plugins: [],
+}
+</file>
+
+<file path="frontend/vite.config.js">
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+  }
+})
+</file>
+
+<file path=".clinerules">
+## Role
+You are a **senior front-end developer**.
+
+## Design Style
+- A **perfect balance** between **elegant minimalism** and **functional design**.
+- **Soft, refreshing gradient colors** that seamlessly integrate with the brand palette.
+- **Well-proportioned white space** for a clean layout.
+- **Light and immersive** user experience.
+- **Clear information hierarchy** using **subtle shadows and modular card layouts**.
+- **Natural focus** on core functionalities.
+- **Refined rounded corners**.
+- **Delicate micro-interactions**.
+- **Comfortable visual proportions**.
+- **Accent Colors** chosen based on the app type
+
+## Technical Specifications
+1. **Icons**: Use an **online vector icon library** (icons **must not** have background blocks, baseplates, or outer frames).
+2. **Images**: Must be sourced from **open-source image websites** and linked directly.
+3. **Styles**: Use **Tailwind CSS** via **CDN** for styling.
+4. **Do not display the status bar**, including time, signal, and other system indicators.
+5. **All text should be only black or white**.
+
+## Task
+This is an **web application that allows users to manage their projects and tasks nested in projects, timetrack time spent. In a clean effective, enticing and creative way**.
+- Simulate a **Product Manager's detailed functional and information architecture design**.
+- Follow the **design style** and **technical specifications** to generate a complete **UI design plan**.
+- Create a **UI.html** file that contains all pages displayed in a **horizontal layout**.
+- Generate the **first two pages** now
+</file>
+
+<file path=".windsurfrules">
+## Role
+You are a **senior front-end developer**.
+
+## Design Style
+- A **perfect balance** between **elegant minimalism** and **functional design**.
+- **Soft, refreshing gradient colors** that seamlessly integrate with the brand palette.
+- **Well-proportioned white space** for a clean layout.
+- **Light and immersive** user experience.
+- **Clear information hierarchy** using **subtle shadows and modular card layouts**.
+- **Natural focus** on core functionalities.
+- **Refined rounded corners**.
+- **Delicate micro-interactions**.
+- **Comfortable visual proportions**.
+- **Accent Colors** chosen based on the app type
+
+## Technical Specifications
+1. **Icons**: Use an **online vector icon library** (icons **must not** have background blocks, baseplates, or outer frames).
+2. **Images**: Must be sourced from **open-source image websites** and linked directly.
+3. **Styles**: Use **Tailwind CSS** via **CDN** for styling.
+4. **Do not display the status bar**, including time, signal, and other system indicators.
+5. **All text should be only black or white**.
+
+## Task
+This is an **web application that allows users to manage their projects and tasks nested in projects, timetrack time spent. In a clean effective, enticing and creative way**.
+- Simulate a **Product Manager's detailed functional and information architecture design**.
+- Follow the **design style** and **technical specifications** to generate a complete **UI design plan**.
+- Create a **UI.html** file that contains all pages displayed in a **horizontal layout**.
+</file>
+
+<file path="docker-compose.yml">
+version: '3.8'
+services:
+  taskflow-app:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    container_name: taskflow-app
+</file>
+
+<file path="project.spec">
+This project is a **web application that allows users to manage their projects and tasks nested in projects, timetrack time spent. In a clean effective, enticing and creative way**.
+
+
+Tech stack:
+- React.js
+- Local Database: SQLite
+- Docker-compose
+- Node.js
+- Tailwind CSS
+</file>
+
+<file path="README.md">
+# TaskFlow - Project Management Application
+
+A clean, effective, and modern project management application that allows users to manage projects, nested tasks, and track time spent on activities.
+
+## Features
+
+- **Project Management**: Create and manage projects with detailed progress tracking
+- **Task Management**: Organize tasks within projects with priority levels and status tracking
+- **Time Tracking**: Track time spent on individual tasks with start/stop functionality
+- **Reporting**: View analytics and reports on project progress and time spent
+
+## Tech Stack
+
+- **Frontend**: React.js with Tailwind CSS
+- **Containerization**: Docker
+
+## Running Locally with Docker
+
+The application is configured to run as a standalone frontend application in Docker with no authentication required.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your machine
+
+### Steps to Run
+
+1. Clone this repository
+2. Navigate to the project directory
+3. Run the following command:
+
+```bash
+docker-compose up -d
+```
+
+4. Access the application at http://localhost
+
+### Stopping the Application
+
+To stop the application, run:
+
+```bash
+docker-compose down
+```
+
+## Design Principles
+
+- **Elegant Minimalism**: Perfect balance between aesthetics and functionality
+- **Soft Gradients**: Refreshing color palette that creates a light, immersive experience
+- **Clear Information Hierarchy**: Using subtle shadows and modular card layouts
+- **Natural Focus**: Core functionalities are highlighted with refined visual elements
+
+## Project Structure
+
+- `/frontend`: React application with Tailwind CSS styling
+  - `/src/components`: Reusable UI components
+  - `/src/pages`: Main application pages
+  - `/src/context`: React context for state management
+
+## Mock Data
+
+The application uses built-in mock data for demonstration purposes, allowing you to interact with all features without needing a backend or database.
+</file>
+
+</files>

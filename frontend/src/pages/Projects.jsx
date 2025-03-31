@@ -1,15 +1,23 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
-import { FiPlus, FiFilter, FiSearch } from 'react-icons/fi'
+import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
 
 const Projects = () => {
-  const { projects, loading } = useProjects()
+  const { projects, loading, createProject } = useProjects()
   const [searchTerm, setSearchTerm] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    client: '',
+    color: '#0ea5e9',
+    startDate: '',
+    dueDate: ''
+  })
   
   // Filter projects based on search term
   const filteredProjects = projects.filter(project => 
@@ -124,6 +132,139 @@ const Projects = () => {
             ].map(project => (
               <ProjectCard key={project.id} project={project} />
             ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Create Project Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-secondary-100">
+              <h3 className="text-lg font-medium text-secondary-900">Create New Project</h3>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-secondary-500 hover:text-secondary-700"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const result = await createProject(newProject)
+                if (result.success) {
+                  setShowCreateModal(false)
+                  setNewProject({
+                    name: '',
+                    description: '',
+                    client: '',
+                    color: '#0ea5e9',
+                    startDate: '',
+                    dueDate: ''
+                  })
+                }
+              }}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                      className="input w-full h-24"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="client" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Client
+                    </label>
+                    <input
+                      type="text"
+                      id="client"
+                      value={newProject.client}
+                      onChange={(e) => setNewProject({...newProject, client: e.target.value})}
+                      className="input w-full"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="color" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Color
+                    </label>
+                    <input
+                      type="color"
+                      id="color"
+                      value={newProject.color}
+                      onChange={(e) => setNewProject({...newProject, color: e.target.value})}
+                      className="h-10 w-full rounded-md border border-secondary-200 p-1"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        id="startDate"
+                        value={newProject.startDate}
+                        onChange={(e) => setNewProject({...newProject, startDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        id="dueDate"
+                        value={newProject.dueDate}
+                        onChange={(e) => setNewProject({...newProject, dueDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                  >
+                    Create Project
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
