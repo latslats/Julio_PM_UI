@@ -10,11 +10,13 @@ import TaskItem from '../components/tasks/TaskItem'
 const ProjectDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { projects, tasks, loading, deleteProject, createTask } = useProjects()
+  const { projects, tasks, loading, updateProject, deleteProject, createTask } = useProjects()
   const [project, setProject] = useState(null)
   const [projectTasks, setProjectTasks] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false)
+  const [editableProject, setEditableProject] = useState(null)
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -45,6 +47,7 @@ const ProjectDetail = () => {
       }
       
       setProject(foundProject)
+      setEditableProject(foundProject)
       
       // Get tasks for this project
       const filteredTasks = tasks.filter(task => task.projectId === id) || [
@@ -109,6 +112,25 @@ const ProjectDetail = () => {
     }
   }
   
+  const handleOpenEditModal = () => {
+    setEditableProject(project)
+    setShowEditProjectModal(true)
+  }
+
+  const handleUpdateProject = async (e) => {
+    e.preventDefault()
+    if (!editableProject || id === 'demo1') return
+
+    const result = await updateProject(id, editableProject)
+    if (result.success) {
+      setProject(result.project)
+      setShowEditProjectModal(false)
+    } else {
+      // Handle error (e.g., show a notification)
+      console.error('Failed to update project:', result.message)
+    }
+  }
+
   if (loading || !project) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -146,13 +168,18 @@ const ProjectDetail = () => {
         </div>
         
         <div className="flex space-x-2">
-          <button className="btn btn-secondary flex items-center">
+          <button 
+            onClick={handleOpenEditModal}
+            className="btn btn-secondary flex items-center"
+            disabled={id === 'demo1'}
+          >
             <FiEdit2 className="mr-1.5 h-4 w-4" />
             Edit
           </button>
           <button 
             onClick={() => setShowDeleteConfirm(true)}
             className="btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center"
+            disabled={id === 'demo1'}
           >
             <FiTrash2 className="mr-1.5 h-4 w-4" />
             Delete
@@ -433,6 +460,141 @@ const ProjectDetail = () => {
                     className="btn btn-primary"
                   >
                     Add Task
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Project Modal */}
+      {showEditProjectModal && editableProject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-secondary-100">
+              <h3 className="text-lg font-medium text-secondary-900">Edit Project</h3>
+              <button 
+                onClick={() => setShowEditProjectModal(false)}
+                className="text-secondary-500 hover:text-secondary-700"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 max-h-[80vh] overflow-y-auto">
+              <form onSubmit={handleUpdateProject}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="edit-name" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-name"
+                      value={editableProject.name}
+                      onChange={(e) => setEditableProject({...editableProject, name: e.target.value})}
+                      className="input w-full"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="edit-description" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      id="edit-description"
+                      value={editableProject.description}
+                      onChange={(e) => setEditableProject({...editableProject, description: e.target.value})}
+                      className="input w-full h-24"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="edit-client" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Client
+                    </label>
+                    <input
+                      type="text"
+                      id="edit-client"
+                      value={editableProject.client}
+                      onChange={(e) => setEditableProject({...editableProject, client: e.target.value})}
+                      className="input w-full"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="edit-color" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Color
+                    </label>
+                    <input
+                      type="color"
+                      id="edit-color"
+                      value={editableProject.color}
+                      onChange={(e) => setEditableProject({...editableProject, color: e.target.value})}
+                      className="h-10 w-full rounded-md border border-secondary-200 p-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="edit-status" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      id="edit-status"
+                      value={editableProject.status}
+                      onChange={(e) => setEditableProject({...editableProject, status: e.target.value})}
+                      className="input w-full"
+                    >
+                      <option value="not-started">Not Started</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-startDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="date"
+                        id="edit-startDate"
+                        value={editableProject.startDate}
+                        onChange={(e) => setEditableProject({...editableProject, startDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="edit-dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        id="edit-dueDate"
+                        value={editableProject.dueDate}
+                        onChange={(e) => setEditableProject({...editableProject, dueDate: e.target.value})}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditProjectModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                  >
+                    Save Changes
                   </button>
                 </div>
               </form>

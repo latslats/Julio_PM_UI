@@ -25,3 +25,16 @@ This is an **web application that allows users to manage their projects and task
 - Simulate a **Product Manager's detailed functional and information architecture design**.
 - Follow the **design style** and **technical specifications** to generate a complete **UI design plan**.
 - Create a **UI.html** file that contains all pages displayed in a **horizontal layout**.
+
+## Tech Stack
+- **Frontend**: React.js
+- **Backend**: Node.js with Express
+- **Database**: SQLite
+- **Containerization**: Docker
+- **Styling**: Tailwind CSS (via CDN)
+
+## Usage Tips
+- **Consistency is Key**: Apply the `Design Style` and `Technical Specifications` consistently across all components and pages.
+- **Component-Based Design**: Break down complex features into smaller, reusable UI components adhering to the defined style.
+- **Focus on Core Functionality**: Prioritize implementing the core features described in the [Task]section before adding secondary elements.
+- **Iterative Refinement**: Use these rules as a guideline and refine the UI iteratively based on the specific needs of each feature or page.

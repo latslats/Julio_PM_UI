@@ -1,11 +1,29 @@
 version: '3.8'
 
 services:
-  taskflow-app:
+  taskflow-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "80:80"
     restart: unless-stopped
-    container_name: taskflow-app
+    container_name: taskflow-frontend
+
+  taskflow-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend:/app # Mount host code for development (hot-reloading)
+      - /app/node_modules # Exclude host node_modules, use container's
+      - sqlite_data:/app/data # Mount volume for persistent database
+    working_dir: /app
+    command: npm start # Command to run the app
+    restart: unless-stopped
+    container_name: taskflow-backend
+
+volumes:
+  sqlite_data:

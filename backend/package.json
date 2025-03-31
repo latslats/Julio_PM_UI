@@ -4,21 +4,21 @@
   "description": "Backend for TaskFlow project management application",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
-    "sqlite3": "^5.1.6",
-    "sequelize": "^6.33.0",
     "dotenv": "^16.3.1",
+    "express": "^4.21.2",
     "helmet": "^7.0.0",
-    "morgan": "^1.10.0",
     "jsonwebtoken": "^9.0.2",
-    "bcrypt": "^5.1.1"
+    "morgan": "^1.10.0",
+    "sequelize": "^6.33.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.9"
   }
 }

@@ -11,12 +11,14 @@ A clean, effective, and modern project management application that allows users 
 
 ## Tech Stack
 
-- **Frontend**: React.js with Tailwind CSS
+- **Frontend**: React.js with Tailwind CSS (via CDN)
+- **Backend**: Node.js with Express
+- **Database**: SQLite
 - **Containerization**: Docker
 
 ## Running Locally with Docker
 
-The application is configured to run as a standalone frontend application in Docker with no authentication required.
+The application includes both a frontend and a backend service, containerized using Docker.
 
 ### Prerequisites
 
@@ -26,17 +28,18 @@ The application is configured to run as a standalone frontend application in Doc
 
 1. Clone this repository
 2. Navigate to the project directory
-3. Run the following command:
+3. Run the following command to build and start both the frontend and backend services:
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
-4. Access the application at http://localhost
+4. Access the application frontend at http://localhost (served by Nginx)
+5. The backend API will be running on http://localhost:5001
 
 ### Stopping the Application
 
-To stop the application, run:
+To stop the application and remove the containers, run:
 
 ```bash
 docker-compose down
@@ -51,11 +54,11 @@ docker-compose down
 
 ## Project Structure
 
-- `/frontend`: React application with Tailwind CSS styling
-  - `/src/components`: Reusable UI components
-  - `/src/pages`: Main application pages
-  - `/src/context`: React context for state management
-
-## Mock Data
-
-The application uses built-in mock data for demonstration purposes, allowing you to interact with all features without needing a backend or database.
+- `/frontend`: React application (served via Nginx)
+  - `/src`: Frontend source code
+- `/backend`: Node.js/Express API
+  - `/database.js`: SQLite database setup
+  - `/routes`: API route definitions
+  - `/server.js`: Express server configuration
+- `docker-compose.yml`: Docker service definitions
+- `Dockerfile`: Frontend Docker build instructions

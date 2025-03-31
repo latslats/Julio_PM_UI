@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
@@ -9,6 +9,7 @@ import ProjectCard from '../components/projects/ProjectCard'
 const Projects = () => {
   const { projects, loading, createProject } = useProjects()
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedClient, setSelectedClient] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newProject, setNewProject] = useState({
     name: '',
@@ -19,9 +20,16 @@ const Projects = () => {
     dueDate: ''
   })
   
-  // Filter projects based on search term
+  // Get unique client names for the filter dropdown
+  const uniqueClients = useMemo(() => {
+    const clients = new Set(projects.map(p => p.client).filter(Boolean))
+    return ['', ...Array.from(clients).sort()]
+  }, [projects])
+
+  // Filter projects based on search term and selected client
   const filteredProjects = projects.filter(project => 
-    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (selectedClient === '' || project.client === selectedClient)
   )
   
   if (loading) {
@@ -62,10 +70,25 @@ const Projects = () => {
             className="input pl-10 w-full"
           />
         </div>
-        <button className="btn btn-secondary flex items-center">
-          <FiFilter className="mr-1.5 h-4 w-4" />
-          Filter
-        </button>
+        <div className="relative sm:w-48">
+          <select 
+            id="client-filter"
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+            className="input w-full appearance-none pr-8"
+            aria-label="Filter by client"
+          >
+            <option value="">All Clients</option>
+            {uniqueClients.slice(1).map(client => (
+              <option key={client} value={client}>{client}</option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-secondary-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
       </div>
       
       {/* Projects Grid */}
@@ -82,9 +105,9 @@ const Projects = () => {
           </div>
           <h3 className="text-secondary-900 font-medium mb-1">No projects found</h3>
           <p className="text-secondary-600 text-sm mb-4">
-            {searchTerm ? 'Try a different search term' : 'Create your first project to get started'}
+            {searchTerm || selectedClient ? 'Try adjusting your search or filter' : 'Create your first project to get started'}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !selectedClient && (
             <button 
               onClick={() => setShowCreateModal(true)}
               className="btn btn-primary inline-flex items-center"
@@ -96,8 +119,8 @@ const Projects = () => {
         </div>
       )}
       
-      {/* Sample data for demonstration */}
-      {filteredProjects.length === 0 && !searchTerm && (
+      {/* Sample data for demonstration - hide if filters are active */}
+      {filteredProjects.length === 0 && !searchTerm && !selectedClient && (
         <div className="mt-4">
           <h3 className="text-sm font-medium text-secondary-900 mb-2">Sample Projects</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
