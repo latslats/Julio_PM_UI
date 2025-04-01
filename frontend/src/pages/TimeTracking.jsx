@@ -3,6 +3,7 @@ import { useProjects } from '../context/ProjectContext'
 import { FiPlay, FiPause, FiClock, FiCalendar, FiFilter, FiSearch, FiChevronDown, FiTrash2 } from 'react-icons/fi'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO, startOfMonth, endOfMonth } from 'date-fns'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
+import RunningTimersWidget from '../components/timeTracking/RunningTimersWidget'
 
 const TimeTracking = () => {
   const { projects, tasks, timeEntries, loading, startTimeTracking, deleteTimeEntry } = useProjects()
@@ -109,14 +110,30 @@ const TimeTracking = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-secondary-900">Time Tracking</h1>
-        <button 
-          onClick={() => selectedTaskToStart && startTimeTracking(selectedTaskToStart)}
-          className="btn btn-primary flex items-center"
-          disabled={!selectedTaskToStart || !!timeEntries.find(te => !te.endTime)}
-        >
-          <FiPlay className="mr-1.5 h-4 w-4" />
-          Start Timer
-        </button>
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <select 
+              value={selectedTaskToStart}
+              onChange={(e) => setSelectedTaskToStart(e.target.value)}
+              className="input py-1.5 text-sm appearance-none"
+            >
+              <option value="">Select a task...</option>
+              {tasks.map(task => (
+                <option key={task.id} value={task.id}>
+                  {task.title} ({projects.find(p => p.id === task.projectId)?.name || 'Unknown'})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button 
+            onClick={() => selectedTaskToStart && startTimeTracking(selectedTaskToStart)}
+            className="btn btn-primary flex items-center"
+            disabled={!selectedTaskToStart}
+          >
+            <FiPlay className="mr-1.5 h-4 w-4" />
+            Start Timer
+          </button>
+        </div>
       </div>
 
       <div className="card">
@@ -173,7 +190,10 @@ const TimeTracking = () => {
         </div>
       </div>
 
-      <TimeTrackingWidget />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TimeTrackingWidget />
+        <RunningTimersWidget />
+      </div>
 
       <div className="card">
         <div className="flex items-center justify-between mb-4">
@@ -286,10 +306,28 @@ const TimeTracking = () => {
             <p className="text-secondary-600 text-sm mb-4">
               Start tracking time on your tasks to see entries here
             </p>
-            <button className="btn btn-primary inline-flex items-center">
-              <FiPlay className="mr-1.5 h-4 w-4" />
-              Start Timer
-            </button>
+            <div className="flex flex-col space-y-2 items-center">
+              <select 
+                value={selectedTaskToStart}
+                onChange={(e) => setSelectedTaskToStart(e.target.value)}
+                className="input py-1.5 text-sm appearance-none w-full"
+              >
+                <option value="">Select a task...</option>
+                {tasks.map(task => (
+                  <option key={task.id} value={task.id}>
+                    {task.title} ({projects.find(p => p.id === task.projectId)?.name || 'Unknown'})
+                  </option>
+                ))}
+              </select>
+              <button 
+                onClick={() => selectedTaskToStart && startTimeTracking(selectedTaskToStart)}
+                className="btn btn-primary inline-flex items-center w-full"
+                disabled={!selectedTaskToStart}
+              >
+                <FiPlay className="mr-1.5 h-4 w-4" />
+                Start Timer
+              </button>
+            </div>
           </div>
         )}
       </div>

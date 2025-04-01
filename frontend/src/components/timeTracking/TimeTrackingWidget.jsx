@@ -159,13 +159,17 @@ const TimeTrackingWidget = () => {
           <p className="text-secondary-600 text-sm mb-4">
             Start tracking time on any task to see it here
           </p>
-          <button 
-            onClick={() => startTimeTracking('task5')} 
-            className="btn btn-primary flex items-center"
-          >
-            <FiPlay className="mr-1.5 h-4 w-4" />
-            Start Tracking
-          </button>
+          {tasks.length > 0 ? (
+            <button 
+              onClick={() => startTimeTracking(tasks[0].id)} 
+              className="btn btn-primary flex items-center"
+            >
+              <FiPlay className="mr-1.5 h-4 w-4" />
+              Start Tracking
+            </button>
+          ) : (
+            <p className="text-secondary-500 text-sm">No tasks available to track</p>
+          )}
         </div>
       )}
     </div>

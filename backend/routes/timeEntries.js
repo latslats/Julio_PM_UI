@@ -30,30 +30,48 @@ const calculateCurrentActiveDuration = async (client, entryId) => {
   return { updatedTotalPausedDuration: currentTotalPaused, wasRunning };
 };
 
-// GET /api/time-entries - Get all time entries (optionally filter by taskId or projectId)
+// GET /api/time-entries - Get all time entries with flexible filtering options
 router.get('/', async (req, res, next) => {
-  const { taskId, projectId } = req.query;
-  let sql = `SELECT te.*, t."projectId" 
+  const { taskId, projectId, active } = req.query;
+  
+  // Enhanced query to include task and project information
+  let sql = `SELECT te.*, 
+             t.title as "taskTitle", 
+             t."projectId", 
+             p.name as "projectName", 
+             p.color as "projectColor"
              FROM time_entries te 
-             JOIN tasks t ON te."taskId" = t.id`;
+             JOIN tasks t ON te."taskId" = t.id
+             JOIN projects p ON t."projectId" = p.id`;
+             
   const params = [];
   const conditions = [];
   let paramIndex = 1;
 
+  // Filter by taskId if provided
   if (taskId) {
     conditions.push(`te."taskId" = $${paramIndex++}`);
     params.push(taskId);
   }
+  
+  // Filter by projectId if provided
   if (projectId) {
     conditions.push(`t."projectId" = $${paramIndex++}`);
     params.push(projectId);
   }
+  
+  // Filter for active timers (where endTime is null) if requested
+  if (active === 'true') {
+    conditions.push(`te."endTime" IS NULL`);
+  }
 
+  // Add WHERE clause if we have conditions
   if (conditions.length > 0) {
     sql += " WHERE " + conditions.join(" AND ");
   }
 
-  sql += ' ORDER BY te."startTime" DESC'; // Use quotes
+  // Order by most recent first, but put active timers at the top
+  sql += ' ORDER BY te."endTime" IS NULL DESC, te."startTime" DESC';
 
   try {
     const result = await pool.query(sql, params);

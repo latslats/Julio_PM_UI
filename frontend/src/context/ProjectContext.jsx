@@ -51,21 +51,64 @@ export const ProjectProvider = ({ children }) => {
 
     fetchData()
   }, []) // Empty dependency array means this runs once on mount
+  
+  // Function to fetch only active timers
+  const fetchActiveTimers = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/time-entries?active=true`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API response error:', response.status, errorText)
+        throw new Error(`Failed to fetch active timers: ${response.status} ${response.statusText}`)
+      }
+      const activeTimersData = await response.json()
+      
+      // Update timeEntries state by replacing active entries and keeping completed ones
+      setTimeEntries(prev => {
+        // Keep entries that have an endTime (completed)
+        const completedEntries = prev.filter(entry => entry.endTime !== null)
+        // Add all active entries from the new data
+        return [...activeTimersData, ...completedEntries]
+      })
+      
+      return { success: true, data: activeTimersData }
+    } catch (err) {
+      console.error("Error fetching active timers:", err)
+      setError(err.message || 'Could not load active timers. Please try again later.')
+      return { success: false, message: err.message }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // --- Helper Functions (Consider moving to a utils file later) ---
   const apiRequest = async (url, options = {}) => {
     try {
-      const response = await fetch(url, {
+      const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+      console.log(`Making API request to: ${fullUrl}`);
+      
+      const response = await fetch(fullUrl, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
         ...options,
       });
+      
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: response.statusText }))
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+        const errorText = await response.text();
+        console.error('API response error:', response.status, errorText);
+        let errorMessage;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+        } catch (e) {
+          errorMessage = `HTTP error! status: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+      
       // If response has content, parse it, otherwise return success status
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -154,49 +197,116 @@ export const ProjectProvider = ({ children }) => {
 
   // --- Time Tracking ---
   const startTimeTracking = async (taskId) => {
-    // Optional: Check if another timer is already running and stop it?
-    // const runningTimer = timeEntries.find(te => te.endTime === null);
-    // if (runningTimer) { await stopTimeTracking(runningTimer.id); }
-
-    const result = await apiRequest(`${API_BASE_URL}/time-entries/start`, {
-      method: 'POST',
-      body: JSON.stringify({ taskId }),
-    });
-    if (result.success) {
-      setTimeEntries(prev => [result.data, ...prev.filter(te => te.endTime !== null)]) // Add new, remove any other potentially active ones just in case
+    // We now support multiple concurrent timers, so we don't need to check if another timer is running
+    // Just start a new timer for the selected task
+    console.log(`Starting time tracking for task: ${taskId}`);
+    setLoading(true);
+    
+    try {
+      const result = await apiRequest(`/time-entries/start`, {
+        method: 'POST',
+        body: JSON.stringify({ taskId }),
+      });
+      
+      if (result.success) {
+        console.log('Time tracking started successfully:', result.data);
+        // Add the new time entry to the list without removing other active ones
+        setTimeEntries(prev => [result.data, ...prev]);
+        return { success: true, data: result.data };
+      } else {
+        console.error('Failed to start time tracking:', result.message);
+        setError(result.message || 'Failed to start time tracking');
+        return result;
+      }
+    } catch (err) {
+      console.error('Error starting time tracking:', err);
+      setError(err.message || 'Failed to start time tracking');
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   const stopTimeTracking = async (timeEntryId) => {
-    const result = await apiRequest(`${API_BASE_URL}/time-entries/stop/${timeEntryId}`, {
-      method: 'PUT',
-    });
-    if (result.success) {
-      // Replace the entry with the updated one from the server
-      setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
+    console.log(`Stopping time tracking for entry: ${timeEntryId}`);
+    setLoading(true);
+    
+    try {
+      const result = await apiRequest(`/time-entries/stop/${timeEntryId}`, {
+        method: 'PUT',
+      });
+      
+      if (result.success) {
+        console.log('Time tracking stopped successfully:', result.data);
+        // Replace the entry with the updated one from the server
+        setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te));
+        return { success: true, data: result.data };
+      } else {
+        console.error('Failed to stop time tracking:', result.message);
+        setError(result.message || 'Failed to stop time tracking');
+        return result;
+      }
+    } catch (err) {
+      console.error('Error stopping time tracking:', err);
+      setError(err.message || 'Failed to stop time tracking');
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
   
   const pauseTimeTracking = async (timeEntryId) => {
-    const result = await apiRequest(`${API_BASE_URL}/time-entries/pause/${timeEntryId}`, {
-      method: 'PUT',
-    });
-    if (result.success) {
-      setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
+    console.log(`Pausing time tracking for entry: ${timeEntryId}`);
+    setLoading(true);
+    
+    try {
+      const result = await apiRequest(`/time-entries/pause/${timeEntryId}`, {
+        method: 'PUT',
+      });
+      
+      if (result.success) {
+        console.log('Time tracking paused successfully:', result.data);
+        setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te));
+        return { success: true, data: result.data };
+      } else {
+        console.error('Failed to pause time tracking:', result.message);
+        setError(result.message || 'Failed to pause time tracking');
+        return result;
+      }
+    } catch (err) {
+      console.error('Error pausing time tracking:', err);
+      setError(err.message || 'Failed to pause time tracking');
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result;
   };
 
   const resumeTimeTracking = async (timeEntryId) => {
-    const result = await apiRequest(`${API_BASE_URL}/time-entries/resume/${timeEntryId}`, {
-      method: 'PUT',
-    });
-    if (result.success) {
-      setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
+    console.log(`Resuming time tracking for entry: ${timeEntryId}`);
+    setLoading(true);
+    
+    try {
+      const result = await apiRequest(`/time-entries/resume/${timeEntryId}`, {
+        method: 'PUT',
+      });
+      
+      if (result.success) {
+        console.log('Time tracking resumed successfully:', result.data);
+        setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te));
+        return { success: true, data: result.data };
+      } else {
+        console.error('Failed to resume time tracking:', result.message);
+        setError(result.message || 'Failed to resume time tracking');
+        return result;
+      }
+    } catch (err) {
+      console.error('Error resuming time tracking:', err);
+      setError(err.message || 'Failed to resume time tracking');
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result;
   };
 
   const deleteTimeEntry = async (id) => {
@@ -279,6 +389,7 @@ export const ProjectProvider = ({ children }) => {
       pauseTimeTracking,
       resumeTimeTracking,
       deleteTimeEntry, // Provide deleteTimeEntry
+      fetchActiveTimers, // Provide the new function
       projectStats,
       totalTrackedHours,
       recentActivity

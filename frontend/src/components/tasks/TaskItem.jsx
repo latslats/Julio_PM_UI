@@ -44,6 +44,7 @@ const TaskItem = ({ task }) => {
       await stopTimeTracking(activeTimeEntry.id)
       setIsTracking(false)
     } else {
+      // Start a new timer for this task, even if other tasks have running timers
       await startTimeTracking(task.id)
       setIsTracking(true)
     }
