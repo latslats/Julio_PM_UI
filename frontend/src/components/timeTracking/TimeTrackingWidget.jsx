@@ -14,8 +14,10 @@ const TimeTrackingWidget = () => {
     loading
   } = useProjects()
 
-  // Find the active entry from the context state
-  const activeTimeEntry = timeEntries.find(entry => entry.endTime === null)
+  // Find all active entries from the context state
+  const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
+  // Use the first active entry for the main display if available
+  const activeTimeEntry = activeTimeEntries.length > 0 ? activeTimeEntries[0] : null
 
   const [elapsedTime, setElapsedTime] = useState(0)
 
@@ -91,8 +93,9 @@ const TimeTrackingWidget = () => {
     <div className="card h-full flex flex-col">
       <h2 className="text-lg font-medium text-secondary-900 mb-4">Time Tracking</h2>
 
-      {activeTimeEntry ? (
+      {activeTimeEntries.length > 0 ? (
         <div className="flex-1 flex flex-col">
+          {/* Display the first active timer in detail */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200">
             <div className="flex items-center mb-3">
               <div className="w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-600">
@@ -142,13 +145,43 @@ const TimeTrackingWidget = () => {
               </button>
             </div>
           </div>
-
-          <div className="mt-4 flex-1">
-            <h3 className="text-sm font-medium text-secondary-900 mb-2">Recent Time Entries</h3>
-            <div className="text-center py-8 bg-secondary-50 rounded-lg">
-              <p className="text-secondary-600 text-sm">Time entries will appear here</p>
+          
+          {/* If there are additional active timers, show them in a more compact format */}
+          {activeTimeEntries.length > 1 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-secondary-900 mb-2">Other Active Timers</h3>
+              <div className="space-y-2">
+                {activeTimeEntries.slice(1).map(entry => {
+                  const entryTask = tasks.find(t => t.id === entry.taskId);
+                  const entryProject = entryTask ? projects.find(p => p.id === entryTask.projectId) : null;
+                  return (
+                    <div key={entry.id} className="p-3 rounded-lg border border-secondary-200 bg-white shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-600 mr-3">
+                            <FiClock className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-secondary-900 truncate">{entryTask?.title || 'Unknown Task'}</h3>
+                            <p className="text-xs text-secondary-500">{entryProject?.name || 'Unknown Project'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {activeTimeEntries.length === 1 && (
+            <div className="mt-4 flex-1">
+              <h3 className="text-sm font-medium text-secondary-900 mb-2">Recent Time Entries</h3>
+              <div className="text-center py-8 bg-secondary-50 rounded-lg">
+                <p className="text-secondary-600 text-sm">Time entries will appear here</p>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-secondary-50 rounded-xl">

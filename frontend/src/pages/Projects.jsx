@@ -7,7 +7,7 @@ import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
 import ProjectCard from '../components/projects/ProjectCard'
 
 const Projects = () => {
-  const { projects, loading, createProject } = useProjects()
+  const { projects, loading, createProject, projectStats } = useProjects()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedClient, setSelectedClient] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -94,9 +94,18 @@ const Projects = () => {
       {/* Projects Grid */}
       {filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredProjects.map(project => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
+          {filteredProjects.map(project => {
+            // Enhance project with stats from projectStats
+            const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
+            const enhancedProject = {
+              ...project,
+              totalTasks: stats.totalTasks,
+              completedTasks: stats.completedTasks,
+              totalHours: stats.totalHours,
+              progress: stats.progress
+            };
+            return <ProjectCard key={project.id} project={enhancedProject} />;
+          })}
         </div>
       ) : (
         <div className="text-center py-12 bg-secondary-50 rounded-xl">

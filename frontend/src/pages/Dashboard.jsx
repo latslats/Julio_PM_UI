@@ -10,7 +10,7 @@ import TaskItem from '../components/tasks/TaskItem'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
 
 const Dashboard = () => {
-  const { projects, tasks, timeEntries, loading } = useProjects()
+  const { projects, tasks, timeEntries, loading, projectStats } = useProjects()
   const [recentProjects, setRecentProjects] = useState([])
   const [upcomingTasks, setUpcomingTasks] = useState([])
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
@@ -151,9 +151,18 @@ const Dashboard = () => {
             
             {recentProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recentProjects.map(project => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
+                {recentProjects.map(project => {
+                  // Enhance project with stats from projectStats
+                  const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
+                  const enhancedProject = {
+                    ...project,
+                    totalTasks: stats.totalTasks,
+                    completedTasks: stats.completedTasks,
+                    totalHours: stats.totalHours,
+                    progress: stats.progress
+                  };
+                  return <ProjectCard key={project.id} project={enhancedProject} />;
+                })}
               </div>
             ) : (
               <div className="text-center py-8 bg-secondary-50 rounded-lg">
