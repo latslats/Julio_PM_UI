@@ -1,11 +1,24 @@
 import { useState } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import { useProjects } from '../../context/ProjectContext'
-import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX } from 'react-icons/fi'
+import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader } from 'react-icons/fi'
+import { useNotification } from '../../context/NotificationContext'
 
 const TaskItem = ({ task }) => {
-  const { projects, updateTask, deleteTask, startTimeTracking, stopTimeTracking, timeEntries } = useProjects()
+  const { 
+    projects, 
+    updateTask, 
+    deleteTask, 
+    startTimeTracking, 
+    stopTimeTracking, 
+    pauseTimeTracking,
+    resumeTimeTracking,
+    fetchActiveTimers,
+    timeEntries 
+  } = useProjects()
+  const { showNotification } = useNotification()
   const [isTracking, setIsTracking] = useState(false)
+  const [isActionLoading, setIsActionLoading] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editableTask, setEditableTask] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -40,13 +53,68 @@ const TaskItem = ({ task }) => {
 
   // Handle time tracking
   const toggleTimeTracking = async () => {
-    if (activeTimeEntry) {
-      await stopTimeTracking(activeTimeEntry.id)
-      setIsTracking(false)
-    } else {
-      // Start a new timer for this task, even if other tasks have running timers
-      await startTimeTracking(task.id)
-      setIsTracking(true)
+    try {
+      setIsActionLoading(true);
+      
+      if (activeTimeEntry) {
+        if (activeTimeEntry.isPaused) {
+          // If paused, resume it
+          const result = await resumeTimeTracking(activeTimeEntry.id);
+          if (result.success) {
+            showNotification('success', `Resumed tracking for "${task.title}"`); 
+            await fetchActiveTimers();
+          } else {
+            showNotification('error', `Failed to resume tracking: ${result.message || 'Unknown error'}`);
+          }
+        } else {
+          // If running, pause it
+          const result = await pauseTimeTracking(activeTimeEntry.id);
+          if (result.success) {
+            showNotification('success', `Paused tracking for "${task.title}"`);
+            await fetchActiveTimers();
+          } else {
+            showNotification('error', `Failed to pause tracking: ${result.message || 'Unknown error'}`);
+          }
+        }
+      } else {
+        // Start a new timer for this task, even if other tasks have running timers
+        const result = await startTimeTracking(task.id);
+        if (result.success) {
+          showNotification('success', `Started tracking for "${task.title}"`);
+          setIsTracking(true);
+          await fetchActiveTimers();
+        } else {
+          showNotification('error', `Failed to start tracking: ${result.message || 'Unknown error'}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling time tracking:', err);
+      showNotification('error', `Error updating timer: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
+  
+  // Handle stopping time tracking
+  const handleStopTracking = async () => {
+    try {
+      setIsActionLoading(true);
+      
+      if (activeTimeEntry) {
+        const result = await stopTimeTracking(activeTimeEntry.id);
+        if (result.success) {
+          showNotification('success', `Stopped tracking for "${task.title}"`);
+          setIsTracking(false);
+          await fetchActiveTimers();
+        } else {
+          showNotification('error', `Failed to stop tracking: ${result.message || 'Unknown error'}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error stopping time tracking:', err);
+      showNotification('error', `Error stopping timer: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsActionLoading(false);
     }
   }
 
@@ -141,17 +209,50 @@ const TaskItem = ({ task }) => {
           >
             <FiTrash2 className="h-4 w-4" />
           </button>
-          <button
-            onClick={toggleTimeTracking}
-            className={`p-2 rounded-lg ${
-              activeTimeEntry
-                ? 'text-red-600 hover:bg-red-50'
-                : 'text-primary-600 hover:bg-primary-50'
-            }`}
-            title={activeTimeEntry ? 'Stop tracking' : 'Start tracking'}
-          >
-            {activeTimeEntry ? <FiSquare className="h-5 w-5" /> : <FiPlay className="h-5 w-5" />}
-          </button>
+          <div className="flex space-x-1">
+            {activeTimeEntry && (
+              <button
+                onClick={handleStopTracking}
+                className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                title="Stop tracking"
+                disabled={isActionLoading}
+              >
+                {isActionLoading ? (
+                  <FiLoader className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FiSquare className="h-5 w-5" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={toggleTimeTracking}
+              className={`p-2 rounded-lg ${
+                activeTimeEntry
+                  ? activeTimeEntry.isPaused
+                    ? 'text-primary-600 hover:bg-primary-50' // Paused - show play
+                    : 'text-secondary-600 hover:bg-secondary-50' // Running - show pause
+                  : 'text-primary-600 hover:bg-primary-50' // Not tracking - show play
+              }`}
+              title={activeTimeEntry 
+                ? activeTimeEntry.isPaused 
+                  ? 'Resume tracking' 
+                  : 'Pause tracking' 
+                : 'Start tracking'}
+              disabled={isActionLoading}
+            >
+              {isActionLoading ? (
+                <FiLoader className="h-5 w-5 animate-spin" />
+              ) : activeTimeEntry ? (
+                activeTimeEntry.isPaused ? (
+                  <FiPlay className="h-5 w-5" />
+                ) : (
+                  <FiPause className="h-5 w-5" />
+                )
+              ) : (
+                <FiPlay className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

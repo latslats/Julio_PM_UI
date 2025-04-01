@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProjects } from '../../context/ProjectContext';
-import { FiPlay, FiPause, FiClock, FiStopCircle, FiRefreshCw } from 'react-icons/fi';
+import { FiPlay, FiPause, FiClock, FiStopCircle, FiRefreshCw, FiLoader } from 'react-icons/fi';
+import { useNotification } from '../../context/NotificationContext';
 
 /**
  * Component for displaying and managing all currently running timers.
@@ -18,9 +19,11 @@ const RunningTimersWidget = () => {
     fetchActiveTimers,
     loading
   } = useProjects();
+  const { showNotification } = useNotification();
 
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [actionLoadingMap, setActionLoadingMap] = useState({});
 
   // Filter to only active time entries (where endTime is null)
   const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null);
@@ -105,16 +108,67 @@ const RunningTimersWidget = () => {
 
   // Handle pause/resume for a specific timer
   const handlePauseResume = async (entry) => {
-    if (entry.isPaused) {
-      await resumeTimeTracking(entry.id);
-    } else {
-      await pauseTimeTracking(entry.id);
+    try {
+      // Set loading state for this specific entry
+      setActionLoadingMap(prev => ({ ...prev, [entry.id]: 'pauseResume' }));
+      
+      let result;
+      if (entry.isPaused) {
+        result = await resumeTimeTracking(entry.id);
+        if (result.success) {
+          showNotification('success', 'Timer resumed');
+        } else {
+          showNotification('error', `Failed to resume timer: ${result.message || 'Unknown error'}`);
+        }
+      } else {
+        result = await pauseTimeTracking(entry.id);
+        if (result.success) {
+          showNotification('success', 'Timer paused');
+        } else {
+          showNotification('error', `Failed to pause timer: ${result.message || 'Unknown error'}`);
+        }
+      }
+      
+      // Refresh all active timers to ensure UI is up-to-date
+      await fetchActiveTimers();
+    } catch (err) {
+      console.error('Error toggling pause/resume:', err);
+      showNotification('error', `Error updating timer: ${err.message || 'Unknown error'}`);
+    } finally {
+      // Clear loading state for this entry
+      setActionLoadingMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[entry.id];
+        return newMap;
+      });
     }
   };
 
   // Handle stopping a specific timer
   const handleStopTracking = async (entryId) => {
-    await stopTimeTracking(entryId);
+    try {
+      // Set loading state for this specific entry
+      setActionLoadingMap(prev => ({ ...prev, [entryId]: 'stop' }));
+      
+      const result = await stopTimeTracking(entryId);
+      if (result.success) {
+        showNotification('success', 'Timer stopped successfully');
+        // Refresh all active timers to ensure UI is up-to-date
+        await fetchActiveTimers();
+      } else {
+        showNotification('error', `Failed to stop timer: ${result.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error stopping timer:', err);
+      showNotification('error', `Error stopping timer: ${err.message || 'Unknown error'}`);
+    } finally {
+      // Clear loading state for this entry
+      setActionLoadingMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[entryId];
+        return newMap;
+      });
+    }
   };
 
   // Find task and project for a time entry
@@ -194,9 +248,14 @@ const RunningTimersWidget = () => {
                   <button
                     onClick={() => handlePauseResume(entry)}
                     className="flex-1 btn-sm bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50 flex items-center justify-center"
-                    disabled={loading || refreshing}
+                    disabled={loading || refreshing || actionLoadingMap[entry.id]}
                   >
-                    {entry.isPaused ? (
+                    {actionLoadingMap[entry.id] === 'pauseResume' ? (
+                      <>
+                        <FiLoader className="mr-1 h-3 w-3 animate-spin" />
+                        {entry.isPaused ? 'Resuming...' : 'Pausing...'}
+                      </>
+                    ) : entry.isPaused ? (
                       <>
                         <FiPlay className="mr-1 h-3 w-3" />
                         Resume
@@ -211,10 +270,19 @@ const RunningTimersWidget = () => {
                   <button
                     onClick={() => handleStopTracking(entry.id)}
                     className="flex-1 btn-sm bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center"
-                    disabled={loading || refreshing}
+                    disabled={loading || refreshing || actionLoadingMap[entry.id]}
                   >
-                    <FiStopCircle className="mr-1 h-3 w-3" />
-                    Stop
+                    {actionLoadingMap[entry.id] === 'stop' ? (
+                      <>
+                        <FiLoader className="mr-1 h-3 w-3 animate-spin" />
+                        Stopping...
+                      </>
+                    ) : (
+                      <>
+                        <FiStopCircle className="mr-1 h-3 w-3" />
+                        Stop
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -1,18 +1,30 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useProjects } from '../context/ProjectContext'
-import { FiPlay, FiPause, FiClock, FiCalendar, FiFilter, FiSearch, FiChevronDown, FiTrash2 } from 'react-icons/fi'
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO, startOfMonth, endOfMonth } from 'date-fns'
+import { useNotification } from '../context/NotificationContext'
+import { FiPlay, FiClock, FiCalendar, FiFilter, FiSearch, FiChevronDown, FiTrash2, FiX } from 'react-icons/fi'
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, parseISO, startOfMonth, endOfMonth, subDays, subWeeks, subMonths, isWithinInterval } from 'date-fns'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
 import RunningTimersWidget from '../components/timeTracking/RunningTimersWidget'
 
 const TimeTracking = () => {
   const { projects, tasks, timeEntries, loading, startTimeTracking, deleteTimeEntry } = useProjects()
+  const { showNotification } = useNotification()
   const [weekDays, setWeekDays] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedTaskToStart, setSelectedTaskToStart] = useState('')
+  const [dateRange, setDateRange] = useState('all')
+  const [customDateRange, setCustomDateRange] = useState({ start: null, end: null })
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [filterStatus, setFilterStatus] = useState('all') // 'all', 'completed', 'active'
 
   useEffect(() => {
+    console.log('TimeTracking component mounted')
+    console.log('Projects:', projects)
+    console.log('Tasks:', tasks)
+    console.log('Time Entries:', timeEntries)
+    console.log('Loading state:', loading)
+    
     const now = new Date()
     const start = startOfWeek(now, { weekStartsOn: 1 })
     const end = endOfWeek(now, { weekStartsOn: 1 })
@@ -79,6 +91,47 @@ const TimeTracking = () => {
     };
   }, [timeEntries, weekDays]);
 
+  // Get date range based on selection
+  const getDateRangeInterval = useMemo(() => {
+    const now = new Date();
+    let start, end;
+    
+    switch (dateRange) {
+      case 'today':
+        start = new Date(now.setHours(0, 0, 0, 0));
+        end = new Date(now.setHours(23, 59, 59, 999));
+        break;
+      case 'yesterday':
+        start = new Date(subDays(now, 1).setHours(0, 0, 0, 0));
+        end = new Date(subDays(now, 1).setHours(23, 59, 59, 999));
+        break;
+      case 'thisWeek':
+        start = startOfWeek(now, { weekStartsOn: 1 });
+        end = endOfWeek(now, { weekStartsOn: 1 });
+        break;
+      case 'lastWeek':
+        start = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+        end = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+        break;
+      case 'thisMonth':
+        start = startOfMonth(now);
+        end = endOfMonth(now);
+        break;
+      case 'lastMonth':
+        start = startOfMonth(subMonths(now, 1));
+        end = endOfMonth(subMonths(now, 1));
+        break;
+      case 'custom':
+        start = customDateRange.start;
+        end = customDateRange.end;
+        break;
+      default: // 'all'
+        return null;
+    }
+    
+    return { start, end };
+  }, [dateRange, customDateRange]);
+
   const filteredTimeEntries = useMemo(() => {
     return timeEntries
       .filter(entry => {
@@ -90,11 +143,56 @@ const TimeTracking = () => {
           entry.notes?.toLowerCase().includes(searchTermLower)
         );
         const matchesProject = !selectedProjectId || project?.id === selectedProjectId;
-        return matchesSearch && matchesProject;
+        
+        // Date range filtering
+        let matchesDateRange = true;
+        if (getDateRangeInterval) {
+          const entryDate = parseISO(entry.startTime);
+          matchesDateRange = isWithinInterval(entryDate, getDateRangeInterval);
+        }
+        
+        // Status filtering
+        let matchesStatus = true;
+        if (filterStatus !== 'all') {
+          if (filterStatus === 'completed') {
+            matchesStatus = entry.endTime !== null;
+          } else if (filterStatus === 'active') {
+            matchesStatus = entry.endTime === null;
+          }
+        }
+        
+        return matchesSearch && matchesProject && matchesDateRange && matchesStatus;
       })
       .sort((a, b) => parseISO(b.startTime) - parseISO(a.startTime));
-  }, [timeEntries, tasks, projects, searchTerm, selectedProjectId]);
+  }, [timeEntries, tasks, projects, searchTerm, selectedProjectId, getDateRangeInterval, filterStatus]);
 
+  // Handle filter button click
+  const handleFilterClick = () => {
+    setShowFilterModal(true);
+  };
+  
+  // Handle date range change
+  const handleDateRangeChange = (e) => {
+    setDateRange(e.target.value);
+  };
+  
+  // Handle custom date range change
+  const handleCustomDateChange = (field, value) => {
+    setCustomDateRange(prev => ({
+      ...prev,
+      [field]: value ? new Date(value) : null
+    }));
+  };
+  
+  // Handle time entry deletion with confirmation
+  const handleDeleteTimeEntry = (entryId) => {
+    if (window.confirm('Are you sure you want to delete this time entry? This action cannot be undone.')) {
+      deleteTimeEntry(entryId);
+    }
+  };
+  
+  console.log('Rendering TimeTracking, loading state:', loading)
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -103,7 +201,7 @@ const TimeTracking = () => {
           <p className="mt-3 text-secondary-600">Loading time tracking data...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -219,16 +317,27 @@ const TimeTracking = () => {
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FiCalendar className="h-4 w-4 text-secondary-400" />
               </div>
-              <select className="input pl-9 pr-8 py-1.5 text-sm">
-                <option>Today</option>
-                <option>Yesterday</option>
-                <option>This Week</option>
-                <option>Last Week</option>
-                <option>This Month</option>
+              <select 
+                className="input pl-9 pr-8 py-1.5 text-sm"
+                value={dateRange}
+                onChange={handleDateRangeChange}
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="thisWeek">This Week</option>
+                <option value="lastWeek">Last Week</option>
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="custom">Custom Range</option>
               </select>
             </div>
 
-            <button className="p-1.5 rounded-lg text-secondary-500 hover:bg-secondary-100">
+            <button 
+              onClick={handleFilterClick}
+              className="p-1.5 rounded-lg text-secondary-500 hover:bg-secondary-100"
+              title="Additional Filters"
+            >
               <FiFilter className="h-5 w-5" />
             </button>
           </div>
@@ -287,7 +396,7 @@ const TimeTracking = () => {
                   </div>
 
                   <button 
-                    onClick={() => deleteTimeEntry(entry.id)}
+                    onClick={() => handleDeleteTimeEntry(entry.id)}
                     className="ml-4 p-1 text-secondary-400 hover:text-red-500"
                     title="Delete Entry"
                   >
@@ -331,8 +440,93 @@ const TimeTracking = () => {
           </div>
         )}
       </div>
+      
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-secondary-100">
+              <h3 className="text-lg font-medium text-secondary-900">Filter Time Entries</h3>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                className="text-secondary-500 hover:text-secondary-700"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  Entry Status
+                </label>
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="input w-full"
+                >
+                  <option value="all">All Entries</option>
+                  <option value="completed">Completed Only</option>
+                  <option value="active">Active Only</option>
+                </select>
+              </div>
+              
+              {/* Custom Date Range */}
+              {dateRange === 'custom' && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-secondary-700">
+                    Custom Date Range
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-secondary-500 mb-1">Start Date</label>
+                      <input 
+                        type="date" 
+                        className="input w-full" 
+                        value={customDateRange.start ? format(customDateRange.start, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-secondary-500 mb-1">End Date</label>
+                      <input 
+                        type="date" 
+                        className="input w-full" 
+                        value={customDateRange.end ? format(customDateRange.end, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                        min={customDateRange.start ? format(customDateRange.start, 'yyyy-MM-dd') : ''}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-secondary-100 flex justify-end space-x-2">
+              <button 
+                onClick={() => {
+                  setFilterStatus('all');
+                  if (dateRange === 'custom') {
+                    setCustomDateRange({ start: null, end: null });
+                  }
+                }}
+                className="btn bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50"
+              >
+                Reset Filters
+              </button>
+              <button 
+                onClick={() => setShowFilterModal(false)}
+                className="btn btn-primary"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
 export default TimeTracking

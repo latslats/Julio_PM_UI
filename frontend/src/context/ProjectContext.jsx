@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
+import { useNotification } from './NotificationContext'
 
 // Define the base URL for the API - Use relative path for proxy
 const API_BASE_URL = '/api' // Rely on Nginx proxy in Docker
@@ -14,6 +15,7 @@ export const ProjectProvider = ({ children }) => {
   const [timeEntries, setTimeEntries] = useState([])
   const [loading, setLoading] = useState(true) // Add loading state
   const [error, setError] = useState(null) // Add error state
+  const { showNotification } = useNotification()
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -124,75 +126,167 @@ export const ProjectProvider = ({ children }) => {
 
   // --- Project CRUD ---
   const createProject = async (projectData) => {
-    const result = await apiRequest(`${API_BASE_URL}/projects`, {
-      method: 'POST',
-      body: JSON.stringify(projectData),
-    });
-    if (result.success) {
-      setProjects(prev => [result.data, ...prev])
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/projects`, {
+        method: 'POST',
+        body: JSON.stringify(projectData),
+      });
+      
+      if (result.success) {
+        setProjects(prev => [result.data, ...prev]);
+        showNotification('success', `Project "${projectData.name}" created successfully`);
+        return { success: true, data: result.data };
+      } else {
+        showNotification('error', `Failed to create project: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error creating project:', err);
+      showNotification('error', `Failed to create project: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   const updateProject = async (id, projectData) => {
     // Only send fields that are being updated (backend handles this)
-    const result = await apiRequest(`${API_BASE_URL}/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(projectData),
-    });
-    if (result.success) {
-      setProjects(prev => prev.map(p => p.id === id ? result.data : p))
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/projects/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(projectData),
+      });
+      
+      if (result.success) {
+        setProjects(prev => prev.map(p => p.id === id ? result.data : p));
+        showNotification('success', `Project "${projectData.name || 'Unknown'}" updated successfully`);
+        return { success: true, data: result.data };
+      } else {
+        showNotification('error', `Failed to update project: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error updating project:', err);
+      showNotification('error', `Failed to update project: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   const deleteProject = async (id) => {
-    const result = await apiRequest(`${API_BASE_URL}/projects/${id}`, {
-      method: 'DELETE',
-    });
-    if (result.success) {
-      setProjects(prev => prev.filter(p => p.id !== id))
-      // Remove associated tasks and time entries from frontend state
-      const tasksToDelete = tasks.filter(t => t.projectId === id).map(t => t.id);
-      setTasks(prev => prev.filter(t => t.projectId !== id));
-      setTimeEntries(prev => prev.filter(te => !tasksToDelete.includes(te.taskId)));
+    setLoading(true);
+    try {
+      // Get project name before deletion for notification
+      const projectToDelete = projects.find(p => p.id === id);
+      const projectName = projectToDelete?.name || 'Unknown';
+      
+      const result = await apiRequest(`/projects/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (result.success) {
+        setProjects(prev => prev.filter(p => p.id !== id));
+        // Remove associated tasks and time entries from frontend state
+        const tasksToDelete = tasks.filter(t => t.projectId === id).map(t => t.id);
+        setTasks(prev => prev.filter(t => t.projectId !== id));
+        setTimeEntries(prev => prev.filter(te => !tasksToDelete.includes(te.taskId)));
+        showNotification('success', `Project "${projectName}" deleted successfully`);
+        return { success: true };
+      } else {
+        showNotification('error', `Failed to delete project: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      showNotification('error', `Failed to delete project: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   // --- Task CRUD ---
   const createTask = async (taskData) => {
-    const result = await apiRequest(`${API_BASE_URL}/tasks`, {
-      method: 'POST',
-      body: JSON.stringify(taskData),
-    });
-    if (result.success) {
-      setTasks(prev => [result.data, ...prev])
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/tasks`, {
+        method: 'POST',
+        body: JSON.stringify(taskData),
+      });
+      
+      if (result.success) {
+        setTasks(prev => [result.data, ...prev]);
+        showNotification('success', `Task "${taskData.title}" created successfully`);
+        return { success: true, data: result.data };
+      } else {
+        showNotification('error', `Failed to create task: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error creating task:', err);
+      showNotification('error', `Failed to create task: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   const updateTask = async (id, taskData) => {
-    const result = await apiRequest(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(taskData),
-    });
-    if (result.success) {
-      setTasks(prev => prev.map(t => t.id === id ? result.data : t))
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/tasks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(taskData),
+      });
+      
+      if (result.success) {
+        setTasks(prev => prev.map(t => t.id === id ? result.data : t));
+        showNotification('success', `Task "${taskData.title || 'Unknown'}" updated successfully`);
+        return { success: true, data: result.data };
+      } else {
+        showNotification('error', `Failed to update task: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error updating task:', err);
+      showNotification('error', `Failed to update task: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   const deleteTask = async (id) => {
-    const result = await apiRequest(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'DELETE',
-    });
-    if (result.success) {
-      setTasks(prev => prev.filter(t => t.id !== id))
-      // Remove associated time entries from frontend state
-      setTimeEntries(prev => prev.filter(te => te.taskId !== id));
+    setLoading(true);
+    try {
+      // Get task title before deletion for notification
+      const taskToDelete = tasks.find(t => t.id === id);
+      const taskTitle = taskToDelete?.title || 'Unknown';
+      
+      const result = await apiRequest(`/tasks/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (result.success) {
+        setTasks(prev => prev.filter(t => t.id !== id));
+        // Remove associated time entries from frontend state
+        setTimeEntries(prev => prev.filter(te => te.taskId !== id));
+        showNotification('success', `Task "${taskTitle}" deleted successfully`);
+        return { success: true };
+      } else {
+        showNotification('error', `Failed to delete task: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      showNotification('error', `Failed to delete task: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result
   }
 
   // --- Time Tracking ---
@@ -310,13 +404,27 @@ export const ProjectProvider = ({ children }) => {
   };
 
   const deleteTimeEntry = async (id) => {
-    const result = await apiRequest(`${API_BASE_URL}/time-entries/${id}`, {
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/time-entries/${id}`, {
         method: 'DELETE',
-    });
-    if (result.success) {
+      });
+      
+      if (result.success) {
         setTimeEntries(prev => prev.filter(te => te.id !== id));
+        showNotification('success', 'Time entry deleted successfully');
+        return { success: true };
+      } else {
+        showNotification('error', `Failed to delete time entry: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error deleting time entry:', err);
+      showNotification('error', `Failed to delete time entry: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
     }
-    return result;
   };
 
   // --- Calculated Values (Memoized) ---

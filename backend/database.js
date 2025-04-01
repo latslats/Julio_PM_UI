@@ -67,6 +67,7 @@ const initializeDatabase = async () => {
         notes TEXT,
         "isPaused" BOOLEAN DEFAULT false NOT NULL,          -- Track pause state
         "lastResumedAt" TIMESTAMPTZ,                       -- When the timer last started/resumed
+        "pausedAt" TIMESTAMPTZ,                           -- When the timer was last paused
         "totalPausedDuration" NUMERIC(12, 2) DEFAULT 0 NOT NULL, -- Accumulates paused time in seconds
         "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       );
@@ -78,6 +79,7 @@ const initializeDatabase = async () => {
     try {
       await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "isPaused" BOOLEAN DEFAULT false NOT NULL');
       await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "lastResumedAt" TIMESTAMPTZ');
+      await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "pausedAt" TIMESTAMPTZ');
       await client.query('ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS "totalPausedDuration" NUMERIC(12, 2) DEFAULT 0 NOT NULL');
       console.log('Checked/added columns for pause functionality to time_entries.');
     } catch (alterErr) {
