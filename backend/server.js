@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const db = require('./database.js'); // Import the database connection
@@ -5,6 +8,8 @@ const db = require('./database.js'); // Import the database connection
 const projectRoutes = require('./routes/projects'); // Import project routes
 const taskRoutes = require('./routes/tasks'); // Import task routes
 const timeEntryRoutes = require('./routes/timeEntries'); // Import time entry routes
+const waitingItemRoutes = require('./routes/waitingItems'); // Import waiting item routes
+const reportRoutes = require('./routes/reports'); // Import report routes
 
 const app = express();
 
@@ -21,6 +26,8 @@ app.get('/', (req, res) => {
 app.use('/api/projects', projectRoutes); // Use project routes
 app.use('/api/tasks', taskRoutes); // Use task routes
 app.use('/api/time-entries', timeEntryRoutes); // Use time entry routes
+app.use('/api/waiting-items', waitingItemRoutes); // Use waiting item routes
+app.use('/api/reports', reportRoutes); // Use report routes
 
 // Error Handling Middleware (Basic)
 app.use((err, req, res, next) => {
