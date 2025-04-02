@@ -2,8 +2,6 @@
 ## Current Focus (High Priority)
 ## Backlog / To-Do
 ### Frontend
-[IGNOREFORNOW] Settings Page:
-Implement the /settings route and page functionality (if required).
 [Polish] UI/UX:
 Ensure consistent styling and responsiveness across all pages and components.
 [Refactor] ProjectContext:
@@ -13,6 +11,14 @@ Evaluate if Context API is sufficient for managing multiple active timers or if 
 ### Database
 ### General
 ## Completed (2025-04-02)
+- [Enhancement] Settings Page & API:
+  - Created `settings` table in PostgreSQL with columns for `auto_pause_enabled` (boolean) and `auto_pause_time` (time).
+  - Added default settings row insertion during database initialization.
+  - Implemented backend API endpoints (`GET /api/settings`, `PUT /api/settings`) to fetch and update settings.
+  - Added `node-cron` dependency and implemented a scheduled job in `server.js` to check settings and auto-pause running timers every minute based on the configured time.
+  - Ensured the `/settings` route exists in the frontend `App.jsx`.
+  - Created the `frontend/src/pages/SettingsPage.jsx` component to fetch settings, display controls (toggle, time input), and save changes via the API.
+  - Ensured the Settings link exists in the `Sidebar.jsx`.
 - [Backend] Waiting Items Validation: Enhanced validation for waiting items API including:
   - Comprehensive field validation for required fields and formats
   - Date relationship validation (sent date, deadline date, received date)

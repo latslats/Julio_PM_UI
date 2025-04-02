@@ -11,6 +11,7 @@ import TimeTracking from './pages/TimeTracking'
 import Reports from './pages/Reports'
 import WaitingItems from './pages/WaitingItems'
 import WaitingItemDetail from './pages/WaitingItemDetail'
+import SettingsPage from './pages/SettingsPage' // Import SettingsPage
 import NotFound from './pages/NotFound'
 
 const App = () => {
@@ -25,8 +26,9 @@ const App = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="waiting-items" element={<WaitingItems />} />
         <Route path="waiting-items/:id" element={<WaitingItemDetail />} />
+        <Route path="settings" element={<SettingsPage />} /> {/* Add Settings Route */}
       </Route>
-      
+
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />
     </Routes>

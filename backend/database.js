@@ -107,7 +107,28 @@ const initializeDatabase = async () => {
       );
     `);
     console.log('Checked/created waiting_timeline_events table.');
-    
+
+    // Settings Table (Assuming single row for now)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id INT PRIMARY KEY DEFAULT 1, -- Use INT for single row constraint
+        "auto_pause_enabled" BOOLEAN DEFAULT false,
+        "auto_pause_time" TIME, -- e.g., '18:00:00'
+        CONSTRAINT settings_pk CHECK (id = 1) -- Enforce single row
+      );
+    `);
+    console.log('Checked/created settings table.');
+
+    // Insert default settings if the table was just created and is empty
+    const settingsCheck = await client.query('SELECT COUNT(*) FROM settings');
+    if (parseInt(settingsCheck.rows[0].count, 10) === 0) {
+      await client.query(`
+        INSERT INTO settings (id, "auto_pause_enabled", "auto_pause_time")
+        VALUES (1, false, NULL);
+      `);
+      console.log('Inserted default settings row.');
+    }
+
     // Add columns if they don't exist (for existing databases)
     // Normally, you'd use migration tools for this in production
     try {
