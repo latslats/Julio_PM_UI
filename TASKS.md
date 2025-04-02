@@ -2,17 +2,23 @@
 ## Current Focus (High Priority)
 ## Backlog / To-Do
 ### Frontend
-[IGNOREFORNOW] Settings Page:
+[ENHANCEMENT] Settings Page:
 Implement the /settings route and page functionality (if required).
-[Polish] UI/UX:
-Ensure consistent styling and responsiveness across all pages and components.
-[Refactor] ProjectContext:
-Review apiRequest helper to potentially use axios consistently if preferred, or stick with fetch.
-Evaluate if Context API is sufficient for managing multiple active timers or if a more robust state management solution (like Zustand) is needed.
 ### Backend
 ### Database
 ### General
 ## Completed (2025-04-02)
+- [Polish] UI/UX: Enhanced UI consistency with reusable components including:
+  - Created Button component with consistent styling, loading states, and variants
+  - Created Card component for consistent card-based UI elements
+  - Created Input and Select components for form field consistency
+  - Improved component organization with common component index exports
+
+- [Refactor] ProjectContext: Improved API request handling and state management:
+  - Implemented axios-based apiClient utility for consistent API requests
+  - Refactored all fetch calls to use the new apiClient
+  - Added better error handling and response formatting
+  - Confirmed Context API is sufficient for managing multiple active timers
 - [Backend] Waiting Items Validation: Enhanced validation for waiting items API including:
   - Comprehensive field validation for required fields and formats
   - Date relationship validation (sent date, deadline date, received date)

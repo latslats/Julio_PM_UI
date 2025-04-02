@@ -165,18 +165,22 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                 <label htmlFor="requestType" className="block text-sm font-medium text-secondary-700 mb-1">
                   Request Type *
                 </label>
-                <input
-                  type="text"
+                <select
                   id="requestType"
                   name="requestType"
                   value={formData.requestType}
                   onChange={handleChange}
                   className={`input w-full ${formErrors.requestType ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="e.g., Feedback, Approval, Information"
                   required
                   disabled={formLoading}
-                  maxLength={100}
-                />
+                >
+                  <option value="">Select a request type</option>
+                  <option value="Information">Information</option>
+                  <option value="Approval">Approval</option>
+                  <option value="Feedback">Feedback</option>
+                  <option value="Resource">Resource</option>
+                  <option value="Other">Other</option>
+                </select>
                 {formErrors.requestType && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.requestType}</p>
                 )}

@@ -1,9 +1,7 @@
 import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNotification } from './NotificationContext'
-
-// Define the base URL for the API - Use relative path for proxy
-const API_BASE_URL = '/api' // Rely on Nginx proxy in Docker
+import apiClient, { handleApiRequest } from '../utils/apiClient'
 
 const ProjectContext = createContext()
 
@@ -18,28 +16,25 @@ export const ProjectProvider = ({ children }) => {
   const { showNotification } = useNotification()
 
   // --- Data Fetching ---
+  // Empty dependency array means this runs once on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       setError(null)
       try {
-        const [projectsRes, tasksRes, timeEntriesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/projects`),
-          fetch(`${API_BASE_URL}/tasks`),
-          fetch(`${API_BASE_URL}/time-entries`)
+        const [projectsResult, tasksResult, timeEntriesResult] = await Promise.all([
+          handleApiRequest(() => apiClient.get('/projects')),
+          handleApiRequest(() => apiClient.get('/tasks')),
+          handleApiRequest(() => apiClient.get('/time-entries'))
         ])
 
-        if (!projectsRes.ok || !tasksRes.ok || !timeEntriesRes.ok) {
+        if (!projectsResult.success || !tasksResult.success || !timeEntriesResult.success) {
           throw new Error('Failed to fetch initial data')
         }
 
-        const projectsData = await projectsRes.json()
-        const tasksData = await tasksRes.json()
-        const timeEntriesData = await timeEntriesRes.json()
-
-        setProjects(projectsData)
-        setTasks(tasksData)
-        setTimeEntries(timeEntriesData)
+        setProjects(projectsResult.data)
+        setTasks(tasksResult.data)
+        setTimeEntries(timeEntriesResult.data)
 
       } catch (err) {
         console.error("Error fetching data:", err)
@@ -52,19 +47,21 @@ export const ProjectProvider = ({ children }) => {
     }
 
     fetchData()
-  }, []) // Empty dependency array means this runs once on mount
+  }, []
   
   // Function to fetch only active timers
   const fetchActiveTimers = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/time-entries?active=true`)
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API response error:', response.status, errorText)
-        throw new Error(`Failed to fetch active timers: ${response.status} ${response.statusText}`)
+      const result = await handleApiRequest(() => apiClient.get('/time-entries', {
+        params: { active: true }
+      }))
+      
+      if (!result.success) {
+        throw new Error(`Failed to fetch active timers: ${result.message}`)
       }
-      const activeTimersData = await response.json()
+      
+      const activeTimersData = result.data
       
       // Update timeEntries state by replacing active entries and keeping completed ones
       setTimeEntries(prev => {
@@ -84,42 +81,26 @@ export const ProjectProvider = ({ children }) => {
     }
   }
 
-  // --- Helper Functions (Consider moving to a utils file later) ---
-  const apiRequest = async (url, options = {}) => {
+  // Helper function to make API requests using the apiClient utility
+  const makeApiRequest = async (method, endpoint, data = null, config = {}) => {
     try {
-      const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-      console.log(`Making API request to: ${fullUrl}`);
-      
-      const response = await fetch(fullUrl, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API response error:', response.status, errorText);
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-        } catch (e) {
-          errorMessage = `HTTP error! status: ${response.status} ${response.statusText}`;
+      console.log(`Making ${method.toUpperCase()} API request to: ${endpoint}`);
+      return await handleApiRequest(() => {
+        switch (method.toLowerCase()) {
+          case 'get':
+            return apiClient.get(endpoint, config);
+          case 'post':
+            return apiClient.post(endpoint, data, config);
+          case 'put':
+            return apiClient.put(endpoint, data, config);
+          case 'delete':
+            return apiClient.delete(endpoint, config);
+          default:
+            throw new Error(`Unsupported method: ${method}`);
         }
-        throw new Error(errorMessage);
-      }
-      
-      // If response has content, parse it, otherwise return success status
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-         return { success: true, data: await response.json() };
-      } else {
-         return { success: true }; // For DELETE or other requests with no body response
-      }
+      });
     } catch (err) {
-      console.error('API Request Error:', err);
+      console.error(`API ${method.toUpperCase()} Request Error:`, err);
       return { success: false, message: err.message };
     }
   };
@@ -128,10 +109,7 @@ export const ProjectProvider = ({ children }) => {
   const createProject = async (projectData) => {
     setLoading(true);
     try {
-      const result = await apiRequest(`/projects`, {
-        method: 'POST',
-        body: JSON.stringify(projectData),
-      });
+      const result = await makeApiRequest('post', '/projects', projectData);
       
       if (result.success) {
         setProjects(prev => [result.data, ...prev]);
@@ -154,10 +132,7 @@ export const ProjectProvider = ({ children }) => {
     // Only send fields that are being updated (backend handles this)
     setLoading(true);
     try {
-      const result = await apiRequest(`/projects/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(projectData),
-      });
+      const result = await makeApiRequest('put', `/projects/${id}`, projectData);
       
       if (result.success) {
         setProjects(prev => prev.map(p => p.id === id ? result.data : p));
@@ -183,9 +158,7 @@ export const ProjectProvider = ({ children }) => {
       const projectToDelete = projects.find(p => p.id === id);
       const projectName = projectToDelete?.name || 'Unknown';
       
-      const result = await apiRequest(`/projects/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await makeApiRequest('delete', `/projects/${id}`);
       
       if (result.success) {
         setProjects(prev => prev.filter(p => p.id !== id));
@@ -212,10 +185,7 @@ export const ProjectProvider = ({ children }) => {
   const createTask = async (taskData) => {
     setLoading(true);
     try {
-      const result = await apiRequest(`/tasks`, {
-        method: 'POST',
-        body: JSON.stringify(taskData),
-      });
+      const result = await makeApiRequest('post', '/tasks', taskData);
       
       if (result.success) {
         setTasks(prev => [result.data, ...prev]);
@@ -237,10 +207,7 @@ export const ProjectProvider = ({ children }) => {
   const updateTask = async (id, taskData) => {
     setLoading(true);
     try {
-      const result = await apiRequest(`/tasks/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(taskData),
-      });
+      const result = await makeApiRequest('put', `/tasks/${id}`, taskData);
       
       if (result.success) {
         setTasks(prev => prev.map(t => t.id === id ? result.data : t));
@@ -266,9 +233,7 @@ export const ProjectProvider = ({ children }) => {
       const taskToDelete = tasks.find(t => t.id === id);
       const taskTitle = taskToDelete?.title || 'Unknown';
       
-      const result = await apiRequest(`/tasks/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await makeApiRequest('delete', `/tasks/${id}`);
       
       if (result.success) {
         setTasks(prev => prev.filter(t => t.id !== id));
@@ -297,10 +262,7 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      const result = await apiRequest(`/time-entries/start`, {
-        method: 'POST',
-        body: JSON.stringify({ taskId }),
-      });
+      const result = await makeApiRequest('post', '/time-entries/start', { taskId });
       
       if (result.success) {
         console.log('Time tracking started successfully:', result.data);
@@ -326,9 +288,7 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      const result = await apiRequest(`/time-entries/stop/${timeEntryId}`, {
-        method: 'PUT',
-      });
+      const result = await makeApiRequest('put', `/time-entries/stop/${timeEntryId}`);
       
       if (result.success) {
         console.log('Time tracking stopped successfully:', result.data);
@@ -354,9 +314,7 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      const result = await apiRequest(`/time-entries/pause/${timeEntryId}`, {
-        method: 'PUT',
-      });
+      const result = await makeApiRequest('put', `/time-entries/pause/${timeEntryId}`);
       
       if (result.success) {
         console.log('Time tracking paused successfully:', result.data);
@@ -381,9 +339,7 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     
     try {
-      const result = await apiRequest(`/time-entries/resume/${timeEntryId}`, {
-        method: 'PUT',
-      });
+      const result = await makeApiRequest('put', `/time-entries/resume/${timeEntryId}`);
       
       if (result.success) {
         console.log('Time tracking resumed successfully:', result.data);
@@ -406,9 +362,7 @@ export const ProjectProvider = ({ children }) => {
   const deleteTimeEntry = async (id) => {
     setLoading(true);
     try {
-      const result = await apiRequest(`/time-entries/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await makeApiRequest('delete', `/time-entries/${id}`);
       
       if (result.success) {
         setTimeEntries(prev => prev.filter(te => te.id !== id));
