@@ -7,7 +7,6 @@ import MainLayout from './components/layouts/MainLayout'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
-import TimeTracking from './pages/TimeTracking'
 import Reports from './pages/Reports'
 import WaitingItems from './pages/WaitingItems'
 import WaitingItemDetail from './pages/WaitingItemDetail'
@@ -22,7 +21,6 @@ const App = () => {
         <Route index element={<Dashboard />} />
         <Route path="projects" element={<Projects />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
-        <Route path="time-tracking" element={<TimeTracking />} />
         <Route path="reports" element={<Reports />} />
         <Route path="waiting-items" element={<WaitingItems />} />
         <Route path="waiting-items/:id" element={<WaitingItemDetail />} />

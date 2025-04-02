@@ -1,12 +1,31 @@
 # TaskFlow - Task List
 ## Current Focus (High Priority)
 ## Backlog / To-Do
-### Frontend
-[Polish] UI/UX:
-Ensure consistent styling and responsiveness across all pages and components.
-[Refactor] ProjectContext:
-Review apiRequest helper to potentially use axios consistently if preferred, or stick with fetch.
-Evaluate if Context API is sufficient for managing multiple active timers or if a more robust state management solution (like Zustand) is needed.
+### Backend
+### Database
+### General
+## Completed (2025-04-02)
+- [Cleanup] Time Tracking Page:
+  - Removed the /time-tracking page and route from the application
+  - Removed the Time Tracking link from the sidebar navigation
+  - Removed unused RunningTimersWidget component
+  - Kept TimeTrackingWidget as it's still used in the Dashboard
+## Completed (2025-04-02)
+- [Polish] UI/UX:
+  - Ensured consistent styling and responsiveness across all pages and components.
+  - Updated SettingsPage to use consistent styling patterns with the rest of the application.
+  - Standardized loading indicators across all pages.
+  - Improved error handling UI for consistency.
+  - Enhanced form elements with consistent styling.
+  - Implemented proper responsive design for all screen sizes.
+  - Added consistent iconography using react-icons.
+
+- [Refactor] ProjectContext:
+  - Refactored apiRequest helper to use axios consistently instead of fetch for better error handling and more concise API.
+  - Added comprehensive documentation for the apiRequest helper explaining the advantages of axios over fetch.
+  - Evaluated Context API for managing multiple active timers and determined it is sufficient for the current use case.
+  - Added detailed documentation explaining when to consider migrating to a more robust state management solution.
+  - Updated SettingsPage to use axios for consistency across the codebase.
 ### Backend
 ### Database
 ### General

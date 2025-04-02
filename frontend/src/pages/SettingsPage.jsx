@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { FiSettings, FiClock, FiSave, FiLoader } from 'react-icons/fi';
 
 // Define the API base URL (adjust if necessary)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 const SettingsPage = () => {
   const [isEnabled, setIsEnabled] = useState(false);
@@ -16,16 +26,22 @@ const SettingsPage = () => {
     setError(null);
     setSaveStatus(''); // Reset save status on fetch
     try {
-      const response = await fetch(`${API_BASE_URL}/settings`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const response = await api.get('/settings');
+      const data = response.data;
       setIsEnabled(data.auto_pause_enabled || false);
       setTime(data.auto_pause_time || ''); // Expects HH:MM or empty
     } catch (e) {
       console.error("Failed to fetch settings:", e);
-      setError('Failed to load settings. Please try again later.');
+      // Handle axios error
+      let errorMessage = 'Failed to load settings. Please try again later.';
+      if (e.response) {
+        errorMessage = e.response.data?.message || `HTTP error! status: ${e.response.status}`;
+      } else if (e.request) {
+        errorMessage = 'No response received from server';
+      } else {
+        errorMessage = e.message;
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -46,19 +62,8 @@ const SettingsPage = () => {
         auto_pause_time: isEnabled && time ? time : null,
       };
 
-      const response = await fetch(`${API_BASE_URL}/settings`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settingsToSave),
-      });
-
-      const result = await response.json(); // Read body regardless of ok status
-
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP error! status: ${response.status}`);
-      }
+      const response = await api.put('/settings', settingsToSave);
+      const result = response.data;
 
       setSaveStatus('success');
       // Optionally update state from response if backend formats differently
@@ -69,7 +74,18 @@ const SettingsPage = () => {
 
     } catch (e) {
       console.error("Failed to save settings:", e);
-      setError(`Failed to save settings: ${e.message}`);
+      
+      // Handle axios error
+      let errorMessage = 'Failed to save settings.';
+      if (e.response) {
+        errorMessage = e.response.data?.message || `HTTP error! status: ${e.response.status}`;
+      } else if (e.request) {
+        errorMessage = 'No response received from server';
+      } else {
+        errorMessage = e.message;
+      }
+      
+      setError(`Failed to save settings: ${errorMessage}`);
       setSaveStatus('error');
     }
   };
@@ -91,62 +107,120 @@ const SettingsPage = () => {
 
   // Render logic
   if (isLoading) {
-    return <div className="p-4">Loading settings...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="mt-3 text-secondary-600">Loading settings...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error && saveStatus !== 'saving') { // Show general fetch error only if not currently saving
-    return <div className="p-4 text-red-600">{error} <button onClick={fetchSettings} className="ml-2 text-blue-600 underline">Retry</button></div>;
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <p className="mb-3">{error}</p>
+        <button 
+          onClick={fetchSettings} 
+          className="btn btn-secondary inline-flex items-center"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Settings</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-secondary-900">Settings</h1>
+      </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-md">
-        <h2 className="text-lg font-medium text-gray-700 mb-4">Auto-Pause Timers</h2>
-
-        <div className="flex items-center justify-between mb-4">
-          <label htmlFor="auto-pause-toggle" className="text-sm font-medium text-gray-600">
-            Enable Auto-Pause
-          </label>
-          {/* Basic Toggle Switch (Replace with styled component if available) */}
-          <input
-            type="checkbox"
-            id="auto-pause-toggle"
-            checked={isEnabled}
-            onChange={handleToggleChange}
-            className="form-checkbox h-5 w-5 text-blue-600" // Basic styling
-          />
+      <div className="card max-w-2xl">
+        <div className="flex items-center mb-6">
+          <div className="p-3 rounded-lg bg-primary-500/10 mr-3">
+            <FiSettings className="h-6 w-6 text-primary-600" />
+          </div>
+          <h2 className="text-lg font-medium text-secondary-900">Application Settings</h2>
         </div>
 
-        <div className={`mb-4 ${!isEnabled ? 'opacity-50' : ''}`}>
-          <label htmlFor="auto-pause-time" className="block text-sm font-medium text-gray-600 mb-1">
-            Pause Time (Daily)
-          </label>
-          <input
-            type="time"
-            id="auto-pause-time"
-            value={time}
-            onChange={handleTimeChange}
-            disabled={!isEnabled}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
-          />
-           <p className="text-xs text-gray-500 mt-1">Timers running at or after this time will be automatically paused.</p>
-        </div>
+        <div className="space-y-6">
+          <div className="border-b border-secondary-100 pb-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 rounded-lg bg-secondary-100 mr-3">
+                <FiClock className="h-5 w-5 text-secondary-600" />
+              </div>
+              <h3 className="text-md font-medium text-secondary-800">Auto-Pause Timers</h3>
+            </div>
 
-        <div className="flex justify-end items-center mt-6">
-           {/* Save Status Indicators */}
-           {saveStatus === 'saving' && <span className="text-sm text-gray-500 mr-3">Saving...</span>}
-           {saveStatus === 'success' && <span className="text-sm text-green-600 mr-3">Settings saved!</span>}
-           {saveStatus === 'error' && <span className="text-sm text-red-600 mr-3">{error || 'Save failed.'}</span>}
+            <div className="flex items-center justify-between mb-4 pl-10">
+              <label htmlFor="auto-pause-toggle" className="text-sm font-medium text-secondary-700">
+                Enable Auto-Pause
+              </label>
+              <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                <input
+                  type="checkbox"
+                  id="auto-pause-toggle"
+                  checked={isEnabled}
+                  onChange={handleToggleChange}
+                  className="sr-only"
+                />
+                <div className={`block w-10 h-6 rounded-full transition-colors ${isEnabled ? 'bg-primary-500' : 'bg-secondary-200'}`}></div>
+                <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${isEnabled ? 'translate-x-4' : ''}`}></div>
+              </div>
+            </div>
 
-          <button
-            onClick={handleSave}
-            disabled={saveStatus === 'saving'}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            Save Settings
-          </button>
+            <div className={`pl-10 ${!isEnabled ? 'opacity-50' : ''}`}>
+              <label htmlFor="auto-pause-time" className="block text-sm font-medium text-secondary-700 mb-1">
+                Pause Time (Daily)
+              </label>
+              <input
+                type="time"
+                id="auto-pause-time"
+                value={time}
+                onChange={handleTimeChange}
+                disabled={!isEnabled}
+                className="input w-full max-w-xs"
+              />
+              <p className="text-xs text-secondary-500 mt-1">Timers running at or after this time will be automatically paused.</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end items-center">
+            {/* Save Status Indicators */}
+            {saveStatus === 'success' && (
+              <span className="text-sm text-green-600 mr-3 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Settings saved!
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-sm text-red-600 mr-3">
+                {error || 'Save failed.'}
+              </span>
+            )}
+
+            <button
+              onClick={handleSave}
+              disabled={saveStatus === 'saving'}
+              className="btn btn-primary flex items-center justify-center min-w-[120px]"
+            >
+              {saveStatus === 'saving' ? (
+                <>
+                  <FiLoader className="animate-spin mr-2 h-4 w-4" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <FiSave className="mr-1.5 h-4 w-4" />
+                  Save Settings
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

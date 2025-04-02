@@ -1,9 +1,18 @@
 import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNotification } from './NotificationContext'
+import axios from 'axios'
 
 // Define the base URL for the API - Use relative path for proxy
 const API_BASE_URL = '/api' // Rely on Nginx proxy in Docker
+
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 const ProjectContext = createContext()
 
@@ -23,27 +32,38 @@ export const ProjectProvider = ({ children }) => {
       setLoading(true)
       setError(null)
       try {
+        // Use axios for all API requests
         const [projectsRes, tasksRes, timeEntriesRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/projects`),
-          fetch(`${API_BASE_URL}/tasks`),
-          fetch(`${API_BASE_URL}/time-entries`)
+          api.get('/projects'),
+          api.get('/tasks'),
+          api.get('/time-entries')
         ])
 
-        if (!projectsRes.ok || !tasksRes.ok || !timeEntriesRes.ok) {
-          throw new Error('Failed to fetch initial data')
-        }
+        // Axios automatically throws errors for non-2xx responses
+        // and parses JSON responses, so we can directly use the data
 
-        const projectsData = await projectsRes.json()
-        const tasksData = await tasksRes.json()
-        const timeEntriesData = await timeEntriesRes.json()
-
-        setProjects(projectsData)
-        setTasks(tasksData)
-        setTimeEntries(timeEntriesData)
+        setProjects(projectsRes.data)
+        setTasks(tasksRes.data)
+        setTimeEntries(timeEntriesRes.data)
 
       } catch (err) {
         console.error("Error fetching data:", err)
-        setError(err.message || 'Could not load data. Please try again later.')
+        
+        // Handle axios error
+        let errorMessage = 'Could not load data. Please try again later.'
+        if (err.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          errorMessage = err.response.data?.message || `HTTP error! status: ${err.response.status}`
+        } else if (err.request) {
+          // The request was made but no response was received
+          errorMessage = 'No response received from server'
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          errorMessage = err.message
+        }
+        
+        setError(errorMessage)
         // Keep existing state or clear it depending on desired UX
         // setProjects([]); setTasks([]); setTimeEntries([]); 
       } finally {
@@ -58,13 +78,11 @@ export const ProjectProvider = ({ children }) => {
   const fetchActiveTimers = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/time-entries?active=true`)
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API response error:', response.status, errorText)
-        throw new Error(`Failed to fetch active timers: ${response.status} ${response.statusText}`)
-      }
-      const activeTimersData = await response.json()
+      const response = await api.get('/time-entries', {
+        params: { active: true }
+      })
+      
+      const activeTimersData = response.data
       
       // Update timeEntries state by replacing active entries and keeping completed ones
       setTimeEntries(prev => {
@@ -77,50 +95,82 @@ export const ProjectProvider = ({ children }) => {
       return { success: true, data: activeTimersData }
     } catch (err) {
       console.error("Error fetching active timers:", err)
-      setError(err.message || 'Could not load active timers. Please try again later.')
-      return { success: false, message: err.message }
+      
+      // Handle axios error
+      let errorMessage = 'Could not load active timers. Please try again later.'
+      if (err.response) {
+        errorMessage = err.response.data?.message || `Failed to fetch active timers: ${err.response.status}`
+      } else if (err.request) {
+        errorMessage = 'No response received from server'
+      } else {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
+      return { success: false, message: errorMessage }
     } finally {
       setLoading(false)
     }
   }
 
   // --- Helper Functions (Consider moving to a utils file later) ---
+  /**
+   * Helper function to make API requests using axios
+   * 
+   * Advantages over fetch:
+   * - Automatic JSON transformation
+   * - Better error handling
+   * - Request/response interceptors
+   * - Automatic transforms of JSON data
+   * - Client-side protection against XSRF
+   * 
+   * @param {string} url - The URL to make the request to
+   * @param {Object} options - The options for the request
+   * @returns {Promise<Object>} - A promise that resolves to the response data
+   */
   const apiRequest = async (url, options = {}) => {
     try {
-      const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
-      console.log(`Making API request to: ${fullUrl}`);
+      // Extract method and body from options
+      const { method = 'GET', body, headers, ...restOptions } = options;
       
-      const response = await fetch(fullUrl, {
+      // Prepare request config
+      const config = {
+        method,
+        url: url.startsWith('http') ? url : url, // axios already uses baseURL
         headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
+          ...headers,
         },
-        ...options,
-      });
+        ...restOptions,
+      };
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API response error:', response.status, errorText);
-        let errorMessage;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
-        } catch (e) {
-          errorMessage = `HTTP error! status: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
+      // Add data if body is provided
+      if (body) {
+        config.data = body;
       }
       
-      // If response has content, parse it, otherwise return success status
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-         return { success: true, data: await response.json() };
-      } else {
-         return { success: true }; // For DELETE or other requests with no body response
-      }
+      console.log(`Making API request to: ${config.url}`);
+      
+      // Make the request
+      const response = await api(config);
+      
+      // Return success with data
+      return { success: true, data: response.data };
     } catch (err) {
       console.error('API Request Error:', err);
-      return { success: false, message: err.message };
+      
+      // Handle axios error
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        const errorMessage = err.response.data?.message || `HTTP error! status: ${err.response.status}`;
+        return { success: false, message: errorMessage, status: err.response.status };
+      } else if (err.request) {
+        // The request was made but no response was received
+        return { success: false, message: 'No response received from server' };
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        return { success: false, message: err.message };
+      }
     }
   };
 
@@ -479,6 +529,26 @@ export const ProjectProvider = ({ children }) => {
 }, [projects, tasks, timeEntries]);
 
 
+  /**
+   * Note on State Management:
+   * 
+   * The React Context API is currently sufficient for managing multiple active timers in this application.
+   * Reasons:
+   * 1. The state updates are predictable and follow a clear pattern
+   * 2. The number of active timers is typically small (< 10)
+   * 3. Timer updates are infrequent and don't cause performance issues
+   * 4. The component tree is not deeply nested, so prop drilling is not a significant issue
+   * 
+   * If the application grows to include:
+   * - Many more concurrent timers (dozens or hundreds)
+   * - More complex state interactions
+   * - Performance issues with Context re-renders
+   * 
+   * Then consider migrating to a more robust state management solution like:
+   * - Zustand (lightweight, hooks-based)
+   * - Redux Toolkit (more structured, better for complex state)
+   * - Jotai/Recoil (atomic state management)
+   */
   return (
     <ProjectContext.Provider value={{
       projects,
