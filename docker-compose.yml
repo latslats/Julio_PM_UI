@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   taskflow-frontend:
     build:
@@ -21,6 +19,7 @@ services:
       POSTGRES_DB: taskflow_db
       POSTGRES_USER: taskflow_user
       POSTGRES_PASSWORD: taskflow_password # Use a more secure password in production
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
