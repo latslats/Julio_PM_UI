@@ -74,6 +74,40 @@ const initializeDatabase = async () => {
     `);
     console.log('Checked/created time_entries table.');
 
+    // Waiting Items Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS waiting_items (
+        id VARCHAR(255) PRIMARY KEY,
+        "projectId" VARCHAR(255) NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        "requestType" VARCHAR(100) NOT NULL,
+        priority VARCHAR(50) DEFAULT 'medium',
+        "requestedFrom" VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        "sentDate" TIMESTAMPTZ NOT NULL,
+        "deadlineDate" TIMESTAMPTZ,
+        "receivedDate" TIMESTAMPTZ,
+        notes TEXT,
+        link VARCHAR(255),
+        "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Checked/created waiting_items table.');
+
+    // Waiting Timeline Events Table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS waiting_timeline_events (
+        id VARCHAR(255) PRIMARY KEY,
+        "waitingItemId" VARCHAR(255) NOT NULL REFERENCES waiting_items(id) ON DELETE CASCADE,
+        "eventType" VARCHAR(100) NOT NULL,
+        description TEXT,
+        "eventDate" TIMESTAMPTZ NOT NULL,
+        "createdBy" VARCHAR(255),
+        "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Checked/created waiting_timeline_events table.');
+    
     // Add columns if they don't exist (for existing databases)
     // Normally, you'd use migration tools for this in production
     try {

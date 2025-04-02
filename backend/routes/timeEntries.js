@@ -3,12 +3,51 @@ const router = express.Router();
 const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto');
 
-// Re-use the helper function for consistent error handling
+// Enhanced helper function for consistent error handling with specific error messages
 const handleDatabaseError = (err, res, next) => {
   console.error('Database Error:', err.stack);
+  
+  // Only show detailed errors in non-production environments
   if (process.env.NODE_ENV === 'production') {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
+  
+  // Provide more specific error messages based on error type
+  if (err.code) {
+    switch(err.code) {
+      case '23503': // Foreign key violation
+        return res.status(400).json({ 
+          message: 'Referenced record does not exist', 
+          detail: err.detail || 'A record you referenced does not exist',
+          code: err.code 
+        });
+      case '23505': // Unique violation
+        return res.status(409).json({ 
+          message: 'Duplicate record', 
+          detail: err.detail || 'A record with this key already exists',
+          code: err.code 
+        });
+      case '22P02': // Invalid text representation (often invalid UUID)
+        return res.status(400).json({ 
+          message: 'Invalid input format', 
+          detail: err.detail || 'The format of your input is invalid',
+          code: err.code 
+        });
+      case '42P01': // Undefined table
+        return res.status(500).json({ 
+          message: 'Database schema error', 
+          detail: 'A required table does not exist',
+          code: err.code 
+        });
+      default:
+        return res.status(500).json({ 
+          message: 'Database error', 
+          detail: err.message,
+          code: err.code 
+        });
+    }
+  }
+  
   return next(err);
 };
 
@@ -62,12 +101,14 @@ const calculateCurrentActiveDuration = async (client, entryId) => {
 
 // GET /api/time-entries - Get all time entries with flexible filtering options
 router.get('/', async (req, res, next) => {
-  const { taskId, projectId, active } = req.query;
+  const { taskId, projectId, active, limit } = req.query;
   
   // Enhanced query to include task and project information
   let sql = `SELECT te.*, 
              t.title as "taskTitle", 
              t."projectId", 
+             t.status as "taskStatus",
+             t.priority as "taskPriority",
              p.name as "projectName", 
              p.color as "projectColor"
              FROM time_entries te 
@@ -102,14 +143,74 @@ router.get('/', async (req, res, next) => {
 
   // Order by most recent first, but put active timers at the top
   sql += ' ORDER BY te."endTime" IS NULL DESC, te."startTime" DESC';
+  
+  // Add limit if provided
+  if (limit && !isNaN(parseInt(limit))) {
+    sql += ` LIMIT $${paramIndex++}`;
+    params.push(parseInt(limit));
+  }
 
   try {
     const result = await pool.query(sql, params);
-    res.json(result.rows);
+    
+    // For active timers, calculate and add real-time information
+    const now = new Date();
+    const enhancedRows = result.rows.map(entry => {
+      // If this is an active timer (endTime is null), add real-time calculations
+      if (entry.endTime === null) {
+        const startTime = new Date(entry.startTime);
+        const totalElapsedSeconds = (now.getTime() - startTime.getTime()) / 1000;
+        let currentTotalPaused = parseFloat(entry.totalPausedDuration) || 0;
+        let currentElapsed = 0;
+        
+        // Calculate current elapsed time based on pause state
+        if (!entry.isPaused && entry.lastResumedAt) {
+          const lastResume = new Date(entry.lastResumedAt);
+          currentElapsed = totalElapsedSeconds - currentTotalPaused;
+        } else {
+          // If paused, elapsed time is total time minus paused time
+          currentElapsed = totalElapsedSeconds - currentTotalPaused;
+        }
+        
+        return {
+          ...entry,
+          currentElapsedSeconds: Math.max(0, currentElapsed),
+          isActive: true,
+          formattedElapsed: formatTimeFromSeconds(Math.max(0, currentElapsed))
+        };
+      }
+      
+      // For completed timers, just add formatted duration
+      return {
+        ...entry,
+        isActive: false,
+        formattedDuration: entry.duration ? formatTimeFromSeconds(entry.duration) : '00:00:00'
+      };
+    });
+    
+    res.json(enhancedRows);
   } catch (err) {
     handleDatabaseError(err, res, next);
   }
 });
+
+/**
+ * Helper function to format seconds into HH:MM:SS
+ * 
+ * @param {number} seconds - Number of seconds to format
+ * @returns {string} Formatted time string
+ */
+const formatTimeFromSeconds = (seconds) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  return [
+    h.toString().padStart(2, '0'),
+    m.toString().padStart(2, '0'),
+    s.toString().padStart(2, '0')
+  ].join(':');
+};
 
 // GET /api/time-entries/:id - Get a single time entry
 router.get('/:id', async (req, res, next) => {
@@ -132,7 +233,15 @@ router.post('/start', async (req, res, next) => {
     return res.status(400).json({ message: "Task ID is required" });
   }
 
-  // TODO: Validate if taskId exists in the tasks table
+  // Explicitly validate if taskId exists in the tasks table
+  try {
+    const taskCheckResult = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
+    if (taskCheckResult.rows.length === 0) {
+      return res.status(400).json({ message: `Task with ID ${taskId} does not exist.` });
+    }
+  } catch (err) {
+    return handleDatabaseError(err, res, next);
+  }
 
   const id = crypto.randomUUID();
   const startTime = new Date(); // Use Date object for TIMESTAMPTZ

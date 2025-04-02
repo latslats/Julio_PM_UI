@@ -14,9 +14,13 @@ const ProjectDetail = () => {
   const [project, setProject] = useState(null)
   const [projectTasks, setProjectTasks] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [editableProject, setEditableProject] = useState(null)
+  const [editFormLoading, setEditFormLoading] = useState(false)
+  const [editFormErrors, setEditFormErrors] = useState({})
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -25,6 +29,8 @@ const ProjectDetail = () => {
     dueDate: '',
     estimatedHours: 0
   })
+  const [taskFormLoading, setTaskFormLoading] = useState(false)
+  const [taskFormErrors, setTaskFormErrors] = useState({})
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -68,9 +74,20 @@ const ProjectDetail = () => {
   }, [id, projects, tasks, loading])
   
   const handleDeleteProject = async () => {
-    const result = await deleteProject(id)
-    if (result.success) {
-      navigate('/projects')
+    setDeleteLoading(true);
+    setDeleteError(null);
+    
+    try {
+      const result = await deleteProject(id);
+      if (result.success) {
+        navigate('/projects');
+      } else {
+        setDeleteError(result.message || 'Failed to delete project');
+      }
+    } catch (err) {
+      setDeleteError(err.message || 'An unexpected error occurred');
+    } finally {
+      setDeleteLoading(false);
     }
   }
   
@@ -82,14 +99,49 @@ const ProjectDetail = () => {
   const handleUpdateProject = async (e) => {
     e.preventDefault()
     if (!editableProject) return
-
-    const result = await updateProject(id, editableProject)
-    if (result.success) {
-      setProject(result.data) // Use data returned from context API call
-      setShowEditProjectModal(false)
-    } else {
-      // Handle error (e.g., show a notification)
-      console.error('Failed to update project:', result.message)
+    
+    // Reset previous errors
+    setEditFormErrors({});
+    
+    // Validate form
+    const errors = {};
+    if (!editableProject.name.trim()) {
+      errors.name = 'Project name is required';
+    } else if (editableProject.name.length > 100) {
+      errors.name = 'Project name must be less than 100 characters';
+    }
+    
+    // Validate dates if provided
+    if (editableProject.startDate && editableProject.dueDate) {
+      const start = new Date(editableProject.startDate);
+      const due = new Date(editableProject.dueDate);
+      if (due < start) {
+        errors.dueDate = 'Due date cannot be before start date';
+      }
+    }
+    
+    // If there are validation errors, show them and stop submission
+    if (Object.keys(errors).length > 0) {
+      setEditFormErrors(errors);
+      return;
+    }
+    
+    // Submit form if validation passes
+    setEditFormLoading(true);
+    try {
+      const result = await updateProject(id, editableProject);
+      if (result.success) {
+        setProject(result.data); // Use data returned from context API call
+        setShowEditProjectModal(false);
+        setEditFormErrors({});
+      } else {
+        // Handle API error
+        setEditFormErrors({ api: result.message || 'Failed to update project' });
+      }
+    } catch (err) {
+      setEditFormErrors({ api: err.message || 'An unexpected error occurred' });
+    } finally {
+      setEditFormLoading(false);
     }
   }
 
@@ -313,20 +365,67 @@ const ProjectDetail = () => {
             <div className="p-4">
               <form onSubmit={async (e) => {
                 e.preventDefault()
-                const result = await createTask({
-                  ...newTask,
-                  projectId: id
-                })
-                if (result.success) {
-                  setShowAddTaskModal(false)
-                  setNewTask({
-                    title: '',
-                    description: '',
-                    status: 'not-started',
-                    priority: 'medium',
-                    dueDate: '',
-                    estimatedHours: 0
-                  })
+                
+                // Reset previous errors
+                setTaskFormErrors({});
+                
+                // Validate form
+                const errors = {};
+                if (!newTask.title.trim()) {
+                  errors.title = 'Task title is required';
+                } else if (newTask.title.length > 100) {
+                  errors.title = 'Task title must be less than 100 characters';
+                }
+                
+                // Validate estimated hours
+                if (newTask.estimatedHours < 0) {
+                  errors.estimatedHours = 'Estimated hours cannot be negative';
+                } else if (newTask.estimatedHours > 1000) {
+                  errors.estimatedHours = 'Estimated hours must be less than 1000';
+                }
+                
+                // Validate due date if provided
+                if (newTask.dueDate && project.dueDate) {
+                  const taskDue = new Date(newTask.dueDate);
+                  const projectDue = new Date(project.dueDate);
+                  if (taskDue > projectDue) {
+                    errors.dueDate = 'Task due date cannot be after project due date';
+                  }
+                }
+                
+                // If there are validation errors, show them and stop submission
+                if (Object.keys(errors).length > 0) {
+                  setTaskFormErrors(errors);
+                  return;
+                }
+                
+                // Submit form if validation passes
+                setTaskFormLoading(true);
+                try {
+                  const result = await createTask({
+                    ...newTask,
+                    projectId: id
+                  });
+                  
+                  if (result.success) {
+                    setShowAddTaskModal(false);
+                    setNewTask({
+                      title: '',
+                      description: '',
+                      status: 'not-started',
+                      priority: 'medium',
+                      dueDate: '',
+                      estimatedHours: 0
+                    });
+                    setTaskFormErrors({});
+                  } else {
+                    // Handle API error
+                    setTaskFormErrors({ api: result.message || 'Failed to create task' });
+                  }
+                } catch (err) {
+                  setTaskFormErrors({ api: err.message || 'An unexpected error occurred' });
+                } finally {
+                  setTaskFormLoading(false);
                 }
               }}>
                 <div className="space-y-4">
@@ -338,10 +437,22 @@ const ProjectDetail = () => {
                       type="text"
                       id="title"
                       value={newTask.title}
-                      onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                      className="input w-full"
+                      onChange={(e) => {
+                        setNewTask({...newTask, title: e.target.value});
+                        // Clear error when user starts typing
+                        if (taskFormErrors.title) {
+                          setTaskFormErrors({...taskFormErrors, title: null});
+                        }
+                      }}
+                      className={`input w-full ${taskFormErrors.title ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                       required
+                      disabled={taskFormLoading}
+                      placeholder="Enter task title"
+                      maxLength={100}
                     />
+                    {taskFormErrors.title && (
+                      <p className="mt-1 text-sm text-red-600">{taskFormErrors.title}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -353,7 +464,13 @@ const ProjectDetail = () => {
                       value={newTask.description}
                       onChange={(e) => setNewTask({...newTask, description: e.target.value})}
                       className="input w-full h-24"
+                      disabled={taskFormLoading}
+                      placeholder="Describe the task (optional)"
+                      maxLength={500}
                     />
+                    <p className="mt-1 text-xs text-secondary-500 text-right">
+                      {newTask.description.length}/500
+                    </p>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -399,9 +516,21 @@ const ProjectDetail = () => {
                         type="date"
                         id="dueDate"
                         value={newTask.dueDate}
-                        onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
-                        className="input w-full"
+                        onChange={(e) => {
+                          setNewTask({...newTask, dueDate: e.target.value});
+                          // Clear error when user changes date
+                          if (taskFormErrors.dueDate) {
+                            setTaskFormErrors({...taskFormErrors, dueDate: null});
+                          }
+                        }}
+                        className={`input w-full ${taskFormErrors.dueDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        disabled={taskFormLoading}
+                        min={project.startDate || new Date().toISOString().split('T')[0]}
+                        max={project.dueDate || ''}
                       />
+                      {taskFormErrors.dueDate && (
+                        <p className="mt-1 text-sm text-red-600">{taskFormErrors.dueDate}</p>
+                      )}
                     </div>
                     
                     <div>
@@ -414,26 +543,59 @@ const ProjectDetail = () => {
                         min="0"
                         step="0.5"
                         value={newTask.estimatedHours}
-                        onChange={(e) => setNewTask({...newTask, estimatedHours: parseFloat(e.target.value) || 0})}
-                        className="input w-full"
+                        onChange={(e) => {
+                          setNewTask({...newTask, estimatedHours: parseFloat(e.target.value) || 0});
+                          // Clear error when user changes hours
+                          if (taskFormErrors.estimatedHours) {
+                            setTaskFormErrors({...taskFormErrors, estimatedHours: null});
+                          }
+                        }}
+                        className={`input w-full ${taskFormErrors.estimatedHours ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        disabled={taskFormLoading}
+                        max="1000"
                       />
+                      {taskFormErrors.estimatedHours && (
+                        <p className="mt-1 text-sm text-red-600">{taskFormErrors.estimatedHours}</p>
+                      )}
                     </div>
                   </div>
                 </div>
                 
+                {/* Display API error if any */}
+                {taskFormErrors.api && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <p>{taskFormErrors.api}</p>
+                  </div>
+                )}
+                
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowAddTaskModal(false)}
+                    onClick={() => {
+                      setShowAddTaskModal(false);
+                      setTaskFormErrors({});
+                    }}
                     className="btn btn-secondary"
+                    disabled={taskFormLoading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary flex items-center justify-center min-w-[120px]"
+                    disabled={taskFormLoading}
                   >
-                    Add Task
+                    {taskFormLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Adding...
+                      </>
+                    ) : (
+                      'Add Task'
+                    )}
                   </button>
                 </div>
               </form>
@@ -467,10 +629,22 @@ const ProjectDetail = () => {
                       type="text"
                       id="edit-name"
                       value={editableProject.name}
-                      onChange={(e) => setEditableProject({...editableProject, name: e.target.value})}
-                      className="input w-full"
+                      onChange={(e) => {
+                        setEditableProject({...editableProject, name: e.target.value});
+                        // Clear error when user starts typing
+                        if (editFormErrors.name) {
+                          setEditFormErrors({...editFormErrors, name: null});
+                        }
+                      }}
+                      className={`input w-full ${editFormErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                       required
+                      disabled={editFormLoading}
+                      placeholder="Enter project name"
+                      maxLength={100}
                     />
+                    {editFormErrors.name && (
+                      <p className="mt-1 text-sm text-red-600">{editFormErrors.name}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -479,10 +653,16 @@ const ProjectDetail = () => {
                     </label>
                     <textarea
                       id="edit-description"
-                      value={editableProject.description}
+                      value={editableProject.description || ''}
                       onChange={(e) => setEditableProject({...editableProject, description: e.target.value})}
                       className="input w-full h-24"
+                      disabled={editFormLoading}
+                      placeholder="Describe the project (optional)"
+                      maxLength={500}
                     />
+                    <p className="mt-1 text-xs text-secondary-500 text-right">
+                      {(editableProject.description || '').length}/500
+                    </p>
                   </div>
                   
                   <div>
@@ -492,9 +672,12 @@ const ProjectDetail = () => {
                     <input
                       type="text"
                       id="edit-client"
-                      value={editableProject.client}
+                      value={editableProject.client || ''}
                       onChange={(e) => setEditableProject({...editableProject, client: e.target.value})}
                       className="input w-full"
+                      disabled={editFormLoading}
+                      placeholder="Client name (optional)"
+                      maxLength={100}
                     />
                   </div>
                   
@@ -505,9 +688,10 @@ const ProjectDetail = () => {
                     <input
                       type="color"
                       id="edit-color"
-                      value={editableProject.color}
+                      value={editableProject.color || '#0ea5e9'}
                       onChange={(e) => setEditableProject({...editableProject, color: e.target.value})}
                       className="h-10 w-full rounded-md border border-secondary-200 p-1"
+                      disabled={editFormLoading}
                     />
                   </div>
                   
@@ -517,9 +701,10 @@ const ProjectDetail = () => {
                     </label>
                     <select
                       id="edit-status"
-                      value={editableProject.status}
+                      value={editableProject.status || 'not-started'}
                       onChange={(e) => setEditableProject({...editableProject, status: e.target.value})}
                       className="input w-full"
+                      disabled={editFormLoading}
                     >
                       <option value="not-started">Not Started</option>
                       <option value="in-progress">In Progress</option>
@@ -535,9 +720,16 @@ const ProjectDetail = () => {
                       <input
                         type="date"
                         id="edit-startDate"
-                        value={editableProject.startDate}
-                        onChange={(e) => setEditableProject({...editableProject, startDate: e.target.value})}
+                        value={editableProject.startDate || ''}
+                        onChange={(e) => {
+                          setEditableProject({...editableProject, startDate: e.target.value});
+                          // Clear date errors when user changes dates
+                          if (editFormErrors.dueDate) {
+                            setEditFormErrors({...editFormErrors, dueDate: null});
+                          }
+                        }}
                         className="input w-full"
+                        disabled={editFormLoading}
                       />
                     </div>
                     
@@ -548,27 +740,60 @@ const ProjectDetail = () => {
                       <input
                         type="date"
                         id="edit-dueDate"
-                        value={editableProject.dueDate}
-                        onChange={(e) => setEditableProject({...editableProject, dueDate: e.target.value})}
-                        className="input w-full"
+                        value={editableProject.dueDate || ''}
+                        onChange={(e) => {
+                          setEditableProject({...editableProject, dueDate: e.target.value});
+                          // Clear date errors when user changes dates
+                          if (editFormErrors.dueDate) {
+                            setEditFormErrors({...editFormErrors, dueDate: null});
+                          }
+                        }}
+                        className={`input w-full ${editFormErrors.dueDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        disabled={editFormLoading}
+                        min={editableProject.startDate || ''}
                       />
+                      {editFormErrors.dueDate && (
+                        <p className="mt-1 text-sm text-red-600">{editFormErrors.dueDate}</p>
+                      )}
                     </div>
                   </div>
                 </div>
                 
+                {/* Display API error if any */}
+                {editFormErrors.api && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <p>{editFormErrors.api}</p>
+                  </div>
+                )}
+                
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowEditProjectModal(false)}
+                    onClick={() => {
+                      setShowEditProjectModal(false);
+                      setEditFormErrors({});
+                    }}
                     className="btn btn-secondary"
+                    disabled={editFormLoading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary flex items-center justify-center min-w-[120px]"
+                    disabled={editFormLoading}
                   >
-                    Save Changes
+                    {editFormLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Updating...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </button>
                 </div>
               </form>
@@ -585,18 +810,40 @@ const ProjectDetail = () => {
             <p className="text-secondary-600 mb-4">
               Are you sure you want to delete this project? This action cannot be undone and all associated tasks and time entries will be deleted.
             </p>
+            
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <p>{deleteError}</p>
+              </div>
+            )}
+            
             <div className="flex space-x-3 justify-end">
               <button 
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteError(null);
+                }}
                 className="btn btn-secondary"
+                disabled={deleteLoading}
               >
                 Cancel
               </button>
               <button 
                 onClick={handleDeleteProject}
-                className="btn bg-red-500 text-white hover:bg-red-600"
+                className="btn bg-red-500 text-white hover:bg-red-600 flex items-center justify-center min-w-[100px]"
+                disabled={deleteLoading}
               >
-                Delete
+                {deleteLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
               </button>
             </div>
           </div>

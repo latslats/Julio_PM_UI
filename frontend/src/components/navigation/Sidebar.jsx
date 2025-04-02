@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { FiHome, FiFolder, FiClock, FiBarChart2, FiSettings, FiX } from 'react-icons/fi'
+import { FiHome, FiFolder, FiClock, FiBarChart2, FiSettings, FiX, FiAlertCircle } from 'react-icons/fi'
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <FiHome className="w-5 h-5" /> },
     { name: 'Projects', path: '/projects', icon: <FiFolder className="w-5 h-5" /> },
     { name: 'Time Tracking', path: '/time-tracking', icon: <FiClock className="w-5 h-5" /> },
+    { name: 'Waiting On', path: '/waiting-items', icon: <FiAlertCircle className="w-5 h-5" /> },
     { name: 'Reports', path: '/reports', icon: <FiBarChart2 className="w-5 h-5" /> },
     { name: 'Settings', path: '/settings', icon: <FiSettings className="w-5 h-5" /> },
   ]

@@ -11,6 +11,8 @@ const Projects = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedClient, setSelectedClient] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [formLoading, setFormLoading] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -145,17 +147,55 @@ const Projects = () => {
             <div className="p-4">
               <form onSubmit={async (e) => {
                 e.preventDefault()
-                const result = await createProject(newProject)
-                if (result.success) {
-                  setShowCreateModal(false)
-                  setNewProject({
-                    name: '',
-                    description: '',
-                    client: '',
-                    color: '#0ea5e9',
-                    startDate: '',
-                    dueDate: ''
-                  })
+                
+                // Reset previous errors
+                setFormErrors({});
+                
+                // Validate form
+                const errors = {};
+                if (!newProject.name.trim()) {
+                  errors.name = 'Project name is required';
+                } else if (newProject.name.length > 100) {
+                  errors.name = 'Project name must be less than 100 characters';
+                }
+                
+                // Validate dates if provided
+                if (newProject.startDate && newProject.dueDate) {
+                  const start = new Date(newProject.startDate);
+                  const due = new Date(newProject.dueDate);
+                  if (due < start) {
+                    errors.dueDate = 'Due date cannot be before start date';
+                  }
+                }
+                
+                // If there are validation errors, show them and stop submission
+                if (Object.keys(errors).length > 0) {
+                  setFormErrors(errors);
+                  return;
+                }
+                
+                // Submit form if validation passes
+                setFormLoading(true);
+                try {
+                  const result = await createProject(newProject);
+                  if (result.success) {
+                    setShowCreateModal(false);
+                    setNewProject({
+                      name: '',
+                      description: '',
+                      client: '',
+                      color: '#0ea5e9',
+                      startDate: '',
+                      dueDate: ''
+                    });
+                  } else {
+                    // Handle API error
+                    setFormErrors({ api: result.message || 'Failed to create project' });
+                  }
+                } catch (err) {
+                  setFormErrors({ api: err.message || 'An unexpected error occurred' });
+                } finally {
+                  setFormLoading(false);
                 }
               }}>
                 <div className="space-y-4">
@@ -167,10 +207,22 @@ const Projects = () => {
                       type="text"
                       id="name"
                       value={newProject.name}
-                      onChange={(e) => setNewProject({...newProject, name: e.target.value})}
-                      className="input w-full"
+                      onChange={(e) => {
+                        setNewProject({...newProject, name: e.target.value});
+                        // Clear error when user starts typing
+                        if (formErrors.name) {
+                          setFormErrors({...formErrors, name: null});
+                        }
+                      }}
+                      className={`input w-full ${formErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
                       required
+                      disabled={formLoading}
+                      placeholder="Enter project name"
+                      maxLength={100}
                     />
+                    {formErrors.name && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -182,7 +234,13 @@ const Projects = () => {
                       value={newProject.description}
                       onChange={(e) => setNewProject({...newProject, description: e.target.value})}
                       className="input w-full h-24"
+                      disabled={formLoading}
+                      placeholder="Describe the project (optional)"
+                      maxLength={500}
                     />
+                    <p className="mt-1 text-xs text-secondary-500 text-right">
+                      {newProject.description.length}/500
+                    </p>
                   </div>
                   
                   <div>
@@ -220,8 +278,16 @@ const Projects = () => {
                         type="date"
                         id="startDate"
                         value={newProject.startDate}
-                        onChange={(e) => setNewProject({...newProject, startDate: e.target.value})}
+                        onChange={(e) => {
+                          setNewProject({...newProject, startDate: e.target.value});
+                          // Clear date errors when user changes dates
+                          if (formErrors.dueDate) {
+                            setFormErrors({...formErrors, dueDate: null});
+                          }
+                        }}
                         className="input w-full"
+                        disabled={formLoading}
+                        min={new Date().toISOString().split('T')[0]} // Today as min date
                       />
                     </div>
                     
@@ -233,26 +299,59 @@ const Projects = () => {
                         type="date"
                         id="dueDate"
                         value={newProject.dueDate}
-                        onChange={(e) => setNewProject({...newProject, dueDate: e.target.value})}
-                        className="input w-full"
+                        onChange={(e) => {
+                          setNewProject({...newProject, dueDate: e.target.value});
+                          // Clear date errors when user changes dates
+                          if (formErrors.dueDate) {
+                            setFormErrors({...formErrors, dueDate: null});
+                          }
+                        }}
+                        className={`input w-full ${formErrors.dueDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                        disabled={formLoading}
+                        min={newProject.startDate || new Date().toISOString().split('T')[0]} // Start date or today as min date
                       />
+                      {formErrors.dueDate && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.dueDate}</p>
+                      )}
                     </div>
                   </div>
                 </div>
                 
+                {/* Display API error if any */}
+                {formErrors.api && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <p>{formErrors.api}</p>
+                  </div>
+                )}
+                
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setFormErrors({});
+                    }}
                     className="btn btn-secondary"
+                    disabled={formLoading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="btn btn-primary flex items-center justify-center min-w-[120px]"
+                    disabled={formLoading}
                   >
-                    Create Project
+                    {formLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Creating...
+                      </>
+                    ) : (
+                      'Create Project'
+                    )}
                   </button>
                 </div>
               </form>

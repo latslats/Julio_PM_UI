@@ -9,9 +9,13 @@ services:
       - "80:80"
     restart: unless-stopped
     container_name: taskflow-frontend
+    depends_on:
+      - taskflow-backend
+    networks:
+      - taskflow-network
 
   postgres:
-    image: postgres:16-alpine # Use a specific version
+    image: postgres:16-alpine
     container_name: taskflow-postgres
     environment:
       POSTGRES_DB: taskflow_db
@@ -20,8 +24,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432" # Optional: Expose port for direct access if needed
+      - "5432:5432" # Expose port for direct access if needed
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow_user -d taskflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - taskflow-network
 
   taskflow-backend:
     build:
@@ -38,10 +49,18 @@ services:
     container_name: taskflow-backend
     environment:
       DATABASE_URL: postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow_db
-      NODE_ENV: development # Or production as needed
+      NODE_ENV: development
       PORT: 5001
     depends_on:
-      - postgres # Ensure postgres starts before backend
+      postgres:
+        condition: service_healthy
+    networks:
+      - taskflow-network
 
 volumes:
   postgres_data:
+    name: taskflow-postgres-data
+
+networks:
+  taskflow-network:
+    driver: bridge

@@ -494,12 +494,12 @@ const Reports = () => {
               <div className="bg-secondary-50 rounded-lg p-3 text-sm text-secondary-700">
                 <p>
                   {reportType === 'time' 
-                    ? 'Most time was spent on the Website Redesign project. Tuesday was your most productive day.'
+                    ? `Most time was spent on ${summaryItems[0]?.label || 'projects'}. You tracked ${totalHours} hours in ${dateRangeLabel.toLowerCase()}.`
                     : reportType === 'projects'
-                    ? 'You completed 2 projects this month, which is 50% more than last month.'
+                    ? `Projects are ${projectCompletionRate}% complete on average. ${projects.filter(p => tasks.filter(t => t.projectId === p.id && t.status === 'completed').length === tasks.filter(t => t.projectId === p.id).length).length} projects are fully completed.`
                     : reportType === 'tasks'
-                    ? 'You completed 8 high-priority tasks this week, a 33% improvement over last week.'
-                    : 'Your productivity peaks between 9-11 AM. Consider scheduling important tasks during this time.'}
+                    ? `You've completed ${completedTasks} out of ${totalTasks} tasks (${Math.round((completedTasks/totalTasks || 0) * 100)}%). ${tasks.filter(t => t.priority === 'high' && t.status === 'completed').length} high-priority tasks are completed.`
+                    : 'Your productivity data will be available once you track more time entries across different times of day.'}
                 </p>
               </div>
             </div>
@@ -538,30 +538,106 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-secondary-100">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <tr key={item} className="hover:bg-secondary-50">
-                  <td className="px-4 py-3 text-sm text-secondary-900">
-                    {reportType === 'time' ? 'Website Redesign - Homepage Design' : 
-                     reportType === 'projects' ? 'Website Redesign' : 
-                     reportType === 'tasks' ? 'Design homepage mockup' : 'Monday, Mar 24'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-secondary-700">
-                    {reportType === 'time' ? 'Mar 26, 2025' : 
-                     reportType === 'projects' ? 'In Progress' : 
-                     reportType === 'tasks' ? 'Completed' : '8h 15m'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-secondary-700">
-                    {reportType === 'time' ? '2h 15m' : 
-                     reportType === 'projects' ? '65%' : 
-                     reportType === 'tasks' ? 'Mar 10, 2025' : '92%'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-secondary-700">
-                    {reportType === 'time' ? 'Completed initial mockups' : 
-                     reportType === 'projects' ? '45h' : 
-                     reportType === 'tasks' ? 'High' : '12'}
-                  </td>
-                </tr>
-              ))}
+              {reportType === 'time' ? (
+                // Time tracking detailed data
+                timeEntries.slice(0, 10).map((entry) => {
+                  const task = tasks.find(t => t.id === entry.taskId) || { title: 'Unknown Task', projectId: null };
+                  const project = projects.find(p => p.id === task.projectId) || { name: 'Unknown Project' };
+                  const duration = entry.duration ? Math.round(parseFloat(entry.duration) / 36) / 100 : 0;
+                  const formattedDate = entry.startTime ? new Date(entry.startTime).toLocaleDateString() : 'N/A';
+                  
+                  return (
+                    <tr key={entry.id} className="hover:bg-secondary-50">
+                      <td className="px-4 py-3 text-sm text-secondary-900">
+                        {`${project.name} - ${task.title}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {formattedDate}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {`${duration}h`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {entry.notes || 'No notes'}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : reportType === 'projects' ? (
+                // Projects detailed data
+                projects.slice(0, 10).map((project) => {
+                  const projectTasks = tasks.filter(task => task.projectId === project.id);
+                  const completedTasks = projectTasks.filter(task => task.status === 'completed').length;
+                  const progress = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
+                  
+                  // Calculate total hours spent on this project
+                  let totalHours = 0;
+                  timeEntries.forEach(entry => {
+                    const task = tasks.find(t => t.id === entry.taskId);
+                    if (task && task.projectId === project.id && entry.duration) {
+                      totalHours += parseFloat(entry.duration) / 3600; // Convert seconds to hours
+                    }
+                  });
+                  
+                  return (
+                    <tr key={project.id} className="hover:bg-secondary-50">
+                      <td className="px-4 py-3 text-sm text-secondary-900">
+                        {project.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {progress === 100 ? 'Completed' : progress > 0 ? 'In Progress' : 'Not Started'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {`${progress}%`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {`${totalHours.toFixed(2)}h`}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : reportType === 'tasks' ? (
+                // Tasks detailed data
+                tasks.slice(0, 10).map((task) => {
+                  const project = projects.find(p => p.id === task.projectId) || { name: 'Unknown Project' };
+                  const formattedDueDate = task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date';
+                  
+                  return (
+                    <tr key={task.id} className="hover:bg-secondary-50">
+                      <td className="px-4 py-3 text-sm text-secondary-900">
+                        {task.title}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {formattedDueDate}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-secondary-700">
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                // Productivity detailed data (placeholder until implemented)
+                [1, 2, 3, 4, 5].map((item) => (
+                  <tr key={item} className="hover:bg-secondary-50">
+                    <td className="px-4 py-3 text-sm text-secondary-900">
+                      {`${new Date(new Date().setDate(new Date().getDate() - item)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-secondary-700">
+                      {`${Math.floor(Math.random() * 4 + 6)}h ${Math.floor(Math.random() * 59)}m`}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-secondary-700">
+                      {`${Math.floor(Math.random() * 30 + 70)}%`}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-secondary-700">
+                      {`${Math.floor(Math.random() * 8 + 5)}`}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

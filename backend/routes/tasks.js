@@ -3,13 +3,63 @@ const router = express.Router();
 const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto');
 
-// Re-use the helper function for consistent error handling
+// Enhanced helper function for consistent error handling with specific error messages
 const handleDatabaseError = (err, res, next) => {
   console.error('Database Error:', err.stack);
+  
+  // Only show detailed errors in non-production environments
   if (process.env.NODE_ENV === 'production') {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
+  
+  // Provide more specific error messages based on error type
+  if (err.code) {
+    switch(err.code) {
+      case '23503': // Foreign key violation
+        return res.status(400).json({ 
+          message: 'Referenced record does not exist', 
+          detail: err.detail || 'A record you referenced does not exist',
+          code: err.code 
+        });
+      case '23505': // Unique violation
+        return res.status(409).json({ 
+          message: 'Duplicate record', 
+          detail: err.detail || 'A record with this key already exists',
+          code: err.code 
+        });
+      case '22P02': // Invalid text representation (often invalid UUID)
+        return res.status(400).json({ 
+          message: 'Invalid input format', 
+          detail: err.detail || 'The format of your input is invalid',
+          code: err.code 
+        });
+      case '42P01': // Undefined table
+        return res.status(500).json({ 
+          message: 'Database schema error', 
+          detail: 'A required table does not exist',
+          code: err.code 
+        });
+      default:
+        return res.status(500).json({ 
+          message: 'Database error', 
+          detail: err.message,
+          code: err.code 
+        });
+    }
+  }
+  
   return next(err);
+};
+
+/**
+ * Helper function to check if a project exists
+ * 
+ * @param {string} projectId - The ID of the project to check
+ * @returns {Promise<boolean>} - True if project exists, false otherwise
+ */
+const checkProjectExists = async (projectId) => {
+  const result = await pool.query('SELECT id FROM projects WHERE id = $1', [projectId]);
+  return result.rows.length > 0;
 };
 
 // GET /api/tasks - Get all tasks (optionally filter by projectId)
@@ -59,9 +109,18 @@ router.post('/', async (req, res, next) => {
   if (!title) {
     errors.push("Task title is required");
   }
-  // TODO: Validate if projectId exists in the projects table before insertion
   if (errors.length) {
     return res.status(400).json({ errors });
+  }
+
+  // Validate if projectId exists in the projects table before insertion
+  try {
+    const projectExists = await checkProjectExists(projectId);
+    if (!projectExists) {
+      return res.status(400).json({ message: `Project with ID ${projectId} does not exist.` });
+    }
+  } catch (err) {
+    return handleDatabaseError(err, res, next);
   }
 
   const id = crypto.randomUUID();
@@ -83,7 +142,7 @@ router.post('/', async (req, res, next) => {
     const result = await pool.query(sql, params);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    // Handle potential foreign key violation if projectId doesn't exist
+    // Still handle foreign key violation as a fallback
     if (err.code === '23503') { // Foreign key violation error code in PostgreSQL
         return res.status(400).json({ message: `Project with ID ${projectId} does not exist.` });
     }
@@ -103,7 +162,28 @@ router.put('/:id', async (req, res, next) => {
   if (req.body.hasOwnProperty('projectId') && !projectId) {
       return res.status(400).json({ message: "Project ID cannot be empty" });
   }
-  // TODO: Add validation: check if projectId exists if provided and changed
+  
+  // Check if the task exists first
+  try {
+    const taskResult = await pool.query('SELECT id FROM tasks WHERE id = $1', [id]);
+    if (taskResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+  } catch (err) {
+    return handleDatabaseError(err, res, next);
+  }
+
+  // Validate projectId exists if it's being updated
+  if (req.body.hasOwnProperty('projectId')) {
+    try {
+      const projectExists = await checkProjectExists(projectId);
+      if (!projectExists) {
+        return res.status(400).json({ message: `Project with ID ${projectId} does not exist.` });
+      }
+    } catch (err) {
+      return handleDatabaseError(err, res, next);
+    }
+  }
 
   // Construct the update query dynamically
   const fields = [];
@@ -134,7 +214,7 @@ router.put('/:id', async (req, res, next) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    // Handle potential foreign key violation if projectId is updated to a non-existent one
+    // Handle potential foreign key violation as a fallback
     if (err.code === '23503') {
         return res.status(400).json({ message: `Project with ID ${projectId} does not exist.` });
     }
