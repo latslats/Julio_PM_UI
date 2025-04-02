@@ -60,6 +60,11 @@ services:
 volumes:
   postgres_data:
     name: taskflow-postgres-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ~/Desktop/Dockers/taskflow_data/
 
 networks:
   taskflow-network:
