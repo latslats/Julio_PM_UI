@@ -1,5 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { FiHome, FiFolder, FiBarChart2, FiSettings, FiX, FiAlertCircle } from 'react-icons/fi'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navItems = [
@@ -33,12 +36,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary-500 to-accent-500"></div>
               <span className="ml-2 text-xl font-semibold text-secondary-900">TaskFlow</span>
             </div>
-            <button 
+            {/* Refactored Close Button */}
+            <Button 
               onClick={toggleSidebar}
-              className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 focus:outline-none lg:hidden"
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              aria-label="Close sidebar"
             >
               <FiX className="h-5 w-5" />
-            </button>
+            </Button>
           </div>
           
           {/* Navigation */}
@@ -61,17 +68,21 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             ))}
           </nav>
           
-          {/* Sidebar footer */}
-          <div className="p-4 border-t border-secondary-100">
-            <div className="bg-secondary-50 rounded-xl p-3">
-              <h3 className="text-sm font-medium text-secondary-900">Need help?</h3>
-              <p className="mt-1 text-xs text-secondary-600">
-                Check our documentation or contact support for assistance.
-              </p>
-              <button className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 focus:outline-none">
-                View Documentation
-              </button>
-            </div>
+          {/* Sidebar footer - Refactored with Card */}
+          <div className="mt-auto p-4 border-t border-secondary-100">
+            <Card className="bg-secondary-50/70 border-secondary-100 shadow-none">
+              <CardHeader className="p-3">
+                <CardTitle className="text-sm font-medium">Need help?</CardTitle>
+                <CardDescription className="text-xs">
+                  Check our documentation or contact support.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="p-3 pt-0">
+                <Button size="sm" className="w-full text-xs">
+                  View Documentation
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
         </div>
       </aside>

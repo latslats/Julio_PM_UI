@@ -12,38 +12,55 @@
 - [x] Configure `Inter` font in Tailwind config - 2025-04-02
 - [x] Add `shadcn/ui` Button component - 2025-04-02
 - [x] Refactor `Button` usage in `Projects.jsx` (New Project button, +2 others) - 2025-04-03
-- [ ] Refactor other prominent `Button` instances (e.g., forms, modals)
-- [ ] Add `shadcn/ui` Input component
-- [ ] Refactor `Input` usage (e.g., search bars, forms)
-- [ ] Add `shadcn/ui` Checkbox component
-- [ ] Refactor `Checkbox` usage
-- [ ] Add `shadcn/ui` Switch component
-- [ ] Refactor `Switch` usage (e.g., Settings page)
-- [ ] Add `shadcn/ui` Card component
-- [ ] Refactor `Card` usage (e.g., `ProjectCard`, `Dashboard` cards)
+- [x] Refactor other prominent `Button` instances (e.g., forms, modals) - 2025-04-03 (Includes TaskItem, SettingsPage, TimeTrackingWidget, ProjectDetail, WaitingItemForm, Header)
+- [x] Add `shadcn/ui` Input component - 2025-04-03
+- [x] Refactor `Input` usage (e.g., search bars, forms) - 2025-04-03 (Includes Projects, ProjectDetail, WaitingItems, SettingsPage, WaitingItemForm, Header, TaskItem)
+- [x] Add `shadcn/ui` Checkbox component - 2025-04-03
+- [x] Refactor `Checkbox` usage - 2025-04-03 (TaskItem)
+- [x] Add `shadcn/ui` Switch component - 2025-04-03
+- [x] Refactor `Switch` usage (e.g., Settings page) - 2025-04-03
+- [x] Add `shadcn/ui` Card component - 2025-04-03
+- [x] Refactor `Card` usage (e.g., `ProjectCard`, `Dashboard` cards) - 2025-04-03
+- [x] Add `shadcn/ui` Textarea component - 2025-04-03 (Implied by Input refactoring)
+- [x] Refactor `Textarea` usage - 2025-04-03 (Projects, ProjectDetail, WaitingItemForm, TaskItem)
+- [x] Add `shadcn/ui` Select component - 2025-04-03 (Implied by Input refactoring)
+- [x] Refactor `Select` usage - 2025-04-03 (Projects, ProjectDetail, WaitingItems, WaitingItemForm, TaskItem)
+- [x] Add `shadcn/ui` AlertDialog component - 2025-04-03 (ProjectDetail delete)
+- [x] Add `shadcn/ui` Calendar/Popover components - 2025-04-03 (WaitingItemForm, TaskItem)
+- [x] Add `shadcn/ui` DropdownMenu component - 2025-04-03 (TaskItem)
+- [x] Add `shadcn/ui` Label component - 2025-04-03 (Used across forms)
 
 **Phase 2: Page Layouts & Containers**
-- [ ] Refactor `Dashboard.jsx` layout using new components & principles
-- [ ] Refactor `Projects.jsx` layout
-- [ ] Refactor `ProjectDetail.jsx` layout
-- [ ] Refactor `SettingsPage.jsx` layout
-- [ ] Add `shadcn/ui` Dialog component
-- [ ] Refactor existing modals to use `Dialog`
-- [ ] Add `shadcn/ui` Toast component
-- [ ] Implement `Toast` for notifications (replace existing `Notification.jsx`?)
+- [x] Refactor `Dashboard.jsx` layout using new components & principles - 2025-04-03
+- [x] Refactor `Projects.jsx` layout - 2025-04-03
+- [x] Refactor `ProjectDetail.jsx` layout - 2025-04-03
+- [x] Refactor `SettingsPage.jsx` layout - 2025-04-03
+- [x] Add `shadcn/ui` Dialog component - 2025-04-03 (Added during Projects.jsx refactor)
+- [x] Refactor existing modals to use `Dialog` - 2025-04-03 (Projects.jsx modal done, ProjectDetail modals done)
+- [x] Add `shadcn/ui` Toast component - 2025-04-03
+- [x] Implement `Toast` for notifications (SettingsPage, ProjectDetail) - 2025-04-03
 
 **Phase 3: Complex Components & Navigation**
-- [ ] Refactor `TimeTrackingWidget.jsx`
-- [ ] Refactor Tables (if any) using `shadcn/ui Table` (add component first)
-- [ ] Refactor Sidebar navigation (`Sidebar.jsx`)
-- [ ] Refactor Header (`Header.jsx`)
-- [ ] Evaluate/Implement iOS-style Segmented Control (custom or adapt `RadioGroup`/`ToggleGroup`)
+- [x] Refactor `TimeTrackingWidget.jsx` - 2025-04-03
+- [ ] Refactor Tables (if any) using `shadcn/ui Table` (add component first) - Skipped (None Found)
+- [x] Refactor Sidebar navigation (`Sidebar.jsx`) - 2025-04-03
+- [x] Refactor Header (`Header.jsx`) - 2025-04-03
+- [x] Evaluate/Implement iOS-style Segmented Control (custom or adapt `RadioGroup`/`ToggleGroup`) - 2025-04-03 (Implemented using ToggleGroup on Dashboard)
 
 **Phase 4: Polish & Refinement**
 - [ ] Review UI consistency across all pages/components
 - [ ] Add subtle animations/transitions where appropriate
 - [ ] Test responsiveness thoroughly
 - [ ] Perform accessibility check
+
+## Discovered During Work (2025-04-03)
+- Refactored `AlertDialog` for delete confirmation in `ProjectDetail.jsx`.
+- Refactored date inputs using `Calendar` and `Popover` in `WaitingItemForm.jsx` and `TaskItem.jsx`.
+- Refactored dropdown menu using `DropdownMenu` in `TaskItem.jsx`.
+- Added and used `Label` component across forms.
+- Added `Textarea` and `Select` components and refactored their usage (these weren't explicitly listed in Phase 1 initially).
+- Refactored remaining buttons missed in initial pass (`TaskItem`, `SettingsPage`, `TimeTrackingWidget`, `ProjectDetail`, `WaitingItemForm`, `Header`).
+- Refactored `Card` usage in `ProjectCard.jsx` and `WaitingItemCard.jsx`. - 2025-04-03
 
 ## Completed (2025-04-02)
 - [Enhancement] Dashboard UI/UX:

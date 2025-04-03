@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useProjects } from '../../context/ProjectContext'
 import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader } from 'react-icons/fi'
-import { useNotification } from '../../context/NotificationContext'
+import { Button } from "@/components/ui/button"; 
+import { cn } from "@/lib/utils"; 
+import { useToast } from "@/hooks/use-toast"; 
+import { 
+  Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription 
+} from "@/components/ui/card"
 
 const TimeTrackingWidget = () => {
   const {
@@ -15,7 +20,7 @@ const TimeTrackingWidget = () => {
     loading,
     fetchActiveTimers
   } = useProjects()
-  const { showNotification } = useNotification()
+  const { toast } = useToast()
 
   // Find all active entries from the context state
   const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
@@ -97,15 +102,26 @@ const TimeTrackingWidget = () => {
       
       const result = await stopTimeTracking(entryId);
       if (result.success) {
-        showNotification('success', 'Timer stopped successfully');
+        toast({
+          title: "Timer Stopped",
+          description: "Tracking successfully stopped.",
+        });
         // Refresh active timers to ensure UI is up-to-date
         await fetchActiveTimers();
       } else {
-        showNotification('error', `Failed to stop timer: ${result.message || 'Unknown error'}`);
+        toast({
+          variant: "destructive",
+          title: "Error Stopping Timer",
+          description: result.message || 'Failed to stop timer.'
+        });
       }
     } catch (err) {
       console.error('Error stopping timer:', err);
-      showNotification('error', `Error stopping timer: ${err.message || 'Unknown error'}`);
+      toast({
+        variant: "destructive",
+        title: "Error Stopping Timer",
+        description: err.message || 'An unexpected error occurred.'
+      });
     } finally {
       // Clear loading state for this entry
       setActionLoadingMap(prev => {
@@ -126,16 +142,24 @@ const TimeTrackingWidget = () => {
       if (entry.isPaused) {
         result = await resumeTimeTracking(entry.id);
         if (result.success) {
-          showNotification('success', 'Timer resumed');
+          toast({ title: "Timer Resumed" });
         } else {
-          showNotification('error', `Failed to resume timer: ${result.message || 'Unknown error'}`);
+          toast({
+            variant: "destructive",
+            title: "Error Resuming Timer",
+            description: result.message || 'Failed to resume timer.'
+          });
         }
       } else {
         result = await pauseTimeTracking(entry.id);
         if (result.success) {
-          showNotification('success', 'Timer paused');
+          toast({ title: "Timer Paused" });
         } else {
-          showNotification('error', `Failed to pause timer: ${result.message || 'Unknown error'}`);
+          toast({
+            variant: "destructive",
+            title: "Error Pausing Timer",
+            description: result.message || 'Failed to pause timer.'
+          });
         }
       }
       
@@ -143,7 +167,11 @@ const TimeTrackingWidget = () => {
       await fetchActiveTimers();
     } catch (err) {
       console.error('Error toggling pause/resume:', err);
-      showNotification('error', `Error updating timer: ${err.message || 'Unknown error'}`);
+      toast({
+        variant: "destructive",
+        title: "Error Updating Timer",
+        description: err.message || 'An unexpected error occurred.'
+      });
     } finally {
       // Clear loading state for this entry
       setActionLoadingMap(prev => {
@@ -154,117 +182,96 @@ const TimeTrackingWidget = () => {
     }
   }
 
+  // Render a single timer card
+  const renderTimerCard = (entry, isFirstEntry) => {
+    const { task, project } = getEntryDetails(entry);
+    const isLoading = actionLoadingMap[entry.id];
+    const isPausing = isLoading === 'pauseResume';
+    const isStopping = isLoading === 'stop';
+
+    return (
+      <Card 
+        key={entry.id} 
+        className={cn(
+          "overflow-hidden",
+          isFirstEntry 
+          ? 'border-primary/30 shadow-sm' // Subtle primary border/shadow for the first
+          : 'border-secondary-200' // Standard border otherwise
+        )}
+      >
+        <CardHeader className="flex flex-row items-start space-x-4 pb-3 pt-4 px-4 bg-secondary-50/50">
+          <div className={`p-2 rounded-full bg-white flex items-center justify-center text-primary shadow-sm border border-secondary-100`}>
+            <FiClock className="h-5 w-5" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <CardTitle className="text-sm font-medium leading-none truncate">{task?.title || 'Unknown Task'}</CardTitle>
+            <CardDescription className="text-xs text-secondary-500 truncate">
+              {project?.name || 'Unknown Project'}
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pt-3 pb-3 text-center">
+          <div className="text-3xl font-semibold text-secondary-900 font-mono tracking-tight">
+            {formatTime(elapsedTimes[entry.id] || 0)}
+          </div>
+          <p className="text-xs text-secondary-500 mt-1">
+            Started at {new Date(entry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </CardContent>
+        <CardFooter className="flex justify-end space-x-2 px-4 pb-3 pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePauseResume(entry)}
+            disabled={loading || isLoading}
+            aria-label={entry.isPaused ? 'Resume Timer' : 'Pause Timer'}
+            className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
+          >
+            {isPausing ? (
+              <FiLoader className="h-4 w-4 animate-spin" />
+            ) : entry.isPaused ? (
+              <FiPlay className="h-4 w-4" />
+            ) : (
+              <FiPause className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => handleStopTracking(entry.id)}
+            disabled={loading || isLoading}
+            aria-label="Stop Timer"
+            className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
+          >
+            {isStopping ? (
+              <FiLoader className="h-4 w-4 animate-spin" />
+            ) : (
+              <FiStopCircle className="h-4 w-4" />
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       {activeTimeEntries.length > 0 ? (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-y-auto pr-1 -mr-1"> {/* Added overflow */}
           <div className="space-y-4">
             {activeTimeEntries.map((entry, index) => {
-              const { task, project } = getEntryDetails(entry);
-              const isFirstEntry = index === 0;
-              const isLoading = actionLoadingMap[entry.id];
-              
-              return (
-                <div 
-                  key={entry.id} 
-                  className={`p-4 rounded-xl ${isFirstEntry 
-                    ? 'bg-gradient-to-r from-primary-500/10 to-primary-600/10 border border-primary-200/50' 
-                    : 'bg-secondary-50 border border-secondary-100'}`}
-                >
-                  <div className="flex items-center mb-3">
-                    <div className={`w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-primary-600 shadow-sm`}>
-                      <FiClock className="h-5 w-5" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="font-medium text-secondary-900 truncate">{task?.title || 'Unknown Task'}</h3>
-                      <p className="text-xs text-secondary-500">{project?.name || 'Unknown Project'}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-center py-2">
-                    <div className="text-3xl font-bold text-secondary-900 font-mono tracking-tight">
-                      {formatTime(elapsedTimes[entry.id] || 0)}
-                    </div>
-                    <p className="text-xs text-secondary-500 mt-1">
-                      Started at {new Date(entry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-
-                  <div className="flex space-x-2 mt-3">
-                    <button
-                      onClick={() => handlePauseResume(entry)}
-                      className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center transition-all ${
-                        entry.isPaused 
-                          ? 'bg-primary-500 text-white hover:bg-primary-600' 
-                          : 'bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50'
-                      }`}
-                      disabled={loading || isLoading} 
-                    >
-                      {isLoading === 'pauseResume' ? (
-                        <>
-                          <FiLoader className="mr-1.5 h-4 w-4 animate-spin" />
-                          <span className="text-sm font-medium">{entry.isPaused ? 'Resuming...' : 'Pausing...'}</span>
-                        </>
-                      ) : entry.isPaused ? (
-                        <>
-                          <FiPlay className="mr-1.5 h-4 w-4" />
-                          <span className="text-sm font-medium">Resume</span>
-                        </>
-                      ) : (
-                        <>
-                          <FiPause className="mr-1.5 h-4 w-4" />
-                          <span className="text-sm font-medium">Pause</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => handleStopTracking(entry.id)}
-                      className="flex-none w-12 h-12 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center transition-all"
-                      disabled={loading || isLoading} 
-                      title="Stop"
-                    >
-                      {isLoading === 'stop' ? (
-                        <FiLoader className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <FiStopCircle className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
+              return renderTimerCard(entry, index === 0);
             })}
-          </div>
-          
-          {/* Show recent time entries if there's space */}
-          <div className="mt-6 flex-1">
-            <h3 className="text-sm font-medium text-secondary-900 mb-3">Recent Entries</h3>
-            <div className="text-center py-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-              <p className="text-secondary-600 text-sm">Completed time entries will appear here</p>
-            </div>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-          <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-secondary-400 shadow-sm mb-4">
-            <FiClock className="h-8 w-8" />
-          </div>
-          <h3 className="text-secondary-900 font-medium mb-1">No active tracking</h3>
-          <p className="text-secondary-600 text-sm mb-5">
-            Start tracking time on any task to see it here
-          </p>
-          {tasks.length > 0 ? (
-            <button 
-              onClick={() => startTimeTracking(tasks[0].id)} 
-              className="py-2.5 px-5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 shadow-sm transition-colors flex items-center"
-            >
-              <FiPlay className="mr-1.5 h-4 w-4" />
-              <span className="font-medium">Start Tracking</span>
-            </button>
-          ) : (
-            <p className="text-secondary-500 text-sm">No tasks available to track</p>
-          )}
-        </div>
+        <Card className="m-auto text-center border-dashed border-secondary-200 bg-secondary-50/30 shadow-none">
+          <CardContent className="pt-6">
+            <FiClock className="mx-auto h-10 w-10 text-secondary-400 mb-3" />
+            <p className="text-sm font-medium text-secondary-700">No active timers</p>
+            <p className="text-xs text-secondary-500 mt-1">Start tracking time from a project task.</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

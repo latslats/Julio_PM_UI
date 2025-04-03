@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight } from 'react-icons/fi'
 import { format } from 'date-fns'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
@@ -12,8 +15,8 @@ import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
 const Dashboard = () => {
   const { projects, tasks, timeEntries, loading, projectStats } = useProjects()
   const [recentProjects, setRecentProjects] = useState([])
-  const [upcomingTasks, setUpcomingTasks] = useState([])
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
+  const [currentView, setCurrentView] = useState('overview') // State for segmented control
   const [stats, setStats] = useState({
     totalProjects: 0,
     completedTasks: 0,
@@ -28,14 +31,6 @@ const Dashboard = () => {
         new Date(b.updatedAt) - new Date(a.updatedAt)
       ).slice(0, 4)
       setRecentProjects(sortedProjects)
-
-      // Get upcoming tasks (due soon, not completed)
-      const now = new Date()
-      const upcoming = tasks
-        .filter(task => task.status !== 'completed' && task.dueDate && new Date(task.dueDate) >= now)
-        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-        .slice(0, 5)
-      setUpcomingTasks(upcoming)
 
       // Find active time entry if any
       const active = timeEntries.find(entry => entry.endTime === null)
@@ -67,6 +62,25 @@ const Dashboard = () => {
     }
   }, [projects, tasks, timeEntries, loading])
 
+  // Derived state for "My Tasks" view - sorted non-completed tasks
+  const myTasks = useMemo(() => {
+    if (loading) return [];
+    
+    return tasks
+      .filter(task => task.status !== 'completed')
+      .sort((a, b) => {
+        // Sort by status first ('in progress' comes first)
+        const statusOrder = { 'in progress': 0, 'pending': 1, 'not started': 2 }; // Adjust as needed
+        const statusComparison = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+        if (statusComparison !== 0) return statusComparison;
+        
+        // Then sort by due date (earliest first)
+        const dateA = a.dueDate ? new Date(a.dueDate) : Infinity;
+        const dateB = b.dueDate ? new Date(b.dueDate) : Infinity;
+        return dateA - dateB;
+      });
+  }, [tasks, loading]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -93,131 +107,200 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-secondary-100 transition-all duration-300 hover:shadow-md hover:border-primary-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
-              <FiActivity className="h-6 w-6" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                <FiActivity className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-3xl font-bold text-secondary-900">{stats.totalProjects}</p>
+                <p className="text-sm text-secondary-500">Active Projects</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-3xl font-bold text-secondary-900">{stats.totalProjects}</p>
-              <p className="text-sm text-secondary-500">Active Projects</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-secondary-100 transition-all duration-300 hover:shadow-md hover:border-green-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
-              <FiCheckCircle className="h-6 w-6" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
+                <FiCheckCircle className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-3xl font-bold text-secondary-900">{stats.completedTasks}</p>
+                <p className="text-sm text-secondary-500">Completed Tasks</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-3xl font-bold text-secondary-900">{stats.completedTasks}</p>
-              <p className="text-sm text-secondary-500">Completed Tasks</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-secondary-100 transition-all duration-300 hover:shadow-md hover:border-amber-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
-              <FiAlertCircle className="h-6 w-6" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
+                <FiAlertCircle className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-3xl font-bold text-secondary-900">{stats.pendingTasks}</p>
+                <p className="text-sm text-secondary-500">Pending Tasks</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-3xl font-bold text-secondary-900">{stats.pendingTasks}</p>
-              <p className="text-sm text-secondary-500">Pending Tasks</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
         
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-secondary-100 transition-all duration-300 hover:shadow-md hover:border-accent-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600">
-              <FiClock className="h-6 w-6" />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600">
+                <FiClock className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-3xl font-bold text-secondary-900">{stats.trackedHoursToday}</p>
+                <p className="text-sm text-secondary-500">Hours Today</p>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-3xl font-bold text-secondary-900">{stats.trackedHoursToday}</p>
-              <p className="text-sm text-secondary-500">Hours Today</p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Projects */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary-100">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-secondary-900">Recent Projects</h2>
-              <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center transition-colors">
-                View All
-                <FiArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </div>
-            
-            {recentProjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {recentProjects.map(project => {
-                  // Enhance project with stats from projectStats
-                  const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
-                  const enhancedProject = {
-                    ...project,
-                    totalTasks: stats.totalTasks,
-                    completedTasks: stats.completedTasks,
-                    totalHours: stats.totalHours,
-                    progress: stats.progress
-                  };
-                  return <ProjectCard key={project.id} project={enhancedProject} />;
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-10 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-                <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
-                  <FiActivity className="h-8 w-8" />
-                </div>
-                <p className="text-secondary-600 mb-4">No projects yet</p>
-                <Link 
-                  to="/projects" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600 shadow-sm transition-colors"
-                >
-                  <FiPlus className="mr-2 h-4 w-4" />
-                  Create Project
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Time Tracking Widget */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary-100 h-full">
-            <h2 className="text-xl font-semibold text-secondary-900 mb-6">Time Tracking</h2>
-            <TimeTrackingWidget />
-          </div>
-        </div>
+      {/* Segmented Control (Toggle Group) */}
+      <div className="flex justify-center">
+        <ToggleGroup 
+          type="single" 
+          defaultValue={currentView}
+          variant="outline"
+          onValueChange={(value) => {
+            if (value) setCurrentView(value); // Update view state if a value is selected
+          }}
+          className="bg-white p-1 rounded-lg shadow-sm"
+        >
+          <ToggleGroupItem value="overview" aria-label="Toggle overview">
+             Overview
+          </ToggleGroupItem>
+          <ToggleGroupItem value="my-tasks" aria-label="Toggle my tasks">
+             My Tasks
+          </ToggleGroupItem>
+          <ToggleGroupItem value="activity" aria-label="Toggle activity feed" disabled> {/* Disabled for now */}
+             Activity
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      {/* Upcoming Tasks */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-secondary-100">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-secondary-900">Upcoming Tasks</h2>
-          <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center transition-colors">
-            View All Tasks
-            <FiArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </div>
-        
-        {upcomingTasks.length > 0 ? (
-          <div className="divide-y divide-secondary-100">
-            {upcomingTasks.map(task => (
-              <TaskItem key={task.id} task={task} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-10 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-            <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
-              <FiCheckCircle className="h-8 w-8" />
+      {/* Conditional Content based on View */}
+      <div className="mt-8">
+        {currentView === 'overview' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Recent Projects */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xl font-semibold">Recent Projects</CardTitle>
+                  <Button variant="link" asChild className="p-0 h-auto text-sm">
+                    <Link to="/projects">
+                      View All
+                      <FiArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {recentProjects.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {recentProjects.map(project => {
+                        const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
+                        const enhancedProject = {
+                          ...project,
+                          totalTasks: stats.totalTasks,
+                          completedTasks: stats.completedTasks,
+                          totalHours: stats.totalHours,
+                          progress: stats.progress
+                        };
+                        return <ProjectCard key={project.id} project={enhancedProject} />;
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
+                      <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
+                        <FiActivity className="h-8 w-8" />
+                      </div>
+                      <p className="text-secondary-600 mb-4">No projects yet</p>
+                      <Button asChild>
+                        <Link to="/projects">
+                          <FiPlus className="mr-2 h-4 w-4" />
+                          Create Project
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-            <p className="text-secondary-600">No upcoming tasks</p>
+
+            {/* Upcoming Tasks & Time Tracker */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold">Upcoming Tasks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {myTasks.filter(t => t.dueDate && new Date(t.dueDate) >= new Date()).slice(0, 5).length > 0 ? (
+                    <ul className="space-y-4">
+                      {myTasks
+                        .filter(t => t.dueDate && new Date(t.dueDate) >= new Date())
+                        .slice(0, 5)
+                        .map(task => (
+                          <li key={task.id}>
+                            <p className="font-medium text-secondary-800">{task.name}</p>
+                            <p className="text-sm text-secondary-500">Due: {format(new Date(task.dueDate), 'PP')}</p>
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
+                    <div className="text-center py-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
+                      <div className="w-12 h-12 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
+                        <FiCheckCircle className="h-6 w-6" />
+                      </div>
+                      <p className="text-secondary-600">No upcoming tasks</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <TimeTrackingWidget />
+            </div>
+          </div>
+        )}
+
+        {currentView === 'my-tasks' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-secondary-800">My Tasks</h2>
+            <Card>
+              <CardContent className="pt-6">
+                {myTasks.length > 0 ? (
+                  <div className="space-y-4 divide-y divide-secondary-100">
+                    {myTasks.map(task => (
+                      <TaskItem key={task.id} task={task} className="pt-4 first:pt-0" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-secondary-500">
+                    <p>No active tasks found.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {currentView === 'activity' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-secondary-800">Activity Feed</h2>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="text-secondary-600">Activity Feed view will be implemented here (requires backend support).</p>
+                {/* Placeholder for activity feed */}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

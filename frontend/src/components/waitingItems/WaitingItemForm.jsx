@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { FiX, FiCalendar } from 'react-icons/fi';
 import { useWaitingItems } from '../../context/WaitingItemContext';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 /**
  * WaitingItemForm component
@@ -137,44 +144,45 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="projectId" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="projectId" className="block text-sm font-medium text-secondary-700 mb-1">
                   Project *
-                </label>
-                <select
-                  id="projectId"
-                  name="projectId"
-                  value={formData.projectId}
-                  onChange={handleChange}
-                  className={`input w-full ${formErrors.projectId ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  required
+                </Label>
+                <Select 
+                  value={formData.projectId || ''} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, projectId: value }))}
                   disabled={formLoading}
+                  name="projectId"
                 >
-                  <option value="">Select a project</option>
-                  {projects.map(project => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="projectId" className={formErrors.projectId ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}>
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {formErrors.projectId && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.projectId}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="requestType" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="requestType" className="block text-sm font-medium text-secondary-700 mb-1">
                   Request Type *
-                </label>
-                <input
-                  type="text"
+                </Label>
+                <Input
                   id="requestType"
+                  type="text"
                   name="requestType"
                   value={formData.requestType}
                   onChange={handleChange}
-                  className={`input w-full ${formErrors.requestType ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="e.g., Feedback, Approval, Information"
                   required
                   disabled={formLoading}
+                  placeholder="e.g., Feedback, Approval, Information"
+                  className={formErrors.requestType ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}
                   maxLength={100}
                 />
                 {formErrors.requestType && (
@@ -183,19 +191,19 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
               </div>
               
               <div>
-                <label htmlFor="requestedFrom" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="requestedFrom" className="block text-sm font-medium text-secondary-700 mb-1">
                   Requested From *
-                </label>
-                <input
-                  type="text"
+                </Label>
+                <Input
                   id="requestedFrom"
+                  type="text"
                   name="requestedFrom"
                   value={formData.requestedFrom}
                   onChange={handleChange}
-                  className={`input w-full ${formErrors.requestedFrom ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="e.g., Client Name, Department, Person"
                   required
                   disabled={formLoading}
+                  placeholder="e.g., Client Name, Department, Person"
+                  className={formErrors.requestedFrom ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}
                 />
                 {formErrors.requestedFrom && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.requestedFrom}</p>
@@ -204,77 +212,111 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="priority" className="block text-sm font-medium text-secondary-700 mb-1">
+                  <Label htmlFor="priority" className="block text-sm font-medium text-secondary-700 mb-1">
                     Priority
-                  </label>
-                  <select
-                    id="priority"
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    className="input w-full"
+                  </Label>
+                  <Select 
+                    value={formData.priority} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
                     disabled={formLoading}
+                    name="priority"
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
+                    <SelectTrigger id="priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium text-secondary-700 mb-1">
+                  <Label htmlFor="status" className="block text-sm font-medium text-secondary-700 mb-1">
                     Status
-                  </label>
-                  <select
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="input w-full"
+                  </Label>
+                  <Select 
+                    value={formData.status} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                     disabled={formLoading}
+                    name="status"
                   >
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="sentDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                  <Label htmlFor="sentDate" className="block text-sm font-medium text-secondary-700 mb-1">
                     Sent Date *
-                  </label>
-                  <input
-                    type="date"
-                    id="sentDate"
-                    name="sentDate"
-                    value={formData.sentDate}
-                    onChange={handleChange}
-                    className={`input w-full ${formErrors.sentDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    required
-                    disabled={formLoading}
-                  />
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.sentDate && "text-muted-foreground",
+                          formErrors.sentDate ? "border-red-500" : ""
+                        )}
+                        disabled={formLoading}
+                      >
+                        <FiCalendar className="mr-2 h-4 w-4" />
+                        {formData.sentDate ? formData.sentDate : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.sentDate}
+                        onSelect={(date) => setFormData(prev => ({ ...prev, sentDate: date }))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {formErrors.sentDate && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.sentDate}</p>
                   )}
                 </div>
                 
                 <div>
-                  <label htmlFor="deadlineDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                  <Label htmlFor="deadlineDate" className="block text-sm font-medium text-secondary-700 mb-1">
                     Deadline Date
-                  </label>
-                  <input
-                    type="date"
-                    id="deadlineDate"
-                    name="deadlineDate"
-                    value={formData.deadlineDate}
-                    onChange={handleChange}
-                    className={`input w-full ${formErrors.deadlineDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                    disabled={formLoading}
-                    min={formData.sentDate}
-                  />
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.deadlineDate && "text-muted-foreground"
+                        )}
+                        disabled={formLoading}
+                      >
+                        <FiCalendar className="mr-2 h-4 w-4" />
+                        {formData.deadlineDate ? formData.deadlineDate : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={formData.deadlineDate}
+                        onSelect={(date) => setFormData(prev => ({ ...prev, deadlineDate: date }))}
+                        initialFocus
+                        disabled={(date) => formData.sentDate && date < formData.sentDate } // Disable dates before sent date
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {formErrors.deadlineDate && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.deadlineDate}</p>
                   )}
@@ -282,36 +324,50 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
               </div>
               
               <div>
-                <label htmlFor="receivedDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="receivedDate" className="block text-sm font-medium text-secondary-700 mb-1">
                   Received Date
-                </label>
-                <input
-                  type="date"
-                  id="receivedDate"
-                  name="receivedDate"
-                  value={formData.receivedDate}
-                  onChange={handleChange}
-                  className={`input w-full ${formErrors.receivedDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  disabled={formLoading}
-                  min={formData.sentDate}
-                />
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.receivedDate && "text-muted-foreground"
+                      )}
+                      disabled={formLoading}
+                    >
+                      <FiCalendar className="mr-2 h-4 w-4" />
+                      {formData.receivedDate ? formData.receivedDate : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.receivedDate}
+                      onSelect={(date) => setFormData(prev => ({ ...prev, receivedDate: date }))}
+                      initialFocus
+                      disabled={(date) => formData.sentDate && date < formData.sentDate } // Disable dates before sent date
+                    />
+                  </PopoverContent>
+                </Popover>
                 {formErrors.receivedDate && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.receivedDate}</p>
                 )}
               </div>
               
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="notes" className="block text-sm font-medium text-secondary-700 mb-1">
                   Notes
-                </label>
-                <textarea
+                </Label>
+                <Textarea
                   id="notes"
                   name="notes"
                   value={formData.notes}
                   onChange={handleChange}
-                  className="input w-full h-24"
-                  placeholder="Additional details about this request"
                   disabled={formLoading}
+                  placeholder="Additional details about this request"
+                  rows={4}
                   maxLength={500}
                 />
                 <p className="mt-1 text-xs text-secondary-500 text-right">
@@ -320,18 +376,17 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
               </div>
               
               <div>
-                <label htmlFor="link" className="block text-sm font-medium text-secondary-700 mb-1">
+                <Label htmlFor="link" className="block text-sm font-medium text-secondary-700 mb-1">
                   Link (Optional)
-                </label>
-                <input
-                  type="url"
+                </Label>
+                <Input
                   id="link"
+                  type="url"
                   name="link"
                   value={formData.link}
                   onChange={handleChange}
-                  className="input w-full"
-                  placeholder="https://example.com/resource"
                   disabled={formLoading}
+                  placeholder="https://example.com/resource"
                 />
               </div>
             </div>
@@ -344,15 +399,15 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
             )}
             
             <div className="mt-6 flex justify-end space-x-3">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
                 className="btn btn-secondary"
                 disabled={formLoading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="btn btn-primary flex items-center justify-center min-w-[120px]"
                 disabled={formLoading}
@@ -368,7 +423,7 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                 ) : (
                   existingItem ? 'Update Request' : 'Create Request'
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

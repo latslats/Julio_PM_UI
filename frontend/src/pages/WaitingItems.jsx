@@ -3,6 +3,8 @@ import { useWaitingItems } from '../context/WaitingItemContext';
 import { useProjects } from '../context/ProjectContext';
 import { FiPlus, FiFilter, FiSearch, FiClock, FiCalendar, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Components
 import WaitingItemCard from '../components/waitingItems/WaitingItemCard';
@@ -155,54 +157,54 @@ const WaitingItems = () => {
           <label htmlFor="project-filter" className="block text-sm font-medium text-secondary-700 mb-1">
             Project
           </label>
-          <select
-            id="project-filter"
-            value={selectedProject}
-            onChange={handleProjectChange}
-            className="input w-full"
-          >
-            <option value="">All Projects</option>
-            {projects.map(project => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+          <Select value={selectedProject} onValueChange={handleProjectChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Projects</SelectItem>
+              {projects.map(project => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         <div>
           <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 mb-1">
             Status
           </label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input w-full"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <Select value={statusFilter} onValueChange={(e) => setStatusFilter(e.target.value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div>
           <label htmlFor="priority-filter" className="block text-sm font-medium text-secondary-700 mb-1">
             Priority
           </label>
-          <select
-            id="priority-filter"
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="input w-full"
-          >
-            <option value="all">All Priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          <Select value={priorityFilter} onValueChange={(e) => setPriorityFilter(e.target.value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All Priorities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div>
@@ -210,15 +212,15 @@ const WaitingItems = () => {
             Search
           </label>
           <div className="relative">
-            <input
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" />
+            <Input 
               type="text"
               id="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search requests..."
-              className="input w-full pl-10"
+              className="pl-10 pr-4 py-2 w-full"
             />
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" />
           </div>
         </div>
       </div>

@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import { useProjects } from '../../context/ProjectContext'
-import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader } from 'react-icons/fi'
 import { useNotification } from '../../context/NotificationContext'
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader } from 'react-icons/fi'
 
 const TaskItem = ({ task }) => {
   const { 
@@ -200,7 +208,9 @@ const TaskItem = ({ task }) => {
     <>
       <div className="py-3 flex items-center justify-between group">
         <div className="flex items-center">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleTaskStatus}
             className={`flex-shrink-0 h-5 w-5 rounded-full border ${
               task.status === 'completed'
@@ -209,7 +219,7 @@ const TaskItem = ({ task }) => {
             }`}
           >
             {task.status === 'completed' && <FiCheck className="h-3 w-3 text-white" />}
-          </button>
+          </Button>
 
           <div className="ml-3">
             <div className="flex items-center">
@@ -251,23 +261,29 @@ const TaskItem = ({ task }) => {
         </div>
 
         <div className="flex items-center space-x-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleOpenEditModal}
             className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-opacity"
             title="Edit task"
           >
             <FiEdit2 className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setShowDeleteConfirm(true)}
             className="p-2 rounded-lg text-secondary-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
             title="Delete task"
           >
             <FiTrash2 className="h-4 w-4" />
-          </button>
+          </Button>
           <div className="flex space-x-1">
             {activeTimeEntry && (
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={handleStopTracking}
                 className="p-2 rounded-lg text-red-600 hover:bg-red-50"
                 title="Stop tracking"
@@ -278,9 +294,11 @@ const TaskItem = ({ task }) => {
                 ) : (
                   <FiSquare className="h-5 w-5" />
                 )}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={toggleTimeTracking}
               className={`p-2 rounded-lg ${
                 activeTimeEntry
@@ -307,7 +325,7 @@ const TaskItem = ({ task }) => {
               ) : (
                 <FiPlay className="h-5 w-5" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -318,122 +336,132 @@ const TaskItem = ({ task }) => {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-secondary-100">
               <h3 className="text-lg font-medium text-secondary-900">Edit Task</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowEditModal(false)}
                 className="text-secondary-500 hover:text-secondary-700"
               >
                 <FiX className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 max-h-[80vh] overflow-y-auto">
               <form onSubmit={handleUpdateTask}>
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="edit-task-title" className="block text-sm font-medium text-secondary-700 mb-1">
-                      Task Title *
-                    </label>
-                    <input
+                    <Label htmlFor={`edit-title-${task.id}`} className="text-sm font-medium">Title</Label>
+                    <Input
+                      id={`edit-title-${task.id}`}
                       type="text"
-                      id="edit-task-title"
+                      name="title"
                       value={editableTask.title}
                       onChange={(e) => setEditableTask({ ...editableTask, title: e.target.value })}
-                      className="input w-full"
                       required
+                      className="mt-1"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="edit-task-description" className="block text-sm font-medium text-secondary-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      id="edit-task-description"
-                      value={editableTask.description}
+                    <Label htmlFor={`edit-description-${task.id}`} className="text-sm font-medium">Description</Label>
+                    <Textarea
+                      id={`edit-description-${task.id}`}
+                      name="description"
+                      value={editableTask.description || ''}
                       onChange={(e) => setEditableTask({ ...editableTask, description: e.target.value })}
-                      className="input w-full h-24"
+                      rows={3}
+                      className="mt-1"
+                      placeholder="Add a more detailed description..."
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="edit-task-status" className="block text-sm font-medium text-secondary-700 mb-1">
-                        Status
-                      </label>
-                      <select
-                        id="edit-task-status"
-                        value={editableTask.status}
-                        onChange={(e) => setEditableTask({ ...editableTask, status: e.target.value })}
-                        className="input w-full"
+                      <Label htmlFor={`edit-priority-${task.id}`} className="text-sm font-medium">Priority</Label>
+                      <Select 
+                        value={editableTask.priority} 
+                        onValueChange={(value) => setEditableTask({ ...editableTask, priority: value })}
                       >
-                        <option value="not-started">Not Started</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
+                        <SelectTrigger id={`edit-priority-${task.id}`} className="mt-1 w-full">
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div>
-                      <label htmlFor="edit-task-priority" className="block text-sm font-medium text-secondary-700 mb-1">
-                        Priority
-                      </label>
-                      <select
-                        id="edit-task-priority"
-                        value={editableTask.priority}
-                        onChange={(e) => setEditableTask({ ...editableTask, priority: e.target.value })}
-                        className="input w-full"
+                      <Label htmlFor={`edit-status-${task.id}`} className="text-sm font-medium">Status</Label>
+                      <Select 
+                        value={editableTask.status} 
+                        onValueChange={(value) => setEditableTask({ ...editableTask, status: value })}
                       >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                        <SelectTrigger id={`edit-status-${task.id}`} className="mt-1 w-full">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not-started">Not Started</SelectItem>
+                          <SelectItem value="in-progress">In Progress</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="edit-task-dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
-                        Due Date
-                      </label>
-                      <input
-                        type="date"
-                        id="edit-task-dueDate"
-                        value={editableTask.dueDate}
-                        onChange={(e) => setEditableTask({ ...editableTask, dueDate: e.target.value })}
-                        className="input w-full"
-                      />
+                      <Label htmlFor={`edit-due-date-${task.id}`} className="text-sm font-medium">Due Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className="w-full justify-start text-left font-normal mt-1"
+                          >
+                            <FiClock className="mr-2 h-4 w-4" />
+                            {editableTask.dueDate ? format(new Date(editableTask.dueDate), "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={editableTask.dueDate ? new Date(editableTask.dueDate) : undefined}
+                            onSelect={(date) => setEditableTask({ ...editableTask, dueDate: date })}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div>
-                      <label htmlFor="edit-task-estimatedHours" className="block text-sm font-medium text-secondary-700 mb-1">
-                        Estimated Hours
-                      </label>
-                      <input
+                      <Label htmlFor={`edit-estimated-hours-${task.id}`} className="text-sm font-medium">Estimated Hours</Label>
+                      <Input
+                        id={`edit-estimated-hours-${task.id}`}
                         type="number"
-                        id="edit-task-estimatedHours"
-                        min="0"
-                        step="0.5"
+                        name="estimatedHours"
                         value={editableTask.estimatedHours}
                         onChange={(e) => setEditableTask({ ...editableTask, estimatedHours: parseFloat(e.target.value) || 0 })}
-                        className="input w-full"
+                        className="mt-1"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() => setShowEditModal(false)}
-                    className="btn btn-secondary"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="primary"
                     type="submit"
-                    className="btn btn-primary"
                   >
                     Save Changes
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
@@ -450,18 +478,18 @@ const TaskItem = ({ task }) => {
               Are you sure you want to delete this task? This action cannot be undone.
             </p>
             <div className="flex space-x-3 justify-end">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="btn btn-secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={handleDeleteTask}
-                className="btn bg-red-500 text-white hover:bg-red-600"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

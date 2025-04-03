@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { FiMenu, FiSearch } from 'react-icons/fi'
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const Header = ({ toggleSidebar }) => {
   
@@ -7,29 +10,35 @@ const Header = ({ toggleSidebar }) => {
     <header className="bg-white shadow-soft z-10">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center">
-          <button 
+          <Button 
             onClick={toggleSidebar}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 focus:outline-none"
+            variant="ghost"
+            size="icon"
+            className="mr-2"
+            aria-label="Toggle sidebar"
           >
             <FiMenu className="h-6 w-6" />
-          </button>
+          </Button>
           
-          <div className="ml-4 relative max-w-xs w-full hidden md:block">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-5 w-5 text-secondary-400" />
-              </div>
-              <input
+          <div className="relative max-w-xs w-full hidden md:block">
+            <div className="relative flex-1">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
                 type="text"
                 placeholder="Search..."
-                className="block w-full pl-10 pr-3 py-2 border border-secondary-200 rounded-lg text-sm placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+                className="pl-10 pr-4 py-2 w-full"
               />
             </div>
           </div>
         </div>
         
         <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary-400 to-accent-400"></div>
+          <Avatar className="h-8 w-8">
+            {/* <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" /> */}
+            <AvatarFallback className="bg-primary-100 text-primary-700 text-xs font-medium">
+              JV
+            </AvatarFallback>
+          </Avatar>
         </div>
       </div>
     </header>

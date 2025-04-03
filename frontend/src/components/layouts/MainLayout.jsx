@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from '../navigation/Sidebar'
 import Header from '../navigation/Header'
 import { useState } from 'react'
+import { Toaster } from "@/components/ui/toaster"
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -19,6 +20,8 @@ const MainLayout = () => {
           </div>
         </main>
       </div>
+      {/* Add Toaster for displaying notifications */}
+      <Toaster /> 
     </div>
   )
 }
