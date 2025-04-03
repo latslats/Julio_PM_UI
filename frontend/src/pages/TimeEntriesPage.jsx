@@ -135,16 +135,14 @@ const TimeEntriesPage = () => {
     
   }, [timeEntries, tasks, projects, selectedProject, searchQuery, dateRange, customStartDate, customEndDate]);
 
-  // Format time as HH:MM:SS
+  // Format time as HH:MM
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
 
     return [
       h.toString().padStart(2, '0'),
-      m.toString().padStart(2, '0'),
-      s.toString().padStart(2, '0')
+      m.toString().padStart(2, '0')
     ].join(':');
   };
 
@@ -197,7 +195,7 @@ const TimeEntriesPage = () => {
               </div>
               <div className="ml-4">
                 <p className="text-3xl font-bold text-secondary-900">{formatTime(stats.totalDuration)}</p>
-                <p className="text-sm text-secondary-500">Total Time</p>
+                <p className="text-sm text-secondary-500">Total Time <span className="text-xs">(HH:MM)</span></p>
               </div>
             </div>
           </CardContent>

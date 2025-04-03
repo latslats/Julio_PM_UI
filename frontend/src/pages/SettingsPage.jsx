@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { FiSettings, FiClock, FiSave, FiLoader } from 'react-icons/fi';
+import { FiSettings, FiClock, FiSave, FiLoader, FiList, FiChevronRight } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from "@/components/ui/input"; 
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast"; 
+import { Link } from 'react-router-dom';
 
 // Define the API base URL (adjust if necessary)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -217,6 +218,45 @@ const SettingsPage = () => {
                   </>
                 )}
               </Button>
+            </div>
+          </div>
+        </CardContent> 
+      </Card>
+
+      {/* Task Management Card */}
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-primary-500/10 mr-3">
+              <FiList className="h-6 w-6 text-primary-600" />
+            </div>
+            <CardTitle className="text-lg font-medium text-secondary-900">Task Management</CardTitle>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-6">
+            <div className="border-b border-secondary-100 pb-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 rounded-lg bg-secondary-100 mr-3">
+                  <FiClock className="h-5 w-5 text-secondary-600" />
+                </div>
+                <h3 className="text-md font-medium text-secondary-800">Time Tracking</h3>
+              </div>
+              
+              <div className="pl-10 mb-4">
+                <p className="text-sm text-secondary-600 mb-4">
+                  Manage your time entries and view reports on how your time is spent across projects and tasks.
+                </p>
+                
+                <Link to="/time-entries">
+                  <Button variant="primary" className="flex items-center w-full sm:w-auto">
+                    <FiList className="mr-2 h-4 w-4" />
+                    Manage Time Entries
+                    <FiChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </CardContent> 

@@ -35,6 +35,8 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
         ...timeEntry,
         startTime: timeEntry.startTime ? format(new Date(timeEntry.startTime), "yyyy-MM-dd'T'HH:mm") : '',
         endTime: timeEntry.endTime ? format(new Date(timeEntry.endTime), "yyyy-MM-dd'T'HH:mm") : '',
+        // Convert seconds to minutes for the form
+        duration: timeEntry.duration ? Math.round(timeEntry.duration / 60) : '',
       };
       setEditableEntry(formattedEntry);
     }
@@ -96,6 +98,9 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
       const end = new Date(updatedEntry.endTime);
       const durationInSeconds = (end.getTime() - start.getTime()) / 1000;
       updatedEntry.duration = durationInSeconds;
+    } else if (updatedEntry.duration) {
+      // Convert minutes to seconds for storage
+      updatedEntry.duration = updatedEntry.duration * 60;
     }
     
     // Remove any properties that might cause issues with the backend
@@ -191,7 +196,7 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
 
           {/* Duration (calculated or manual) */}
           <div>
-            <Label htmlFor="duration" className="text-sm font-medium">Duration (seconds)</Label>
+            <Label htmlFor="duration" className="text-sm font-medium">Duration (minutes)</Label>
             <Input
               id="duration"
               type="number"
