@@ -82,7 +82,7 @@ const WaitingItemStats = ({ stats }) => {
             <h3 className="text-sm font-medium text-secondary-500">Average Wait Time</h3>
             <div className="mt-1">
               <p className="text-2xl font-semibold text-secondary-900">
-                {avgWaitDays.toFixed(1)} days
+                {typeof avgWaitDays === 'number' ? avgWaitDays.toFixed(1) : '0.0'} days
               </p>
             </div>
           </div>

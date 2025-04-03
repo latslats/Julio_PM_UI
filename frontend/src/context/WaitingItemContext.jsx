@@ -100,7 +100,12 @@ export function WaitingItemProvider({ children }) {
       const result = await apiRequest(endpoint);
       
       if (result.success) {
-        setStats(result.data);
+        // Ensure avgWaitDays is always a number
+        const processedStats = {
+          ...result.data,
+          avgWaitDays: typeof result.data.avgWaitDays === 'number' ? result.data.avgWaitDays : 0
+        };
+        setStats(processedStats);
       } else {
         console.error('Failed to fetch waiting items stats:', result.message);
       }
