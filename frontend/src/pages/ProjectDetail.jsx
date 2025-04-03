@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
-import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList } from 'react-icons/fi'
+import { useWaitingItems } from '../context/WaitingItemContext'
+import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList, FiSliders, FiPieChart, FiAlertCircle } from 'react-icons/fi'
 import { format } from 'date-fns'
 import { 
     Card, CardContent, CardHeader, CardTitle 
@@ -15,18 +16,25 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import TaskItem from '../components/tasks/TaskItem' // Using the existing TaskItem component
+import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
+import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
 import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate()
   const { projects, tasks, timeEntries, loading, updateProject, deleteProject, createTask } = useProjects()
+  const { waitingItems, loading: waitingItemsLoading, fetchWaitingItems } = useWaitingItems()
   const [project, setProject] = useState(null)
   const [projectTasks, setProjectTasks] = useState([])
+  const [projectWaitingItems, setProjectWaitingItems] = useState([])
+  const [activeView, setActiveView] = useState('tasks')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
   const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [showAddWaitingItemModal, setShowAddWaitingItemModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
   const [editableProject, setEditableProject] = useState(null)
   const [editFormErrors, setEditFormErrors] = useState({})
@@ -124,6 +132,9 @@ const ProjectDetail = () => {
           totalHours,
           totalTrackedHours: parseFloat(totalTrackedHours.toFixed(2))
         })
+        
+        // Fetch waiting items for this project
+        fetchWaitingItems();
       } else {
         // Project not found, reset tasks and stats
         setProjectTasks([])
@@ -138,6 +149,16 @@ const ProjectDetail = () => {
     }
   }, [id, projects, tasks, timeEntries, loading])
   
+  // Filter waiting items for this project
+  useEffect(() => {
+    if (!waitingItemsLoading && waitingItems.length > 0) {
+      const filtered = waitingItems.filter(item => item.projectId === id);
+      setProjectWaitingItems(filtered);
+    } else {
+      setProjectWaitingItems([]);
+    }
+  }, [id, waitingItems, waitingItemsLoading]);
+
   const handleDeleteProject = async () => {
     setDeleteError(null);
     
@@ -231,6 +252,50 @@ const ProjectDetail = () => {
       });
     }
   }
+
+  const handleAddWaitingItemClick = () => {
+    setShowAddWaitingItemModal(true);
+  };
+  
+  const handleWaitingItemFormClose = () => {
+    setShowAddWaitingItemModal(false);
+  };
+  
+  const handleWaitingItemFormSubmit = async () => {
+    setShowAddWaitingItemModal(false);
+    // The actual submission is handled in the form component
+    fetchWaitingItems(); // Refresh waiting items
+  };
+  
+  // Get status class for badge
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'in-progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  // Get priority class for badge
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+        return 'bg-orange-100 text-orange-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   // Loading state
   if (loading) {
@@ -400,123 +465,296 @@ const ProjectDetail = () => {
       </div>
       
       {/* --- New Stats Cards Grid (like Dashboard) --- */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-         {/* Completed Tasks */}
-         <Card>
-           <CardContent className="pt-6">
-             <div className="flex items-center">
-               <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
-                 <FiCheckSquare className="h-6 w-6" />
-               </div>
-               <div className="ml-4">
-                 <p className="text-3xl font-bold text-secondary-900">{stats.completedTasks}</p>
-                 <p className="text-sm text-secondary-500">Completed Tasks</p>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
+      <Tabs defaultValue="tasks" value={activeView} onValueChange={setActiveView} className="w-full">
+        <div className="flex justify-between items-center mb-2">
+          <TabsList>
+            <TabsTrigger value="tasks" className="flex items-center">
+              <FiClipboard className="mr-1.5 h-4 w-4" />
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="waiting" className="flex items-center">
+              <FiClock className="mr-1.5 h-4 w-4" />
+              Waiting On
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
-         {/* In Progress Tasks */}
-         <Card>
-           <CardContent className="pt-6">
-             <div className="flex items-center">
-               <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
-                 <FiPlayCircle className="h-6 w-6" />
-               </div>
-               <div className="ml-4">
-                 <p className="text-3xl font-bold text-secondary-900">{stats.inProgressTasks}</p>
-                 <p className="text-sm text-secondary-500">In Progress Tasks</p>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
+        <TabsContent value="tasks">
+          {/* Task Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Completed Tasks */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
+                    <FiCheckSquare className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">{stats.completedTasks}</p>
+                    <p className="text-sm text-secondary-500">Completed Tasks</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          
+            {/* In Progress Tasks */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
+                    <FiPlayCircle className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">{stats.inProgressTasks}</p>
+                    <p className="text-sm text-secondary-500">In Progress Tasks</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          
+            {/* Total Tasks */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                    <FiClipboard className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">{stats.totalTasks}</p>
+                    <p className="text-sm text-secondary-500">Total Tasks</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          
+            {/* Total Tracked Hours */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600">
+                    <FiWatch className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">{stats.totalTrackedHours || 0}<span className="text-xl">h</span></p>
+                    <p className="text-sm text-secondary-500">Total Tracked</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Tasks</CardTitle>
+              {/* --- Add Task Dialog Trigger --- */} 
+              <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    onClick={() => setShowAddTaskModal(true)} 
+                  >
+                    <FiPlus className="mr-1.5 h-4 w-4" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                {/* Add Task Modal Content moved below */} 
+              </Dialog>
+            </CardHeader>
+          
+            <CardContent>
+              {projectTasks.length > 0 ? (
+                <div className="divide-y divide-secondary-100 -mx-6 -mb-6"> 
+                  {projectTasks.map(task => (
+                    <TaskItem key={task.id} task={task} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-secondary-600 mb-3">No tasks have been added to this project yet.</p>
+                  {/* Trigger Add Task Dialog */} 
+                  <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="primary"
+                        onClick={() => setShowAddTaskModal(true)}
+                      >
+                        <FiPlus className="mr-1.5 h-4 w-4" />
+                        Add Task
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
-         {/* Total Tasks */}
-         <Card>
-           <CardContent className="pt-6">
-             <div className="flex items-center">
-               <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
-                 <FiClipboard className="h-6 w-6" />
-               </div>
-               <div className="ml-4">
-                 <p className="text-3xl font-bold text-secondary-900">{stats.totalTasks}</p>
-                 <p className="text-sm text-secondary-500">Total Tasks</p>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-        
-         {/* Total Tracked Hours */}
-         <Card>
-           <CardContent className="pt-6">
-             <div className="flex items-center">
-               <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600">
-                 <FiWatch className="h-6 w-6" />
-               </div>
-               <div className="ml-4">
-                 <p className="text-3xl font-bold text-secondary-900">{stats.totalTrackedHours || 0}<span className="text-xl">h</span></p>
-                 <p className="text-sm text-secondary-500">Total Tracked</p>
-               </div>
-             </div>
-           </CardContent>
-         </Card>
-      </div>
+        <TabsContent value="waiting">
+          {/* Waiting Items Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Total Requests */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
+                    <FiPieChart className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">{projectWaitingItems.length}</p>
+                    <p className="text-sm text-secondary-500">Total Requests</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* High Priority */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-600">
+                    <FiAlertCircle className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">
+                      {projectWaitingItems.filter(item => item.priority === 'high').length}
+                    </p>
+                    <p className="text-sm text-secondary-500">High Priority</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Average Wait Time */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600">
+                    <FiClock className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    {/* Calculate average wait time */}
+                    {(() => {
+                      const completedItems = projectWaitingItems.filter(item => item.status === 'completed');
+                      let avgDays = 0;
+                      
+                      if (completedItems.length > 0) {
+                        const totalDays = completedItems.reduce((sum, item) => {
+                          if (item.sentDate && item.completedDate) {
+                            const sentDate = new Date(item.sentDate);
+                            const completedDate = new Date(item.completedDate);
+                            const diffTime = Math.abs(completedDate - sentDate);
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            return sum + diffDays;
+                          }
+                          return sum;
+                        }, 0);
+                        
+                        avgDays = (totalDays / completedItems.length).toFixed(1);
+                      }
+                      
+                      return (
+                        <p className="text-3xl font-bold text-secondary-900">
+                          {avgDays} <span className="text-xl">days</span>
+                        </p>
+                      );
+                    })()}
+                    <p className="text-sm text-secondary-500">Average Wait Time</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Completion Rate */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
+                    <FiCheckCircle className="h-6 w-6" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-3xl font-bold text-secondary-900">
+                      {projectWaitingItems.length > 0 
+                        ? Math.round((projectWaitingItems.filter(item => item.status === 'completed').length / projectWaitingItems.length) * 100)
+                        : 0}%
+                    </p>
+                    <p className="text-sm text-secondary-500">Completion Rate</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Waiting Items</CardTitle>
+              {/* --- Add Waiting Item Dialog Trigger --- */} 
+              <Dialog open={showAddWaitingItemModal} onOpenChange={setShowAddWaitingItemModal}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    onClick={handleAddWaitingItemClick} 
+                  >
+                    <FiPlus className="mr-1.5 h-4 w-4" />
+                    New Request
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
+            </CardHeader>
+          
+            <CardContent>
+              {projectWaitingItems.length > 0 ? (
+                <div className="space-y-4"> 
+                  {projectWaitingItems.map(item => (
+                    <WaitingItemCard 
+                      key={item.id} 
+                      item={item} 
+                      getStatusClass={getStatusClass}
+                      getPriorityClass={getPriorityClass}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-secondary-600 mb-3">No waiting items have been added to this project yet.</p>
+                  {/* Trigger Add Waiting Item Dialog */} 
+                  <Dialog open={showAddWaitingItemModal} onOpenChange={setShowAddWaitingItemModal}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="primary"
+                        onClick={handleAddWaitingItemClick}
+                      >
+                        <FiPlus className="mr-1.5 h-4 w-4" />
+                        New Request
+                      </Button>
+                    </DialogTrigger>
+                  </Dialog>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       
-       {/* --- Tasks Section Wrapped in Card --- */}
-       <Card>
-         <CardHeader className="flex flex-row items-center justify-between">
-           <CardTitle>Tasks</CardTitle>
-           {/* --- Add Task Dialog Trigger --- */} 
-           <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
-             <DialogTrigger asChild>
-               <Button 
-                 variant="primary" 
-                 size="sm"
-                 onClick={() => setShowAddTaskModal(true)} 
-               >
-                 <FiPlus className="mr-1.5 h-4 w-4" />
-                 Add Task
-               </Button>
-             </DialogTrigger>
-             {/* Add Task Modal Content moved below */} 
-           </Dialog>
-         </CardHeader>
-        
-         <CardContent>
-           {projectTasks.length > 0 ? (
-             <div className="divide-y divide-secondary-100 -mx-6 -mb-6"> 
-               {projectTasks.map(task => (
-                 <TaskItem key={task.id} task={task} />
-               ))}
-             </div>
-           ) : (
-             <div className="text-center py-8">
-               <p className="text-secondary-600 mb-3">No tasks have been added to this project yet.</p>
-               {/* Trigger Add Task Dialog */} 
-                <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="primary"
-                      size="sm"
-                    >
-                      <FiPlus className="mr-1.5 h-4 w-4" />
-                      Create First Task
-                    </Button>
-                  </DialogTrigger>
-                  {/* Add Task Modal Content moved below */} 
-                </Dialog>
-             </div>
-           )}
-         </CardContent>
-       </Card>
+      {/* Add Waiting Item Modal */}
+      {showAddWaitingItemModal && (
+        <WaitingItemForm
+          onClose={handleWaitingItemFormClose}
+          onSubmit={handleWaitingItemFormSubmit}
+          projects={[project]} // Pass only the current project
+          selectedProjectId={id} // Pre-select the current project
+          disableProjectSelection={true} // Disable project selection since we're in project context
+        />
+      )}
       
-       {/* --- Add Task Dialog Content --- */}
-       <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
+      {/* --- Add Task Dialog Content --- */}
+      <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
             <DialogDescription>
-               Fill in the details for the new task for project: {project?.name}
+              Fill in the details for the new task for project: {project?.name}
             </DialogDescription>
           </DialogHeader>
           
@@ -570,180 +808,43 @@ const ProjectDetail = () => {
               });
             }
           }}>
-               <div className="space-y-4 py-4"> 
-                 <div>
-                   <Label htmlFor="title">Task Title *</Label>
-                   <Input
-                     id="title"
-                     type="text"
-                     value={newTask.title}
-                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                     disabled={loading}
-                     placeholder="Enter task title"
-                     className={`block w-full ${taskFormErrors.title ? 'border-red-500' : ''}`}
-                   />
-                   {taskFormErrors.title && (
-                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.title}</p>
-                   )}
-                 </div>
-                 <div>
-                   <Label htmlFor="description">Task Description</Label>
-                   <Textarea
-                     id="description"
-                     value={newTask.description}
-                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                     disabled={loading}
-                     placeholder="Enter task description"
-                     className="block w-full"
-                   />
-                 </div>
-                 <div className="grid grid-cols-2 gap-4">
-                   <div>
-                     <Label htmlFor="status">Status</Label>
-                     {/* Using shadcn/ui Select */}
-                     <Select 
-                       value={newTask.status} 
-                       onValueChange={(value) => setNewTask({...newTask, status: value})}
-                       disabled={loading}
-                     >
-                       <SelectTrigger id="status">
-                         <SelectValue placeholder="Select status" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="not-started">Not Started</SelectItem>
-                         <SelectItem value="in-progress">In Progress</SelectItem>
-                         <SelectItem value="completed">Completed</SelectItem>
-                       </SelectContent>
-                     </Select>
-                   </div>
-                   
-                   <div>
-                     <Label htmlFor="priority">Priority</Label>
-                     {/* Using shadcn/ui Select */}
-                     <Select 
-                        value={newTask.priority} 
-                        onValueChange={(value) => setNewTask({...newTask, priority: value})}
-                        disabled={loading}
-                      >
-                       <SelectTrigger id="priority">
-                         <SelectValue placeholder="Select priority" />
-                       </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="low">Low</SelectItem>
-                         <SelectItem value="medium">Medium</SelectItem>
-                         <SelectItem value="high">High</SelectItem>
-                       </SelectContent>
-                     </Select>
-                   </div>
-                 </div>
-                 <div>
-                   <Label htmlFor="dueDate">Due Date</Label>
-                   <Input
-                     id="dueDate"
-                     type="date"
-                     value={newTask.dueDate}
-                     onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                     disabled={loading}
-                     placeholder="Select due date"
-                     className={`block w-full ${taskFormErrors.dueDate ? 'border-red-500' : ''}`}
-                   />
-                   {taskFormErrors.dueDate && (
-                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.dueDate}</p>
-                   )}
-                 </div>
-                 <div>
-                   <Label htmlFor="estimatedHours">Estimated Hours</Label>
-                   <Input
-                     id="estimatedHours"
-                     type="number"
-                     value={newTask.estimatedHours}
-                     onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
-                     disabled={loading}
-                     placeholder="Enter estimated hours"
-                     className={`block w-full ${taskFormErrors.estimatedHours ? 'border-red-500' : ''}`}
-                   />
-                   {taskFormErrors.estimatedHours && (
-                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.estimatedHours}</p>
-                   )}
-                 </div>
-               </div>
-               {/* Display API error if any */}
-               {taskFormErrors.api && (
-                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                   <p>{taskFormErrors.api}</p>
-                 </div>
-               )}
-               
-               <DialogFooter className="mt-6">
-                 <Button 
-                   variant="outline" 
-                   type="button"
-                   onClick={() => {
-                     setShowAddTaskModal(false);
-                     setTaskFormErrors({});
-                   }}
-                   disabled={loading}
-                 >
-                   Cancel
-                 </Button>
-                 <Button 
-                   variant="primary" 
-                   type="submit"
-                   disabled={loading}
-                   className="min-w-[100px]" 
-                 >
-                   {loading ? (
-                     <>
-                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                       </svg>
-                       Adding...
-                     </>
-                   ) : (
-                     'Add Task'
-                   )}
-                 </Button>
-               </DialogFooter>
-             </form>
-            </DialogContent>
-        </Dialog>
-       
-       {/* --- Edit Project Dialog Content --- */}
-       <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
-         <DialogContent className="sm:max-w-md">
-           <DialogHeader>
-             <DialogTitle>Edit Project</DialogTitle>
-             <DialogDescription>
-                Make changes to your project: {project?.name}
-             </DialogDescription>
-           </DialogHeader>
-           
-           {editableProject && (
-             <form onSubmit={handleUpdateProject} className="py-4">
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2"> 
+            <div className="space-y-4 py-4"> 
+              <div>
+                <Label htmlFor="title">Task Title *</Label>
+                <Input
+                  id="title"
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  disabled={loading}
+                  placeholder="Enter task title"
+                  className={`block w-full ${taskFormErrors.title ? 'border-red-500' : ''}`}
+                />
+                {taskFormErrors.title && (
+                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.title}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="description">Task Description</Label>
+                <Textarea
+                  id="description"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  disabled={loading}
+                  placeholder="Enter task description"
+                  className="block w-full"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-name">Project Name *</Label>
-                  <Input
-                    id="edit-name"
-                    type="text"
-                    value={editableProject.name}
-                    onChange={(e) => setEditableProject({ ...editableProject, name: e.target.value })}
-                    disabled={loading}
-                    placeholder="Enter project name"
-                    className="block w-full"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
+                  <Label htmlFor="status">Status</Label>
                   {/* Using shadcn/ui Select */}
                   <Select 
-                     value={editableProject.status || 'not-started'} 
-                     onValueChange={(value) => setEditableProject({...editableProject, status: value})}
-                     disabled={loading}
-                   >
-                    <SelectTrigger id="edit-status">
+                    value={newTask.status} 
+                    onValueChange={(value) => setNewTask({...newTask, status: value})}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -755,149 +856,286 @@ const ProjectDetail = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="edit-client">Client</Label>
-                  <Input
-                    id="edit-client"
-                    type="text"
-                    value={editableProject.client}
-                    onChange={(e) => setEditableProject({ ...editableProject, client: e.target.value })}
+                  <Label htmlFor="priority">Priority</Label>
+                  {/* Using shadcn/ui Select */}
+                  <Select 
+                    value={newTask.priority} 
+                    onValueChange={(value) => setNewTask({...newTask, priority: value})}
                     disabled={loading}
-                    placeholder="Enter client name"
-                    className="block w-full"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-description">Project Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editableProject.description}
-                    onChange={(e) => setEditableProject({ ...editableProject, description: e.target.value })}
-                    disabled={loading}
-                    placeholder="Enter project description"
-                    className="block w-full"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-startDate">Start Date</Label>
-                    <Input
-                      id="edit-startDate"
-                      type="date"
-                      value={editableProject.startDate}
-                      onChange={(e) => setEditableProject({ ...editableProject, startDate: e.target.value })}
-                      disabled={loading}
-                      placeholder="Select start date"
-                      className="block w-full"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="edit-dueDate">Due Date</Label>
-                    <Input
-                      id="edit-dueDate"
-                      type="date"
-                      value={editableProject.dueDate}
-                      onChange={(e) => setEditableProject({ ...editableProject, dueDate: e.target.value })}
-                      disabled={loading}
-                      placeholder="Select due date"
-                      className="block w-full"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-color">Color</Label>
-                  <Input
-                    id="edit-color"
-                    type="color"
-                    value={editableProject.color}
-                    onChange={(e) => setEditableProject({ ...editableProject, color: e.target.value })}
-                    disabled={loading}
-                    placeholder="Select color"
-                    className="block w-full"
-                  />
+                  >
+                    <SelectTrigger id="priority">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              {/* Display API error if any */}
-              {editFormErrors.api && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  <p>{editFormErrors.api}</p>
-                </div>
-              )}
-              
-              <DialogFooter className="mt-6">
-                <Button 
-                  variant="outline" 
-                  type="button"
-                  onClick={() => {
-                    setShowEditProjectModal(false)
-                    setEditFormErrors({})
-                    setEditableProject({ ...project }) 
-                   }}
+              <div>
+                <Label htmlFor="dueDate">Due Date</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={newTask.dueDate}
+                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
                   disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  variant="primary" 
-                  type="submit"
+                  placeholder="Select due date"
+                  className={`block w-full ${taskFormErrors.dueDate ? 'border-red-500' : ''}`}
+                />
+                {taskFormErrors.dueDate && (
+                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.dueDate}</p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="estimatedHours">Estimated Hours</Label>
+                <Input
+                  id="estimatedHours"
+                  type="number"
+                  value={newTask.estimatedHours}
+                  onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
                   disabled={loading}
-                  className="min-w-[120px]" 
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </Button>
-              </DialogFooter>
-            </form>
-           )}
-          </DialogContent>
-       </Dialog>
-       
-       {/* --- Delete Confirmation Dialog --- */}
-       <AlertDialog>
-         <AlertDialogTrigger asChild>
-           <Button
-             variant="destructive"
-             size="sm"
-             className="ml-auto"
-           >
-             <FiTrash2 className="mr-1.5 h-4 w-4" />
-             Delete Project
-           </Button>
-         </AlertDialogTrigger>
-         <AlertDialogContent>
-           <AlertDialogHeader>
-             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-             <AlertDialogDescription>
-               This action cannot be undone. This will permanently delete the project '{project.name}' and all associated tasks and time entries.
-             </AlertDialogDescription>
-           </AlertDialogHeader>
-           {deleteError && (
-             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-               <p>{deleteError}</p>
+                  placeholder="Enter estimated hours"
+                  className={`block w-full ${taskFormErrors.estimatedHours ? 'border-red-500' : ''}`}
+                />
+                {taskFormErrors.estimatedHours && (
+                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.estimatedHours}</p>
+                )}
+              </div>
+            </div>
+            {/* Display API error if any */}
+            {taskFormErrors.api && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <p>{taskFormErrors.api}</p>
+              </div>
+            )}
+            
+            <DialogFooter className="mt-6">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={() => {
+                  setShowAddTaskModal(false);
+                  setTaskFormErrors({});
+                }}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                type="submit"
+                disabled={loading}
+                className="min-w-[100px]" 
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  'Add Task'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* --- Edit Project Dialog Content --- */}
+      <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+               Make changes to your project: {project?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editableProject && (
+            <form onSubmit={handleUpdateProject} className="py-4">
+             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2"> 
+               <div>
+                 <Label htmlFor="edit-name">Project Name *</Label>
+                 <Input
+                   id="edit-name"
+                   type="text"
+                   value={editableProject.name}
+                   onChange={(e) => setEditableProject({ ...editableProject, name: e.target.value })}
+                   disabled={loading}
+                   placeholder="Enter project name"
+                   className="block w-full"
+                 />
+               </div>
+               
+               <div>
+                 <Label htmlFor="edit-status">Status</Label>
+                 {/* Using shadcn/ui Select */}
+                 <Select 
+                    value={editableProject.status || 'not-started'} 
+                    onValueChange={(value) => setEditableProject({...editableProject, status: value})}
+                    disabled={loading}
+                  >
+                   <SelectTrigger id="edit-status">
+                     <SelectValue placeholder="Select status" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     <SelectItem value="not-started">Not Started</SelectItem>
+                     <SelectItem value="in-progress">In Progress</SelectItem>
+                     <SelectItem value="completed">Completed</SelectItem>
+                   </SelectContent>
+                 </Select>
+               </div>
+               
+               <div>
+                 <Label htmlFor="edit-client">Client</Label>
+                 <Input
+                   id="edit-client"
+                   type="text"
+                   value={editableProject.client}
+                   onChange={(e) => setEditableProject({ ...editableProject, client: e.target.value })}
+                   disabled={loading}
+                   placeholder="Enter client name"
+                   className="block w-full"
+                 />
+               </div>
+               
+               <div>
+                 <Label htmlFor="edit-description">Project Description</Label>
+                 <Textarea
+                   id="edit-description"
+                   value={editableProject.description}
+                   onChange={(e) => setEditableProject({ ...editableProject, description: e.target.value })}
+                   disabled={loading}
+                   placeholder="Enter project description"
+                   className="block w-full"
+                 />
+               </div>
+               
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                   <Label htmlFor="edit-startDate">Start Date</Label>
+                   <Input
+                     id="edit-startDate"
+                     type="date"
+                     value={editableProject.startDate}
+                     onChange={(e) => setEditableProject({ ...editableProject, startDate: e.target.value })}
+                     disabled={loading}
+                     placeholder="Select start date"
+                     className="block w-full"
+                   />
+                 </div>
+                 
+                 <div>
+                   <Label htmlFor="edit-dueDate">Due Date</Label>
+                   <Input
+                     id="edit-dueDate"
+                     type="date"
+                     value={editableProject.dueDate}
+                     onChange={(e) => setEditableProject({ ...editableProject, dueDate: e.target.value })}
+                     disabled={loading}
+                     placeholder="Select due date"
+                     className="block w-full"
+                   />
+                 </div>
+               </div>
+               
+               <div>
+                 <Label htmlFor="edit-color">Color</Label>
+                 <Input
+                   id="edit-color"
+                   type="color"
+                   value={editableProject.color}
+                   onChange={(e) => setEditableProject({ ...editableProject, color: e.target.value })}
+                   disabled={loading}
+                   placeholder="Select color"
+                   className="block w-full"
+                 />
+               </div>
              </div>
-           )}
-           <AlertDialogFooter>
-             <AlertDialogCancel onClick={() => setDeleteError(null)} disabled={loading}>
-               Cancel
-             </AlertDialogCancel>
-             <AlertDialogAction onClick={handleDeleteProject}>Continue</AlertDialogAction>
-           </AlertDialogFooter>
-         </AlertDialogContent>
-       </AlertDialog>
-     </div>
-   );
- };
+             {/* Display API error if any */}
+             {editFormErrors.api && (
+               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                 <p>{editFormErrors.api}</p>
+               </div>
+             )}
+             
+             <DialogFooter className="mt-6">
+               <Button 
+                 variant="outline" 
+                 type="button"
+                 onClick={() => {
+                   setShowEditProjectModal(false)
+                   setEditFormErrors({})
+                   setEditableProject({ ...project }) 
+                  }}
+                 disabled={loading}
+               >
+                 Cancel
+               </Button>
+               <Button 
+                 variant="primary" 
+                 type="submit"
+                 disabled={loading}
+                 className="min-w-[120px]" 
+               >
+                 {loading ? (
+                   <>
+                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Saving...
+                   </>
+                 ) : (
+                   'Save Changes'
+                 )}
+               </Button>
+             </DialogFooter>
+           </form>
+          )}
+         </DialogContent>
+      </Dialog>
+      
+      {/* --- Delete Confirmation Dialog --- */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-auto"
+          >
+            <FiTrash2 className="mr-1.5 h-4 w-4" />
+            Delete Project
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the project '{project.name}' and all associated tasks and time entries.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <p>{deleteError}</p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteError(null)} disabled={loading}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
 
- export default ProjectDetail
+export default ProjectDetail
