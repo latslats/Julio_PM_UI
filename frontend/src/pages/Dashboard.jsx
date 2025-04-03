@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { motion } from "framer-motion"
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
@@ -84,18 +85,33 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="text-center"
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto" aria-hidden="true"></div>
           <p className="mt-3 text-secondary-600">Loading your dashboard...</p>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-8"
+    >
       {/* Header with welcome message */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl">
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl"
+      >
         <div>
           <h1 className="text-2xl font-semibold text-secondary-900">Welcome Back</h1>
           <p className="text-secondary-600 mt-1">Here's an overview of your work</p>
@@ -103,15 +119,20 @@ const Dashboard = () => {
         <div className="mt-3 sm:mt-0 text-sm font-medium text-secondary-500 bg-white px-4 py-2 rounded-lg shadow-sm">
           {format(new Date(), 'EEEE, MMMM d, yyyy')}
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        <Card className="transition-all duration-300 hover:shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600">
-                <FiActivity className="h-6 w-6" />
+              <div className="w-12 h-12 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-600 transition-transform duration-300 hover:scale-110">
+                <FiActivity className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="ml-4">
                 <p className="text-3xl font-bold text-secondary-900">{stats.totalProjects}</p>
@@ -121,11 +142,11 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
-                <FiCheckCircle className="h-6 w-6" />
+              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600 transition-transform duration-300 hover:scale-110">
+                <FiCheckCircle className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="ml-4">
                 <p className="text-3xl font-bold text-secondary-900">{stats.completedTasks}</p>
@@ -135,11 +156,11 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
-                <FiAlertCircle className="h-6 w-6" />
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 transition-transform duration-300 hover:scale-110">
+                <FiAlertCircle className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="ml-4">
                 <p className="text-3xl font-bold text-secondary-900">{stats.pendingTasks}</p>
@@ -149,11 +170,11 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center">
-              <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600">
-                <FiClock className="h-6 w-6" />
+              <div className="w-12 h-12 rounded-full bg-accent-500/10 flex items-center justify-center text-accent-600 transition-transform duration-300 hover:scale-110">
+                <FiClock className="h-6 w-6" aria-hidden="true" />
               </div>
               <div className="ml-4">
                 <p className="text-3xl font-bold text-secondary-900">{stats.trackedHoursToday}</p>
@@ -162,10 +183,15 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {/* Segmented Control (Toggle Group) */}
-      <div className="flex justify-center">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="flex justify-center"
+      >
         <ToggleGroup 
           type="single" 
           defaultValue={currentView}
@@ -175,20 +201,26 @@ const Dashboard = () => {
           }}
           className="bg-white p-1 rounded-lg shadow-sm"
         >
-          <ToggleGroupItem value="overview" aria-label="Toggle overview">
+          <ToggleGroupItem value="overview" aria-label="Show overview dashboard">
              Overview
           </ToggleGroupItem>
-          <ToggleGroupItem value="my-tasks" aria-label="Toggle my tasks">
+          <ToggleGroupItem value="my-tasks" aria-label="Show my tasks list">
              My Tasks
           </ToggleGroupItem>
-          <ToggleGroupItem value="activity" aria-label="Toggle activity feed" disabled> {/* Disabled for now */}
+          <ToggleGroupItem value="activity" aria-label="Show activity feed" disabled> {/* Disabled for now */}
              Activity
           </ToggleGroupItem>
         </ToggleGroup>
-      </div>
+      </motion.div>
 
       {/* Conditional Content based on View */}
-      <div className="mt-8">
+      <motion.div 
+        key={currentView}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-8"
+      >
         {currentView === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Recent Projects */}
@@ -196,10 +228,10 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-xl font-semibold">Recent Projects</CardTitle>
-                  <Button variant="link" asChild className="p-0 h-auto text-sm">
-                    <Link to="/projects">
+                  <Button variant="link" asChild className="p-0 h-auto text-sm transition-transform duration-200 hover:translate-x-1">
+                    <Link to="/projects" aria-label="View all projects">
                       View All
-                      <FiArrowRight className="ml-1 h-4 w-4" />
+                      <FiArrowRight className="ml-1 h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
                 </CardHeader>
@@ -220,13 +252,13 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <div className="text-center py-10 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-                      <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
-                        <FiActivity className="h-8 w-8" />
+                      <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3 animate-pulse">
+                        <FiActivity className="h-8 w-8" aria-hidden="true" />
                       </div>
                       <p className="text-secondary-600 mb-4">No projects yet</p>
-                      <Button asChild>
-                        <Link to="/projects">
-                          <FiPlus className="mr-2 h-4 w-4" />
+                      <Button asChild className="transition-all duration-300 hover:shadow-md">
+                        <Link to="/projects" aria-label="Create a new project">
+                          <FiPlus className="mr-2 h-4 w-4" aria-hidden="true" />
                           Create Project
                         </Link>
                       </Button>
@@ -257,8 +289,8 @@ const Dashboard = () => {
                     </ul>
                   ) : (
                     <div className="text-center py-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
-                      <div className="w-12 h-12 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3">
-                        <FiCheckCircle className="h-6 w-6" />
+                      <div className="w-12 h-12 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mx-auto mb-3 animate-pulse">
+                        <FiCheckCircle className="h-6 w-6" aria-hidden="true" />
                       </div>
                       <p className="text-secondary-600">No upcoming tasks</p>
                     </div>
@@ -303,8 +335,8 @@ const Dashboard = () => {
             </Card>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 

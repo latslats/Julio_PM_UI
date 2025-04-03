@@ -2,10 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import custom animations */
+@import './styles/animations.css';
+
 @layer base {
   body {
     /* @apply bg-gradient-to-br from-secondary-50 to-primary-50 min-h-screen font-sans text-secondary-800; */ /* Old style */
     @apply min-h-screen bg-background font-sans antialiased; /* New shadcn base */
+  }
+  
+  /* Improved focus styles for accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+  
+  /* Smooth scrolling for better UX */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Improved link accessibility */
+  a {
+    @apply transition-colors duration-200;
   }
   :root {
     /* iOS-Inspired Palette: slate neutrals, blue primary */
