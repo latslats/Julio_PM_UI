@@ -49,6 +49,36 @@ const ProjectDetail = () => {
   // Toast hook
   const { toast } = useToast();
 
+  // Function to validate task form
+  const validateTaskForm = () => {
+    const errors = {};
+    
+    // Validate title
+    if (!newTask.title.trim()) {
+      errors.title = 'Task title is required';
+    } else if (newTask.title.length > 100) {
+      errors.title = 'Task title must be less than 100 characters';
+    }
+    
+    // Validate estimated hours if provided
+    if (newTask.estimatedHours && (isNaN(newTask.estimatedHours) || Number(newTask.estimatedHours) < 0)) {
+      errors.estimatedHours = 'Estimated hours must be a positive number';
+    }
+    
+    // Validate due date if provided
+    if (newTask.dueDate) {
+      const dueDate = new Date(newTask.dueDate);
+      if (isNaN(dueDate.getTime())) {
+        errors.dueDate = 'Invalid due date';
+      }
+    }
+    
+    return {
+      isValid: Object.keys(errors).length === 0,
+      errors
+    };
+  };
+
   useEffect(() => {
     if (!loading) {
       const foundProject = projects.find(p => p.id === id)
@@ -515,10 +545,12 @@ const ProjectDetail = () => {
                   dueDate: '',
                   estimatedHours: ''
                 });
-                fetchProjectDetails(); // Re-fetch to show the new task
+                // Update UI by using existing project tasks
+                const updatedTasks = [...projectTasks, result.data];
+                setProjectTasks(updatedTasks);
                 toast({
                   title: "Task Created",
-                  description: `Task "${result.task.title}" added successfully.`,
+                  description: `Task "${result.data.title}" added successfully.`,
                 });
               } else {
                 setTaskFormErrors({ api: result.message || 'Failed to create task.' });
@@ -548,8 +580,11 @@ const ProjectDetail = () => {
                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                      disabled={loading}
                      placeholder="Enter task title"
-                     className="block w-full"
+                     className={`block w-full ${taskFormErrors.title ? 'border-red-500' : ''}`}
                    />
+                   {taskFormErrors.title && (
+                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.title}</p>
+                   )}
                  </div>
                  <div>
                    <Label htmlFor="description">Task Description</Label>
@@ -610,8 +645,11 @@ const ProjectDetail = () => {
                      onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
                      disabled={loading}
                      placeholder="Select due date"
-                     className="block w-full"
+                     className={`block w-full ${taskFormErrors.dueDate ? 'border-red-500' : ''}`}
                    />
+                   {taskFormErrors.dueDate && (
+                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.dueDate}</p>
+                   )}
                  </div>
                  <div>
                    <Label htmlFor="estimatedHours">Estimated Hours</Label>
@@ -622,8 +660,11 @@ const ProjectDetail = () => {
                      onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
                      disabled={loading}
                      placeholder="Enter estimated hours"
-                     className="block w-full"
+                     className={`block w-full ${taskFormErrors.estimatedHours ? 'border-red-500' : ''}`}
                    />
+                   {taskFormErrors.estimatedHours && (
+                     <p className="mt-1 text-sm text-red-600">{taskFormErrors.estimatedHours}</p>
+                   )}
                  </div>
                </div>
                {/* Display API error if any */}
