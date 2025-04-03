@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
-import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch } from 'react-icons/fi'
+import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList } from 'react-icons/fi'
 import { format } from 'date-fns'
 import { 
     Card, CardContent, CardHeader, CardTitle 
@@ -237,6 +237,15 @@ const ProjectDetail = () => {
         </div>
         
         <div className="flex space-x-2 self-start sm:self-center">
+          <Link to={`/time-entries?projectId=${id}`}>
+            <Button 
+              variant="outline"
+              size="sm"
+            >
+              <FiList className="mr-1.5 h-4 w-4" />
+              View Time Entries
+            </Button>
+          </Link>
           {/* --- Edit Project Dialog Trigger --- */} 
           <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
             <DialogTrigger asChild>

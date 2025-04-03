@@ -477,6 +477,32 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  const updateTimeEntry = async (id, timeEntryData) => {
+    setLoading(true);
+    try {
+      const result = await apiRequest(`/time-entries/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(timeEntryData),
+      });
+      
+      if (result.success) {
+        // Update the time entry in the state
+        setTimeEntries(prev => prev.map(te => te.id === id ? result.data : te));
+        showNotification('success', 'Time entry updated successfully');
+        return { success: true, data: result.data };
+      } else {
+        showNotification('error', `Failed to update time entry: ${result.message || 'Unknown error'}`);
+        return result;
+      }
+    } catch (err) {
+      console.error('Error updating time entry:', err);
+      showNotification('error', `Failed to update time entry: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- Calculated Values (Memoized) ---
   const projectStats = useMemo(() => {
     return projects.reduce((acc, project) => {
@@ -567,6 +593,7 @@ export const ProjectProvider = ({ children }) => {
       pauseTimeTracking,
       resumeTimeTracking,
       deleteTimeEntry, // Provide deleteTimeEntry
+      updateTimeEntry, // Provide updateTimeEntry
       fetchActiveTimers, // Provide the new function
       projectStats,
       totalTrackedHours,

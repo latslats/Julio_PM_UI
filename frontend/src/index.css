@@ -11,6 +11,27 @@
     @apply min-h-screen bg-background font-sans antialiased; /* New shadcn base */
   }
   
+  /* Typography styles */
+  h1 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+  
+  h2 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+  
+  h3 {
+    @apply text-lg font-medium;
+  }
+  
+  h4 {
+    @apply text-base font-medium;
+  }
+  
+  p {
+    @apply leading-relaxed;
+  }
+  
   /* Improved focus styles for accessibility */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-primary;
@@ -24,6 +45,14 @@
   /* Improved link accessibility */
   a {
     @apply transition-colors duration-200;
+  }
+  
+  /* Add subtle transitions to interactive elements */
+  button, 
+  input, 
+  select, 
+  textarea {
+    @apply transition-all duration-200;
   }
   :root {
     /* iOS-Inspired Palette: slate neutrals, blue primary */

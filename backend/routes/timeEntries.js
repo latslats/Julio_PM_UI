@@ -463,6 +463,106 @@ router.put('/resume/:id', async (req, res, next) => {
   }
 });
 
+// PUT /api/time-entries/:id - Update a time entry
+router.put('/:id', async (req, res, next) => {
+  const { id } = req.params;
+  const { startTime, endTime, duration, notes, taskId } = req.body;
+  
+  // Validate required fields
+  if (!startTime) {
+    return res.status(400).json({ message: 'Start time is required' });
+  }
+  
+  // Validate that taskId exists if provided
+  if (taskId) {
+    try {
+      const taskCheckResult = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
+      if (taskCheckResult.rows.length === 0) {
+        return res.status(400).json({ message: `Task with ID ${taskId} does not exist.` });
+      }
+    } catch (err) {
+      return handleDatabaseError(err, res, next);
+    }
+  }
+  
+  // Validate that endTime is after startTime if both are provided
+  if (startTime && endTime) {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    if (end < start) {
+      return res.status(400).json({ message: 'End time cannot be before start time' });
+    }
+  }
+  
+  // Build the SQL query dynamically based on provided fields
+  let updateFields = [];
+  const values = [id];
+  let paramIndex = 2;
+  
+  if (startTime) {
+    updateFields.push(`"startTime" = $${paramIndex++}`);
+    values.push(new Date(startTime));
+  }
+  
+  if (endTime !== undefined) {
+    if (endTime === null) {
+      updateFields.push(`"endTime" = NULL`);
+    } else {
+      updateFields.push(`"endTime" = $${paramIndex++}`);
+      values.push(new Date(endTime));
+    }
+  }
+  
+  if (duration !== undefined) {
+    updateFields.push(`duration = $${paramIndex++}`);
+    values.push(duration);
+  }
+  
+  if (notes !== undefined) {
+    updateFields.push(`notes = $${paramIndex++}`);
+    values.push(notes);
+  }
+  
+  if (taskId) {
+    updateFields.push(`"taskId" = $${paramIndex++}`);
+    values.push(taskId);
+  }
+  
+  // If no fields to update, return error
+  if (updateFields.length === 0) {
+    return res.status(400).json({ message: 'No fields to update' });
+  }
+  
+  const sql = `UPDATE time_entries SET ${updateFields.join(', ')} WHERE id = $1 RETURNING *`;
+  
+  try {
+    const result = await pool.query(sql, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Time entry not found' });
+    }
+    
+    // Get additional information about the task and project
+    const entryWithDetails = await pool.query(
+      `SELECT te.*, 
+       t.title as "taskTitle", 
+       t."projectId", 
+       t.status as "taskStatus",
+       t.priority as "taskPriority",
+       p.name as "projectName", 
+       p.color as "projectColor"
+       FROM time_entries te 
+       JOIN tasks t ON te."taskId" = t.id
+       JOIN projects p ON t."projectId" = p.id
+       WHERE te.id = $1`,
+      [id]
+    );
+    
+    res.json(entryWithDetails.rows[0]);
+  } catch (err) {
+    handleDatabaseError(err, res, next);
+  }
+});
+
 // DELETE /api/time-entries/:id - Delete a time entry
 router.delete('/:id', async (req, res, next) => {
   const sql = 'DELETE FROM time_entries WHERE id = $1';

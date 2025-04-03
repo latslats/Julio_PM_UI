@@ -10,7 +10,8 @@ import ProjectDetail from './pages/ProjectDetail'
 import Reports from './pages/Reports'
 import WaitingItems from './pages/WaitingItems'
 import WaitingItemDetail from './pages/WaitingItemDetail'
-import SettingsPage from './pages/SettingsPage' // Import SettingsPage
+import SettingsPage from './pages/SettingsPage'
+import TimeEntriesPage from './pages/TimeEntriesPage' // Import TimeEntriesPage
 import NotFound from './pages/NotFound'
 
 const App = () => {
@@ -24,7 +25,8 @@ const App = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="waiting-items" element={<WaitingItems />} />
         <Route path="waiting-items/:id" element={<WaitingItemDetail />} />
-        <Route path="settings" element={<SettingsPage />} /> {/* Add Settings Route */}
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="time-entries" element={<TimeEntriesPage />} /> {/* Add Time Entries Route */}
       </Route>
 
       {/* 404 Route */}

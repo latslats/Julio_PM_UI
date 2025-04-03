@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import { useProjects } from '../../context/ProjectContext'
 import { useNotification } from '../../context/NotificationContext'
+import { Link } from 'react-router-dom'
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader } from 'react-icons/fi'
+import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader, FiList } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
 /**
@@ -316,6 +317,14 @@ const TaskItem = ({ task }) => {
         </div>
 
         <div className="flex items-center space-x-1">
+          <Link
+            to={`/time-entries?taskId=${task.id}`}
+            className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+            title="View time entries"
+            aria-label="View time entries for this task"
+          >
+            <FiList className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <Button
             variant="ghost"
             size="icon"

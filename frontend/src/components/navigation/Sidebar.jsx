@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { FiHome, FiFolder, FiBarChart2, FiSettings, FiX, FiAlertCircle } from 'react-icons/fi'
+import { FiHome, FiFolder, FiBarChart2, FiSettings, FiX, FiAlertCircle, FiClock } from 'react-icons/fi'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -8,6 +8,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <FiHome className="w-5 h-5" /> },
     { name: 'Projects', path: '/projects', icon: <FiFolder className="w-5 h-5" /> },
+    { name: 'Time Entries', path: '/time-entries', icon: <FiClock className="w-5 h-5" /> },
     { name: 'Waiting On', path: '/waiting-items', icon: <FiAlertCircle className="w-5 h-5" /> },
     { name: 'Reports', path: '/reports', icon: <FiBarChart2 className="w-5 h-5" /> },
     { name: 'Settings', path: '/settings', icon: <FiSettings className="w-5 h-5" /> },

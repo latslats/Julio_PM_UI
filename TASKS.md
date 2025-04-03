@@ -8,7 +8,7 @@
 
 **Phase 1: Setup & Core Elements**
 - [x] Setup `shadcn/ui` (init command) - 2025-04-02
-- [ ] Define base styles (colors, typography) in Tailwind config and global CSS
+- [x] Define base styles (colors, typography) in Tailwind config and global CSS - 2025-04-03
 - [x] Configure `Inter` font in Tailwind config - 2025-04-02
 - [x] Add `shadcn/ui` Button component - 2025-04-02
 - [x] Refactor `Button` usage in `Projects.jsx` (New Project button, +2 others) - 2025-04-03
@@ -49,7 +49,7 @@
 
 **Phase 4: Polish & Refinement**
 - [ ] Review UI consistency across all pages/components
-- [ ] Add subtle animations/transitions where appropriate
+- [x] Add subtle animations/transitions where appropriate - 2025-04-03
 - [ ] Test responsiveness thoroughly
 - [ ] Perform accessibility check
 
@@ -212,5 +212,5 @@
 ### Backend
 ### Database
 ### General
-- [ ] Implement manual time entry editing
+- [x] Implement manual time entry editing - 2025-04-03
 ### UI Overhaul (iOS-Inspired Minimalism with shadcn/ui) - 2025-04-03
