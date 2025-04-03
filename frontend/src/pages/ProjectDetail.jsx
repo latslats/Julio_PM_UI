@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import TaskList from '../tasks/TaskList' // Assuming TaskList component exists
+import TaskItem from '../components/tasks/TaskItem' // Using the existing TaskItem component
 import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 const ProjectDetail = () => {
@@ -431,7 +431,7 @@ const ProjectDetail = () => {
            {projectTasks.length > 0 ? (
              <div className="divide-y divide-secondary-100 -mx-6 -mb-6"> 
                {projectTasks.map(task => (
-                 <TaskList key={task.id} task={task} />
+                 <TaskItem key={task.id} task={task} />
                ))}
              </div>
            ) : (
@@ -456,6 +456,7 @@ const ProjectDetail = () => {
        </Card>
       
        {/* --- Add Task Dialog Content --- */}
+       <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
@@ -640,9 +641,10 @@ const ProjectDetail = () => {
                </DialogFooter>
              </form>
             </DialogContent>
+        </Dialog>
        
        {/* --- Edit Project Dialog Content --- */}
-       {showEditProjectModal && (
+       <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
          <DialogContent className="sm:max-w-md">
            <DialogHeader>
              <DialogTitle>Edit Project</DialogTitle>
@@ -794,7 +796,7 @@ const ProjectDetail = () => {
             </form>
            )}
           </DialogContent>
-       )}
+       </Dialog>
        
        {/* --- Delete Confirmation Dialog --- */}
        <AlertDialog>

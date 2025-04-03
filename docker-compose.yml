@@ -3,12 +3,16 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Pass build arguments for configuration if needed
+        VITE_API_URL: http://localhost:5001/api
     ports:
       - "80:80"
     restart: unless-stopped
     container_name: taskflow-frontend
     depends_on:
-      - taskflow-backend
+      taskflow-backend:
+        condition: service_healthy
     networks:
       - taskflow-network
 
@@ -50,6 +54,15 @@ services:
       DATABASE_URL: postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow_db
       NODE_ENV: development
       PORT: 5001
+      # Settings for auto-pause functionality
+      AUTO_PAUSE_CHECK_INTERVAL: "* * * * *" # Run every minute (cron syntax)
+      TIMEZONE: "America/New_York" # Set your local timezone for auto-pause
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5001/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy

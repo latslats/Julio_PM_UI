@@ -20,7 +20,7 @@ const WaitingItems = () => {
   const { projects, loading: projectsLoading } = useProjects();
   
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -34,7 +34,7 @@ const WaitingItems = () => {
   // Filtered waiting items
   const filteredItems = waitingItems.filter(item => {
     // Project filter
-    if (selectedProject && item.projectId !== selectedProject) {
+    if (selectedProject !== 'all' && item.projectId !== selectedProject) {
       return false;
     }
     
@@ -162,7 +162,7 @@ const WaitingItems = () => {
               <SelectValue placeholder="All Projects" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Projects</SelectItem>
+              <SelectItem value="all">All Projects</SelectItem>
               {projects.map(project => (
                 <SelectItem key={project.id} value={project.id}>
                   {project.name}

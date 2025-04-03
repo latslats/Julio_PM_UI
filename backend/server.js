@@ -24,6 +24,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'TaskFlow API is running!' });
 });
 
+// Health Check Endpoint for Docker
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Mount API Routes
 app.use('/api/projects', projectRoutes); // Use project routes
 app.use('/api/tasks', taskRoutes); // Use task routes
@@ -135,13 +140,13 @@ const checkAndPauseTimers = async () => {
   }
 };
 
-// Schedule the job to run every minute
+// Schedule the job to run with the interval defined in environment variables or default to every minute
 // Note: Consider the server's timezone. If the server is UTC and users expect local time, adjustments are needed.
-cron.schedule('* * * * *', checkAndPauseTimers, {
+cron.schedule(process.env.AUTO_PAUSE_CHECK_INTERVAL || '* * * * *', checkAndPauseTimers, {
     scheduled: true,
-    timezone: process.env.TZ || undefined // Use system timezone if TZ env var is not set
+    timezone: process.env.TIMEZONE || process.env.TZ || undefined // Use environment variable timezone or system default
 });
 
-console.log(`[Cron] Auto-pause job scheduled to run every minute. Timezone: ${process.env.TZ || 'System Default'}`);
+console.log(`[Cron] Auto-pause job scheduled to run with interval: ${process.env.AUTO_PAUSE_CHECK_INTERVAL || '* * * * *'}. Timezone: ${process.env.TIMEZONE || process.env.TZ || 'System Default'}`);
 
 // --- End Cron Job ---

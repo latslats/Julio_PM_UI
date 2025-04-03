@@ -31,7 +31,7 @@ import ProjectCard from '../components/projects/ProjectCard'
 const Projects = () => {
   const { projects, loading, createProject, projectStats } = useProjects()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedClient, setSelectedClient] = useState('')
+  const [selectedClient, setSelectedClient] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formErrors, setFormErrors] = useState({});
@@ -47,13 +47,13 @@ const Projects = () => {
   // Get unique client names for the filter dropdown
   const uniqueClients = useMemo(() => {
     const clients = new Set(projects.map(p => p.client).filter(Boolean))
-    return ['', ...Array.from(clients).sort()]
+    return ['all', ...Array.from(clients).sort()]
   }, [projects]);
 
   // Filter projects based on search term and selected client
   const filteredProjects = projects.filter(project => 
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (selectedClient === '' || project.client === selectedClient)
+    (selectedClient === 'all' || project.client === selectedClient)
   );
 
   if (loading) {
