@@ -3989,6 +3989,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader, FiList } from 'react-icons/fi'
+import { CalendarIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 /**
  * TaskItem component displays a task with time tracking functionality
@@ -4075,8 +4076,11 @@ const TaskItem = ({ task }) => {
   }
   // Handle task status toggle
   const toggleTaskStatus = async () => {
-    const newStatus = task.status === 'completed' ? 'in-progress' : 'completed'
-    await updateTask(task.id, { status: newStatus })
+    // Normalize current status to handle both 'completed' and 'Completed' formats
+    const isCurrentlyCompleted = task.status === 'completed' || task.status === 'Completed';
+    // Toggle between completed and in-progress
+    const newStatus = isCurrentlyCompleted ? 'in-progress' : 'completed';
+    await updateTask(task.id, { status: newStatus });
   }
   // Handle time tracking
   const toggleTimeTracking = async () => {
@@ -4168,206 +4172,210 @@ const TaskItem = ({ task }) => {
   }
   return (
     <>
-      <motion.div 
-        className="py-3 flex items-center justify-between group"
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        whileHover={{ backgroundColor: 'rgba(243, 244, 246, 0.5)' }}
-        whileTap={{ scale: 0.99 }}
+      <div 
+        className={`px-6 py-4 border-b border-secondary-100 hover:bg-secondary-50/70 ${
+          task.status === 'completed' || task.status === 'Completed' ? 'bg-secondary-300/90' : ''
+        }`}
       >
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTaskStatus}
-            className={`flex-shrink-0 h-5 w-5 rounded-full border transition-all duration-200 ${
-              task.status === 'completed'
-                ? 'bg-primary-500 border-primary-500 flex items-center justify-center'
-                : 'border-secondary-300 hover:border-primary-400'
-            }`}
-            aria-label={task.status === 'completed' ? 'Mark task as incomplete' : 'Mark task as complete'}
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: task.status === 'completed' ? 1 : 0 }}
-              transition={{ duration: 0.2 }}
+        <motion.div 
+          className="flex items-center justify-between group"
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTaskStatus}
+              className={`flex-shrink-0 h-5 w-5 rounded-full border transition-all duration-200 ${
+                task.status === 'completed' || task.status === 'Completed'
+                  ? 'bg-primary-500 border-primary-500 flex items-center justify-center'
+                  : 'border-secondary-300 hover:border-primary-400'
+              }`}
+              aria-label={task.status === 'completed' || task.status === 'Completed' ? 'Mark task as incomplete' : 'Mark task as complete'}
             >
-              {task.status === 'completed' && <FiCheck className="h-3 w-3 text-white" aria-hidden="true" />}
-            </motion.div>
-          </Button>
-          <div className="ml-3">
-            <div className="flex items-center">
-              <motion.p 
-                className={`text-sm font-medium ${
-                  task.status === 'completed' ? 'text-secondary-500 line-through' : 'text-secondary-900'
-                }`}
-                animate={{ 
-                  opacity: task.status === 'completed' ? 0.7 : 1,
-                  textDecoration: task.status === 'completed' ? 'line-through' : 'none'
-                }}
-                transition={{ duration: 0.3 }}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: task.status === 'completed' || task.status === 'Completed' ? 1 : 0 }}
+                transition={{ duration: 0.2 }}
               >
-                {task.title}
-              </motion.p>
-              <AnimatePresence>
-                {task.priority === 'high' && (
-                  <motion.span 
-                    className="ml-2 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    High
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="flex items-center mt-1 space-x-2">
-              <span className="text-xs text-secondary-500">
-                {project.name || 'Unknown Project'}
-              </span>
-              {formatDueDate()}
-              {task.estimatedHours && (
-                <span className="text-xs text-secondary-500 flex items-center">
-                  <FiClock className="mr-1 h-3 w-3" aria-hidden="true" />
-                  {task.estimatedHours}h
-                  {activeTimeEntry && (
+                {(task.status === 'completed' || task.status === 'Completed') && <FiCheck className="h-3 w-3 text-white" aria-hidden="true" />}
+              </motion.div>
+            </Button>
+            <div className="ml-3">
+              <div className="flex items-center">
+                <motion.p 
+                  className={`text-sm font-medium ${
+                    task.status === 'completed' || task.status === 'Completed' ? 'text-secondary-500 line-through' : 'text-secondary-900'
+                  }`}
+                  animate={{ 
+                    opacity: task.status === 'completed' || task.status === 'Completed' ? 0.7 : 1,
+                    textDecoration: task.status === 'completed' || task.status === 'Completed' ? 'line-through' : 'none'
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {task.title}
+                </motion.p>
+                <AnimatePresence>
+                  {task.priority === 'high' && (
                     <motion.span 
-                      className="ml-1 text-primary-600 font-medium"
-                      animate={{ 
-                        color: activeTimeEntry.isPaused ? '#4f46e5' : '#06b6d4',
-                      }}
-                      transition={{ duration: 0.3 }}
+                      className="ml-2 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      {activeTimeEntry.isPaused 
-                        ? '(paused)' 
-                        : (
-                          <span className="inline-flex items-center">
-                            (running: 
-                            <motion.span
-                              animate={{ opacity: [1, 0.7, 1] }}
-                              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                              className="ml-1"
-                            >
-                              {formatTime(elapsedTime)}
-                            </motion.span>
-                            )
-                          </span>
-                        )}
+                      High
                     </motion.span>
                   )}
+                </AnimatePresence>
+              </div>
+              <div className="flex items-center mt-1 space-x-2">
+                <span className="text-xs text-secondary-500">
+                  {project.name || 'Unknown Project'}
                 </span>
-              )}
+                {formatDueDate()}
+                {task.estimatedHours && (
+                  <span className="text-xs text-secondary-500 flex items-center">
+                    <FiClock className="mr-1 h-3 w-3" aria-hidden="true" />
+                    {task.estimatedHours}h
+                    {activeTimeEntry && (
+                      <motion.span 
+                        className="ml-1 text-primary-600 font-medium"
+                        animate={{ 
+                          color: activeTimeEntry.isPaused ? '#4f46e5' : '#06b6d4',
+                        }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {activeTimeEntry.isPaused 
+                          ? '(paused)' 
+                          : (
+                            <span className="inline-flex items-center">
+                              (running: 
+                              <motion.span
+                                animate={{ opacity: [1, 0.7, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                className="ml-1"
+                              >
+                                {formatTime(elapsedTime)}
+                              </motion.span>
+                              )
+                            </span>
+                          )}
+                      </motion.span>
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-1">
-          <Link
-            to={`/time-entries?taskId=${task.id}`}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-            title="View time entries"
-            aria-label="View time entries for this task"
-          >
-            <FiList className="h-4 w-4" aria-hidden="true" />
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleOpenEditModal}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-            title="Edit task"
-            aria-label="Edit task"
-          >
-            <FiEdit2 className="h-4 w-4" aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 rounded-lg text-secondary-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-            title="Delete task"
-            aria-label="Delete task"
-          >
-            <FiTrash2 className="h-4 w-4" aria-hidden="true" />
-          </Button>
-          <div className="flex space-x-1">
-            {activeTimeEntry && (
+          <div className="flex items-center space-x-1">
+            <Link
+              to={`/time-entries?taskId=${task.id}`}
+              className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+              title="View time entries"
+              aria-label="View time entries for this task"
+            >
+              <FiList className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleOpenEditModal}
+              className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+              title="Edit task"
+              aria-label="Edit task"
+            >
+              <FiEdit2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-lg text-secondary-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+              title="Delete task"
+              aria-label="Delete task"
+            >
+              <FiTrash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <div className="flex space-x-1">
+              {activeTimeEntry && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleStopTracking}
+                  className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                  title="Stop tracking"
+                  aria-label="Stop time tracking"
+                  disabled={isActionLoading}
+                >
+                  {isActionLoading ? (
+                    <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <FiSquare className="h-5 w-5" aria-hidden="true" />
+                    </motion.div>
+                  )}
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                onClick={handleStopTracking}
-                className="p-2 rounded-lg text-red-600 hover:bg-red-50"
-                title="Stop tracking"
-                aria-label="Stop time tracking"
+                onClick={toggleTimeTracking}
+                className={`p-2 rounded-lg ${
+                  activeTimeEntry
+                    ? activeTimeEntry.isPaused
+                      ? 'text-primary-600 hover:bg-primary-50' // Paused - show play
+                      : 'text-secondary-600 hover:bg-secondary-50' // Running - show pause
+                    : 'text-primary-600 hover:bg-primary-50' // Not tracking - show play
+                }`}
+                title={activeTimeEntry 
+                  ? activeTimeEntry.isPaused 
+                    ? 'Resume tracking' 
+                    : 'Pause tracking' 
+                  : 'Start tracking'}
+                aria-label={activeTimeEntry 
+                  ? activeTimeEntry.isPaused 
+                    ? 'Resume time tracking' 
+                    : 'Pause time tracking' 
+                  : 'Start time tracking'}
                 disabled={isActionLoading}
               >
                 {isActionLoading ? (
                   <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
+                ) : activeTimeEntry ? (
+                  activeTimeEntry.isPaused ? (
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <FiPlay className="h-5 w-5" aria-hidden="true" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <FiPause className="h-5 w-5" aria-hidden="true" />
+                    </motion.div>
+                  )
                 ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <FiSquare className="h-5 w-5" aria-hidden="true" />
-                  </motion.div>
-                )}
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTimeTracking}
-              className={`p-2 rounded-lg ${
-                activeTimeEntry
-                  ? activeTimeEntry.isPaused
-                    ? 'text-primary-600 hover:bg-primary-50' // Paused - show play
-                    : 'text-secondary-600 hover:bg-secondary-50' // Running - show pause
-                  : 'text-primary-600 hover:bg-primary-50' // Not tracking - show play
-              }`}
-              title={activeTimeEntry 
-                ? activeTimeEntry.isPaused 
-                  ? 'Resume tracking' 
-                  : 'Pause tracking' 
-                : 'Start tracking'}
-              aria-label={activeTimeEntry 
-                ? activeTimeEntry.isPaused 
-                  ? 'Resume time tracking' 
-                  : 'Pause time tracking' 
-                : 'Start time tracking'}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
-              ) : activeTimeEntry ? (
-                activeTimeEntry.isPaused ? (
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
                     <FiPlay className="h-5 w-5" aria-hidden="true" />
                   </motion.div>
-                ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <FiPause className="h-5 w-5" aria-hidden="true" />
-                  </motion.div>
-                )
-              ) : (
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <FiPlay className="h-5 w-5" aria-hidden="true" />
-                </motion.div>
-              )}
-            </Button>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
       {/* Edit Task Modal */}
       <AnimatePresence>
         {showEditModal && editableTask && (
@@ -4463,22 +4471,27 @@ const TaskItem = ({ task }) => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`edit-due-date-${task.id}`} className="text-sm font-medium">Due Date</Label>
+                        <Label htmlFor={`edit-dueDate-${task.id}`} className="text-sm font-medium">Due Date</Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
-                              variant={"outline"}
-                              className="w-full justify-start text-left font-normal mt-1"
-                              aria-label="Select due date"
+                              variant="outline"
+                              className={`w-full justify-start text-left font-normal ${
+                                !editableTask.dueDate && 'text-muted-foreground'
+                              }`}
                             >
-                              <FiClock className="mr-2 h-4 w-4" aria-hidden="true" />
-                              {editableTask.dueDate ? format(new Date(editableTask.dueDate), "PPP") : <span>Pick a date</span>}
+                              {editableTask.dueDate ? (
+                                format(editableTask.dueDate, 'PPP')
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0">
                             <Calendar
                               mode="single"
-                              selected={editableTask.dueDate ? new Date(editableTask.dueDate) : undefined}
+                              selected={editableTask.dueDate}
                               onSelect={(date) => setEditableTask({ ...editableTask, dueDate: date })}
                               initialFocus
                             />
@@ -4486,85 +4499,33 @@ const TaskItem = ({ task }) => {
                         </Popover>
                       </div>
                       <div>
-                        <Label htmlFor={`edit-estimated-hours-${task.id}`} className="text-sm font-medium">Estimated Hours</Label>
+                        <Label htmlFor={`edit-estimatedHours-${task.id}`} className="text-sm font-medium">Estimated Hours</Label>
                         <Input
-                          id={`edit-estimated-hours-${task.id}`}
+                          id={`edit-estimatedHours-${task.id}`}
                           type="number"
                           name="estimatedHours"
-                          value={editableTask.estimatedHours}
-                          onChange={(e) => setEditableTask({ ...editableTask, estimatedHours: parseFloat(e.target.value) || 0 })}
+                          value={editableTask.estimatedHours || ''}
+                          onChange={(e) => setEditableTask({ ...editableTask, estimatedHours: e.target.value })}
                           className="mt-1"
-                          min="0"
-                          step="0.5"
+                          placeholder="Estimated hours"
                         />
                       </div>
                     </div>
                   </div>
-                  <div className="mt-6 flex justify-end space-x-3">
+                  <div className="mt-6 flex justify-end space-x-2">
                     <Button
-                      type="button"
-                      variant="secondary"
+                      variant="outline"
                       onClick={() => setShowEditModal(false)}
-                      className="transition-all duration-200"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
-                      variant="primary"
-                      className="transition-all duration-200 hover:bg-primary-600"
                     >
-                      Save Changes
+                      Save
                     </Button>
                   </div>
                 </form>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteConfirm && (
-          <motion.div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="delete-task-title"
-            aria-describedby="delete-task-description"
-          >
-            <motion.div 
-              className="bg-white rounded-xl shadow-lg max-w-md w-full p-6"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
-              <h3 id="delete-task-title" className="text-lg font-medium text-secondary-900 mb-2">Delete Task</h3>
-              <p id="delete-task-description" className="text-secondary-600 mb-4">
-                Are you sure you want to delete this task? This action cannot be undone.
-              </p>
-              <div className="flex space-x-3 justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="transition-all duration-200"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDeleteTask}
-                  className="transition-all duration-200 hover:bg-red-700"
-                >
-                  Delete
-                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -6276,7 +6237,9 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const formattedDeadline = item.deadlineDate ? format(new Date(item.deadlineDate), 'MMM d, yyyy') : 'None';
   return (
     <div>
-      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col">
+      <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col ${
+        item.status?.toLowerCase() === 'completed' ? 'bg-secondary-300/90' : ''
+      }`}>
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <Link to={`/waiting-items/${item.id}`} className="block hover:text-primary-600 flex-1 mr-2">
@@ -8904,6 +8867,22 @@ const ProjectDetail = () => {
                   <div className="ml-4">
                     <p className="text-3xl font-bold text-secondary-900">{projectWaitingItems.length}</p>
                     <p className="text-sm text-secondary-500">Total Requests</p>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-secondary-100">
+                  <div className="flex flex-col space-y-1 text-xs">
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-yellow-400 mr-1"></span>
+                      Pending: {projectWaitingItems.filter(item => item.status === 'pending').length}
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 mr-1"></span>
+                      In Progress: {projectWaitingItems.filter(item => item.status === 'in-progress').length}
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-green-400 mr-1"></span>
+                      Completed: {projectWaitingItems.filter(item => item.status === 'completed').length}
+                    </span>
                   </div>
                 </div>
               </CardContent>

@@ -605,6 +605,22 @@ const ProjectDetail = () => {
                     <p className="text-sm text-secondary-500">Total Requests</p>
                   </div>
                 </div>
+                <div className="mt-3 pt-3 border-t border-secondary-100">
+                  <div className="flex flex-col space-y-1 text-xs">
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-yellow-400 mr-1"></span>
+                      Pending: {projectWaitingItems.filter(item => item.status === 'pending').length}
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-blue-400 mr-1"></span>
+                      In Progress: {projectWaitingItems.filter(item => item.status === 'in-progress').length}
+                    </span>
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-green-400 mr-1"></span>
+                      Completed: {projectWaitingItems.filter(item => item.status === 'completed').length}
+                    </span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             

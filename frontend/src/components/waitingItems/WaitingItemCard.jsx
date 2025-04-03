@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCalendar, FiClock, FiAlertCircle, FiExternalLink, FiChevronRight, FiEdit2, FiTrash2 } from 'react-icons/fi';
-import { format, formatDistanceToNow, isAfter } from 'date-fns';
+import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const { projects } = useProjects();
   
   // Check if deadline is passed
-  const isDeadlinePassed = item.deadlineDate && isAfter(new Date(), new Date(item.deadlineDate));
+  const isDeadlinePassed = item.deadlineDate && isAfter(new Date(), parseISO(item.deadlineDate));
   
   // Handle edit button click
   const handleEditClick = () => {
@@ -57,17 +57,19 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const statusColor = getStatusClass(item.status);
   const priorityColor = getPriorityClass(item.priority);
 
-  const timeWaiting = item.sentDate ? formatDistanceToNow(new Date(item.sentDate), { addSuffix: false }) : 'N/A';
-  const daysOverdue = item.deadlineDate && item.status !== 'Received' && isAfter(new Date(), new Date(item.deadlineDate))
-    ? Math.round((new Date() - new Date(item.deadlineDate)) / (1000 * 3600 * 24))
+  const timeWaiting = item.sentDate ? formatDistanceToNow(parseISO(item.sentDate), { addSuffix: false }) : 'N/A';
+  const daysOverdue = item.deadlineDate && item.status !== 'Received' && isAfter(new Date(), parseISO(item.deadlineDate))
+    ? Math.round((new Date() - parseISO(item.deadlineDate)) / (1000 * 3600 * 24))
     : null;
 
-  const formattedSentDate = item.sentDate ? format(new Date(item.sentDate), 'MMM d, yyyy') : 'N/A';
-  const formattedDeadline = item.deadlineDate ? format(new Date(item.deadlineDate), 'MMM d, yyyy') : 'None';
+  const formattedSentDate = item.sentDate ? format(parseISO(item.sentDate), 'MMM d, yyyy') : 'N/A';
+  const formattedDeadline = item.deadlineDate ? format(parseISO(item.deadlineDate), 'MMM d, yyyy') : 'None';
 
   return (
     <div>
-      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col">
+      <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col ${
+        item.status?.toLowerCase() === 'completed' ? 'bg-secondary-300/90' : ''
+      }`}>
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <Link to={`/waiting-items/${item.id}`} className="block hover:text-primary-600 flex-1 mr-2">
