@@ -1,10 +1,16 @@
 # TaskFlow - Task List
 ## Current Focus (High Priority)
 ## Backlog / To-Do
-### Frontend
 ### Backend
 ### Database
 ### General
+
+## Completed (2025-04-02)
+- [Bug Fix] Project and Task Display:
+  - Fixed the estimated hours display in projects to properly format and sum all task hours
+  - Added timer status indicators to tasks to show when a task has an active timer (running or paused)
+  - Enhanced running timer display to show real-time elapsed time in HH:MM:SS format
+  - Added tracked hours display to project details to show total completed time entries
 
 ## Completed (2025-04-02)
 - [Cleanup] Time Tracking Page:

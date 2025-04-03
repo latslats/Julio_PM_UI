@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import { useProjects } from '../../context/ProjectContext'
 import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader } from 'react-icons/fi'
@@ -28,6 +28,55 @@ const TaskItem = ({ task }) => {
 
   // Check if task has an active time entry
   const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
+  
+  // State to track elapsed time for active timer
+  const [elapsedTime, setElapsedTime] = useState(0)
+  
+  // Calculate and update elapsed time for active timer
+  useEffect(() => {
+    if (!activeTimeEntry) {
+      setElapsedTime(0)
+      return
+    }
+    
+    // Calculate initial elapsed time
+    const calculateElapsed = () => {
+      let currentElapsedTime = parseFloat(activeTimeEntry.totalPausedDuration) || 0
+      if (!activeTimeEntry.isPaused && activeTimeEntry.lastResumedAt) {
+        const now = new Date().getTime()
+        const lastResume = new Date(activeTimeEntry.lastResumedAt).getTime()
+        currentElapsedTime += (now - lastResume) / 1000
+      }
+      setElapsedTime(Math.floor(currentElapsedTime))
+    }
+    
+    // Calculate once immediately
+    calculateElapsed()
+    
+    // If entry is running (not paused), update every second
+    let interval
+    if (!activeTimeEntry.isPaused) {
+      interval = setInterval(calculateElapsed, 1000)
+    }
+    
+    // Cleanup function to clear interval
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [activeTimeEntry])
+  
+  // Format time as HH:MM:SS
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    
+    return [
+      h.toString().padStart(2, '0'),
+      m.toString().padStart(2, '0'),
+      s.toString().padStart(2, '0')
+    ].join(':')
+  }
 
   // Format due date with visual indication if it's overdue or due today
   const formatDueDate = () => {
@@ -188,6 +237,13 @@ const TaskItem = ({ task }) => {
                 <span className="text-xs text-secondary-500 flex items-center">
                   <FiClock className="mr-1 h-3 w-3" />
                   {task.estimatedHours}h
+                  {activeTimeEntry && (
+                    <span className="ml-1 text-primary-600 font-medium">
+                      {activeTimeEntry.isPaused 
+                        ? '(paused)' 
+                        : `(running: ${formatTime(elapsedTime)})`}
+                    </span>
+                  )}
                 </span>
               )}
             </div>

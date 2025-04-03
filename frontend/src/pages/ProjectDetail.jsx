@@ -10,7 +10,7 @@ import TaskItem from '../components/tasks/TaskItem'
 const ProjectDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { projects, tasks, loading, updateProject, deleteProject, createTask } = useProjects()
+  const { projects, tasks, timeEntries, loading, updateProject, deleteProject, createTask } = useProjects()
   const [project, setProject] = useState(null)
   const [projectTasks, setProjectTasks] = useState([])
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -54,11 +54,18 @@ const ProjectDetail = () => {
         const inProgress = filteredTasks.filter(task => task.status === 'in-progress').length
         const totalHours = filteredTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
         
+        // Calculate total tracked hours for this project
+        const projectTimeEntries = timeEntries.filter(entry => 
+          filteredTasks.some(task => task.id === entry.taskId) && entry.duration
+        )
+        const totalTrackedHours = projectTimeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) / 3600
+        
         setStats({
           totalTasks: filteredTasks.length,
           completedTasks: completed,
           inProgressTasks: inProgress,
-          totalHours
+          totalHours,
+          totalTrackedHours: parseFloat(totalTrackedHours.toFixed(2))
         })
       } else {
         // Project not found, reset tasks and stats
@@ -67,11 +74,12 @@ const ProjectDetail = () => {
           totalTasks: 0,
           completedTasks: 0,
           inProgressTasks: 0,
-          totalHours: 0
+          totalHours: 0,
+          totalTrackedHours: 0
         })
       }
     }
-  }, [id, projects, tasks, loading])
+  }, [id, projects, tasks, timeEntries, loading])
   
   const handleDeleteProject = async () => {
     setDeleteLoading(true);
@@ -246,7 +254,15 @@ const ProjectDetail = () => {
               <h3 className="text-xs font-medium text-secondary-500 uppercase">Estimated Hours</h3>
               <div className="flex items-center mt-1">
                 <FiClock className="h-4 w-4 text-secondary-400 mr-1.5" />
-                <span className="text-sm text-secondary-900">{stats.totalHours} hours</span>
+                <span className="text-sm text-secondary-900">{parseFloat(stats.totalHours).toFixed(2)} hours</span>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-xs font-medium text-secondary-500 uppercase">Tracked Hours</h3>
+              <div className="flex items-center mt-1">
+                <FiClock className="h-4 w-4 text-secondary-400 mr-1.5" />
+                <span className="text-sm text-secondary-900">{stats.totalTrackedHours || 0} hours</span>
               </div>
             </div>
             
