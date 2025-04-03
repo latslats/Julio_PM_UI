@@ -155,13 +155,10 @@ const TimeTrackingWidget = () => {
   }
 
   return (
-    <div className="card h-full flex flex-col">
-      <h2 className="text-lg font-medium text-secondary-900 mb-4">Time Tracking</h2>
-
+    <div className="h-full flex flex-col">
       {activeTimeEntries.length > 0 ? (
         <div className="flex-1 flex flex-col">
-          <h3 className="text-sm font-medium text-secondary-900 mb-2">Active Timers</h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {activeTimeEntries.map((entry, index) => {
               const { task, project } = getEntryDetails(entry);
               const isFirstEntry = index === 0;
@@ -170,13 +167,13 @@ const TimeTrackingWidget = () => {
               return (
                 <div 
                   key={entry.id} 
-                  className={`p-4 rounded-xl border ${isFirstEntry 
-                    ? 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200' 
-                    : 'bg-white border-secondary-200 shadow-sm'}`}
+                  className={`p-4 rounded-xl ${isFirstEntry 
+                    ? 'bg-gradient-to-r from-primary-500/10 to-primary-600/10 border border-primary-200/50' 
+                    : 'bg-secondary-50 border border-secondary-100'}`}
                 >
                   <div className="flex items-center mb-3">
-                    <div className={`${isFirstEntry ? 'w-10 h-10' : 'w-8 h-8'} rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-600`}>
-                      <FiClock className={`${isFirstEntry ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                    <div className={`w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-primary-600 shadow-sm`}>
+                      <FiClock className="h-5 w-5" />
                     </div>
                     <div className="ml-3">
                       <h3 className="font-medium text-secondary-900 truncate">{task?.title || 'Unknown Task'}</h3>
@@ -185,7 +182,7 @@ const TimeTrackingWidget = () => {
                   </div>
 
                   <div className="text-center py-2">
-                    <div className={`${isFirstEntry ? 'text-3xl' : 'text-2xl'} font-semibold text-secondary-900 font-mono`}>
+                    <div className="text-3xl font-bold text-secondary-900 font-mono tracking-tight">
                       {formatTime(elapsedTimes[entry.id] || 0)}
                     </div>
                     <p className="text-xs text-secondary-500 mt-1">
@@ -193,45 +190,44 @@ const TimeTrackingWidget = () => {
                     </p>
                   </div>
 
-                  <div className="flex space-x-2 mt-2">
+                  <div className="flex space-x-2 mt-3">
                     <button
                       onClick={() => handlePauseResume(entry)}
-                      className="flex-1 btn bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50 flex items-center justify-center"
+                      className={`flex-1 py-2 px-4 rounded-lg flex items-center justify-center transition-all ${
+                        entry.isPaused 
+                          ? 'bg-primary-500 text-white hover:bg-primary-600' 
+                          : 'bg-white text-secondary-800 border border-secondary-200 hover:bg-secondary-50'
+                      }`}
                       disabled={loading || isLoading} 
                     >
                       {isLoading === 'pauseResume' ? (
                         <>
                           <FiLoader className="mr-1.5 h-4 w-4 animate-spin" />
-                          {entry.isPaused ? 'Resuming...' : 'Pausing...'}
+                          <span className="text-sm font-medium">{entry.isPaused ? 'Resuming...' : 'Pausing...'}</span>
                         </>
                       ) : entry.isPaused ? (
                         <>
                           <FiPlay className="mr-1.5 h-4 w-4" />
-                          Resume
+                          <span className="text-sm font-medium">Resume</span>
                         </>
                       ) : (
                         <>
                           <FiPause className="mr-1.5 h-4 w-4" />
-                          Pause
+                          <span className="text-sm font-medium">Pause</span>
                         </>
                       )}
                     </button>
 
                     <button
                       onClick={() => handleStopTracking(entry.id)}
-                      className="flex-1 btn bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center"
+                      className="flex-none w-12 h-12 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center justify-center transition-all"
                       disabled={loading || isLoading} 
+                      title="Stop"
                     >
                       {isLoading === 'stop' ? (
-                        <>
-                          <FiLoader className="mr-1.5 h-4 w-4 animate-spin" />
-                          Stopping...
-                        </>
+                        <FiLoader className="h-5 w-5 animate-spin" />
                       ) : (
-                        <>
-                          <FiStopCircle className="mr-1.5 h-4 w-4" />
-                          Stop
-                        </>
+                        <FiStopCircle className="h-5 w-5" />
                       )}
                     </button>
                   </div>
@@ -241,29 +237,29 @@ const TimeTrackingWidget = () => {
           </div>
           
           {/* Show recent time entries if there's space */}
-          <div className="mt-4 flex-1">
-            <h3 className="text-sm font-medium text-secondary-900 mb-2">Recent Time Entries</h3>
-            <div className="text-center py-8 bg-secondary-50 rounded-lg">
+          <div className="mt-6 flex-1">
+            <h3 className="text-sm font-medium text-secondary-900 mb-3">Recent Entries</h3>
+            <div className="text-center py-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
               <p className="text-secondary-600 text-sm">Completed time entries will appear here</p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-secondary-50 rounded-xl">
-          <div className="w-16 h-16 rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-secondary-50/50 rounded-xl border border-dashed border-secondary-200">
+          <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-secondary-400 shadow-sm mb-4">
             <FiClock className="h-8 w-8" />
           </div>
           <h3 className="text-secondary-900 font-medium mb-1">No active tracking</h3>
-          <p className="text-secondary-600 text-sm mb-4">
+          <p className="text-secondary-600 text-sm mb-5">
             Start tracking time on any task to see it here
           </p>
           {tasks.length > 0 ? (
             <button 
               onClick={() => startTimeTracking(tasks[0].id)} 
-              className="btn btn-primary flex items-center"
+              className="py-2.5 px-5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 shadow-sm transition-colors flex items-center"
             >
               <FiPlay className="mr-1.5 h-4 w-4" />
-              Start Tracking
+              <span className="font-medium">Start Tracking</span>
             </button>
           ) : (
             <p className="text-secondary-500 text-sm">No tasks available to track</p>

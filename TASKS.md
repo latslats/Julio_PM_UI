@@ -6,6 +6,15 @@
 ### General
 
 ## Completed (2025-04-02)
+- [Enhancement] Dashboard UI/UX:
+  - Redesigned dashboard layout with a more modern and minimalistic approach
+  - Improved stats cards with cleaner design and hover effects
+  - Enhanced project cards with better spacing, typography, and visual hierarchy
+  - Redesigned time tracking widget with improved visual appeal
+  - Added subtle animations and transitions for a more polished experience
+  - Maintained all existing functionality while improving the visual design
+
+## Completed (2025-04-02)
 - [Bug Fix] Project and Task Display:
   - Fixed the estimated hours display in projects to properly format and sum all task hours
   - Added timer status indicators to tasks to show when a task has an active timer (running or paused)
