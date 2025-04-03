@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
+import { Button } from "@/components/ui/button"; // Import shadcn Button
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
@@ -49,13 +50,10 @@ const Projects = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="btn btn-primary flex items-center"
-        >
+        <Button onClick={() => setShowCreateModal(true)}>
           <FiPlus className="mr-1.5 h-4 w-4" />
           New Project
-        </button>
+        </Button>
       </div>
       
       {/* Search and Filter */}
@@ -119,13 +117,13 @@ const Projects = () => {
             {searchTerm || selectedClient ? 'Try adjusting your search or filter' : 'Create your first project to get started'}
           </p>
           {!searchTerm && !selectedClient && (
-            <button 
+            <Button 
               onClick={() => setShowCreateModal(true)}
-              className="btn btn-primary inline-flex items-center"
+              className="inline-flex items-center"
             >
               <FiPlus className="mr-1.5 h-4 w-4" />
               Create Project
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -336,9 +334,9 @@ const Projects = () => {
                   >
                     Cancel
                   </button>
-                  <button
+                  <Button
                     type="submit"
-                    className="btn btn-primary flex items-center justify-center min-w-[120px]"
+                    className="flex items-center justify-center min-w-[120px]"
                     disabled={formLoading}
                   >
                     {formLoading ? (
@@ -352,7 +350,7 @@ const Projects = () => {
                     ) : (
                       'Create Project'
                     )}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>

@@ -4,6 +4,46 @@
 ### Backend
 ### Database
 ### General
+### UI Overhaul (iOS-Inspired Minimalism with shadcn/ui) - 2025-04-03
+
+**Phase 1: Setup & Core Elements**
+- [x] Setup `shadcn/ui` (init command) - 2025-04-02
+- [ ] Define base styles (colors, typography) in Tailwind config and global CSS
+- [x] Configure `Inter` font in Tailwind config - 2025-04-02
+- [x] Add `shadcn/ui` Button component - 2025-04-02
+- [x] Refactor `Button` usage in `Projects.jsx` (New Project button, +2 others) - 2025-04-03
+- [ ] Refactor other prominent `Button` instances (e.g., forms, modals)
+- [ ] Add `shadcn/ui` Input component
+- [ ] Refactor `Input` usage (e.g., search bars, forms)
+- [ ] Add `shadcn/ui` Checkbox component
+- [ ] Refactor `Checkbox` usage
+- [ ] Add `shadcn/ui` Switch component
+- [ ] Refactor `Switch` usage (e.g., Settings page)
+- [ ] Add `shadcn/ui` Card component
+- [ ] Refactor `Card` usage (e.g., `ProjectCard`, `Dashboard` cards)
+
+**Phase 2: Page Layouts & Containers**
+- [ ] Refactor `Dashboard.jsx` layout using new components & principles
+- [ ] Refactor `Projects.jsx` layout
+- [ ] Refactor `ProjectDetail.jsx` layout
+- [ ] Refactor `SettingsPage.jsx` layout
+- [ ] Add `shadcn/ui` Dialog component
+- [ ] Refactor existing modals to use `Dialog`
+- [ ] Add `shadcn/ui` Toast component
+- [ ] Implement `Toast` for notifications (replace existing `Notification.jsx`?)
+
+**Phase 3: Complex Components & Navigation**
+- [ ] Refactor `TimeTrackingWidget.jsx`
+- [ ] Refactor Tables (if any) using `shadcn/ui Table` (add component first)
+- [ ] Refactor Sidebar navigation (`Sidebar.jsx`)
+- [ ] Refactor Header (`Header.jsx`)
+- [ ] Evaluate/Implement iOS-style Segmented Control (custom or adapt `RadioGroup`/`ToggleGroup`)
+
+**Phase 4: Polish & Refinement**
+- [ ] Review UI consistency across all pages/components
+- [ ] Add subtle animations/transitions where appropriate
+- [ ] Test responsiveness thoroughly
+- [ ] Perform accessibility check
 
 ## Completed (2025-04-02)
 - [Enhancement] Dashboard UI/UX:
@@ -152,3 +192,8 @@
 - Initial Time Entry Start/Stop API & Frontend Integration
 - Docker setup for Frontend, Backend, and Database
 - Basic Frontend Routing and Layout
+### Backend
+### Database
+### General
+- [ ] Implement manual time entry editing
+### UI Overhaul (iOS-Inspired Minimalism with shadcn/ui) - 2025-04-03
