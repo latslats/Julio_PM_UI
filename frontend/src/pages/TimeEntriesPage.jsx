@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
-import { FiClock, FiFilter, FiCalendar, FiSearch, FiX } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiClock, FiFilter, FiCalendar, FiSearch, FiX, FiArrowLeft } from 'react-icons/fi';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -168,7 +169,23 @@ const TimeEntriesPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-secondary-900">Time Entries</h1>
+        <div className="flex flex-col">
+          <div className="flex items-center text-sm text-secondary-500 mb-1">
+            <Link to="/settings" className="hover:text-primary-500 transition-colors">
+              Settings
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-secondary-700">Time Entries</span>
+          </div>
+          <div className="flex items-center">
+            <Link to="/settings" className="inline-flex mr-3">
+              <Button variant="outline" size="icon" className="mr-2" title="Back to Settings">
+                <FiArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-semibold text-secondary-900">Time Entries</h1>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}

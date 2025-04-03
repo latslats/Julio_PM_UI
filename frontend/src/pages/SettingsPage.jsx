@@ -223,6 +223,11 @@ const SettingsPage = () => {
         </CardContent> 
       </Card>
 
+      <div className="mt-8 mb-4">
+        <h2 className="text-xl font-semibold text-secondary-900">Features & Modules</h2>
+        <p className="text-sm text-secondary-600 mt-1">Manage application modules and features</p>
+      </div>
+
       {/* Task Management Card */}
       <Card className="max-w-2xl">
         <CardHeader>
@@ -250,10 +255,10 @@ const SettingsPage = () => {
                 </p>
                 
                 <Link to="/time-entries">
-                  <Button variant="primary" className="flex items-center w-full sm:w-auto">
-                    <FiList className="mr-2 h-4 w-4" />
+                  <Button variant="primary" className="flex items-center w-full sm:w-auto px-4 py-2 text-base bg-primary-500 hover:bg-primary-600 shadow-md hover:shadow-lg transition-all">
+                    <FiClock className="mr-2 h-5 w-5" />
                     Manage Time Entries
-                    <FiChevronRight className="ml-2 h-4 w-4" />
+                    <FiChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
               </div>

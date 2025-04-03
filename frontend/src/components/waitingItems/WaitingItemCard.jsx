@@ -4,6 +4,7 @@ import { FiCalendar, FiClock, FiAlertCircle, FiExternalLink, FiChevronRight, FiE
 import { format, formatDistanceToNow, isAfter } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useWaitingItems } from '../../context/WaitingItemContext';
 import WaitingItemForm from './WaitingItemForm';
 import { useProjects } from '../../context/ProjectContext';

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * WaitingItemForm component
@@ -62,10 +63,11 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
       errors.projectId = 'Project is required';
     }
     
-    if (!formData.requestType.trim()) {
+    const allowedRequestTypes = ['Information', 'Approval', 'Feedback', 'Resource', 'Other'];
+    if (!formData.requestType) {
       errors.requestType = 'Request type is required';
-    } else if (formData.requestType.length > 100) {
-      errors.requestType = 'Request type must be less than 100 characters';
+    } else if (!allowedRequestTypes.includes(formData.requestType)) {
+      errors.requestType = 'Request type must be one of the provided options';
     }
     
     if (!formData.requestedFrom.trim()) {
@@ -116,10 +118,19 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
         onSubmit();
       } else {
         // Handle API error
-        setFormErrors({ api: result.message || 'Failed to save request' });
+        if (result.errors && Array.isArray(result.errors)) {
+          setFormErrors({ api: result.errors });
+        } else {
+          setFormErrors({ api: result.message || 'Failed to save request' });
+        }
       }
     } catch (err) {
-      setFormErrors({ api: err.message || 'An unexpected error occurred' });
+      console.error('Create/update waiting item error:', err);
+      if (err.errors && Array.isArray(err.errors)) {
+        setFormErrors({ api: err.errors });
+      } else {
+        setFormErrors({ api: err.message || 'An unexpected error occurred' });
+      }
     } finally {
       setFormLoading(false);
     }
@@ -173,18 +184,23 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                 <Label htmlFor="requestType" className="block text-sm font-medium text-secondary-700 mb-1">
                   Request Type *
                 </Label>
-                <Input
-                  id="requestType"
-                  type="text"
-                  name="requestType"
-                  value={formData.requestType}
-                  onChange={handleChange}
-                  required
+                <Select 
+                  value={formData.requestType || ''} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, requestType: value }))}
                   disabled={formLoading}
-                  placeholder="e.g., Feedback, Approval, Information"
-                  className={formErrors.requestType ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}
-                  maxLength={100}
-                />
+                  name="requestType"
+                >
+                  <SelectTrigger id="requestType" className={formErrors.requestType ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}>
+                    <SelectValue placeholder="Select request type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Information">Information</SelectItem>
+                    <SelectItem value="Approval">Approval</SelectItem>
+                    <SelectItem value="Feedback">Feedback</SelectItem>
+                    <SelectItem value="Resource">Resource</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
                 {formErrors.requestType && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.requestType}</p>
                 )}
@@ -278,8 +294,13 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={formData.sentDate}
-                        onSelect={(date) => setFormData(prev => ({ ...prev, sentDate: date }))}
+                        selected={formData.sentDate ? new Date(formData.sentDate) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const formattedDate = date.toISOString().split('T')[0];
+                            setFormData(prev => ({ ...prev, sentDate: formattedDate }));
+                          }
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
@@ -310,10 +331,15 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={formData.deadlineDate}
-                        onSelect={(date) => setFormData(prev => ({ ...prev, deadlineDate: date }))}
+                        selected={formData.deadlineDate ? new Date(formData.deadlineDate) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const formattedDate = date.toISOString().split('T')[0];
+                            setFormData(prev => ({ ...prev, deadlineDate: formattedDate }));
+                          }
+                        }}
                         initialFocus
-                        disabled={(date) => formData.sentDate && date < formData.sentDate } // Disable dates before sent date
+                        disabled={(date) => formData.sentDate && date < new Date(formData.sentDate)} // Disable dates before sent date
                       />
                     </PopoverContent>
                   </Popover>
@@ -344,10 +370,15 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={formData.receivedDate}
-                      onSelect={(date) => setFormData(prev => ({ ...prev, receivedDate: date }))}
+                      selected={formData.receivedDate ? new Date(formData.receivedDate) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const formattedDate = date.toISOString().split('T')[0];
+                          setFormData(prev => ({ ...prev, receivedDate: formattedDate }));
+                        }
+                      }}
                       initialFocus
-                      disabled={(date) => formData.sentDate && date < formData.sentDate } // Disable dates before sent date
+                      disabled={(date) => formData.sentDate && date < new Date(formData.sentDate)} // Disable dates before sent date
                     />
                   </PopoverContent>
                 </Popover>
@@ -394,7 +425,17 @@ const WaitingItemForm = ({ onClose, onSubmit, projects, existingItem = null }) =
             {/* Display API error if any */}
             {formErrors.api && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                <p>{formErrors.api}</p>
+                {typeof formErrors.api === 'string' ? (
+                  <p>{formErrors.api}</p>
+                ) : Array.isArray(formErrors.api) ? (
+                  <ul className="list-disc pl-5">
+                    {formErrors.api.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>An error occurred while processing your request.</p>
+                )}
               </div>
             )}
             
