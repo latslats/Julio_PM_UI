@@ -131,17 +131,17 @@ const WaitingItems = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl">
         <div>
           <h1 className="text-2xl font-semibold text-secondary-900">Waiting On</h1>
-          <p className="text-secondary-600">
+          <p className="text-secondary-600 mt-1">
             Track and manage items you're waiting on from external parties
           </p>
         </div>
         
         <button
           onClick={handleAddClick}
-          className="btn btn-primary flex items-center"
+          className="inline-flex items-center justify-center px-4 py-2 bg-primary-500 text-white rounded-lg shadow hover:bg-primary-600 transition-colors"
         >
           <FiPlus className="mr-1.5 h-4 w-4" />
           New Request
@@ -152,75 +152,84 @@ const WaitingItems = () => {
       <WaitingItemStats stats={stats} />
       
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label htmlFor="project-filter" className="block text-sm font-medium text-secondary-700 mb-1">
-            Project
-          </label>
-          <Select value={selectedProject} onValueChange={handleProjectChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="All Projects" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="bg-white p-4 rounded-xl shadow-sm">
+        <div className="flex items-center mb-3">
+          <FiFilter className="text-secondary-500 mr-2" />
+          <h3 className="text-sm font-medium text-secondary-700">Filters</h3>
         </div>
-        
-        <div>
-          <label htmlFor="status-filter" className="block text-sm font-medium text-secondary-700 mb-1">
-            Status
-          </label>
-          <Select value={statusFilter} onValueChange={(e) => setStatusFilter(e.target.value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label htmlFor="priority-filter" className="block text-sm font-medium text-secondary-700 mb-1">
-            Priority
-          </label>
-          <Select value={priorityFilter} onValueChange={(e) => setPriorityFilter(e.target.value)}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="All Priorities" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <label htmlFor="search" className="block text-sm font-medium text-secondary-700 mb-1">
-            Search
-          </label>
-          <div className="relative">
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" />
-            <Input 
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search requests..."
-              className="pl-10 pr-4 py-2 w-full"
-            />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label htmlFor="project-filter" className="block text-xs font-medium text-secondary-500 mb-1">
+              Project
+            </label>
+            <Select value={selectedProject} onValueChange={(value) => {
+              setSelectedProject(value);
+              fetchStats(value !== 'all' ? value : null);
+            }}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="All Projects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label htmlFor="status-filter" className="block text-xs font-medium text-secondary-500 mb-1">
+              Status
+            </label>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label htmlFor="priority-filter" className="block text-xs font-medium text-secondary-500 mb-1">
+              Priority
+            </label>
+            <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value)}>
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="All Priorities" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <label htmlFor="search" className="block text-xs font-medium text-secondary-500 mb-1">
+              Search
+            </label>
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400" />
+              <Input 
+                type="text"
+                id="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search requests..."
+                className="pl-10 pr-4 py-2 w-full text-sm"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -239,7 +248,7 @@ const WaitingItems = () => {
             {!searchTerm && !selectedProject && statusFilter === 'all' && priorityFilter === 'all' && (
               <button
                 onClick={handleAddClick}
-                className="mt-4 btn btn-primary"
+                className="mt-4 inline-flex items-center justify-center px-4 py-2 bg-primary-500 text-white rounded-lg shadow hover:bg-primary-600 transition-colors"
               >
                 <FiPlus className="mr-1.5 h-4 w-4" />
                 New Request

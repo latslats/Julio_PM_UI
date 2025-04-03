@@ -67,87 +67,81 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
 
   return (
     <div>
-      <Card className="overflow-hidden transition-shadow duration-200 hover:shadow-md border h-full flex flex-col">
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <Link to={`/waiting-items/${item.id}`} className="block hover:text-primary-600 flex-1 mr-2">
               <CardTitle className="text-base font-semibold leading-tight">
                 {item.requestType}
               </CardTitle>
-              <p className="text-xs text-gray-500 mt-1">From: {item.requestedFrom}</p>
+              <p className="text-xs text-secondary-500 mt-1">From: {item.requestedFrom}</p>
             </Link>
             <div className="flex flex-col items-end space-y-1">
-               <Badge variant="outline" style={{ borderColor: priorityColor, color: priorityColor }}>{item.priority || 'Medium'}</Badge>
-               <Badge variant="secondary" style={{ backgroundColor: `${statusColor}1A`, color: statusColor }}> 
-                 {item.status || 'Pending'}
-               </Badge>
+              <Badge variant="outline" className="text-xs font-medium" style={{ backgroundColor: `${priorityColor}10`, borderColor: priorityColor, color: priorityColor }}>
+                {item.priority || 'Medium'}
+              </Badge>
+              <Badge variant="outline" className="text-xs font-medium" style={{ backgroundColor: `${statusColor}10`, borderColor: statusColor, color: statusColor }}> 
+                {item.status || 'Pending'}
+              </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow pt-0 pb-3 text-sm text-gray-700 space-y-2">
-            {item.notes && (
-               <p className="line-clamp-2 text-xs italic text-gray-500">Notes: {item.notes}</p>
-            )}
-            {daysOverdue !== null && (
-               <p className="text-red-600 font-medium text-xs flex items-center">
-                  <FiAlertCircle className="mr-1" /> Overdue by {daysOverdue} day{daysOverdue > 1 ? 's' : ''}
-               </p>
-            )}
-            {item.link && (
-               <a 
-                  href={item.link} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-blue-600 hover:underline text-xs flex items-center truncate"
-                  onClick={(e) => e.stopPropagation()} // Prevent card link navigation
-               >
-                 <FiExternalLink className="mr-1 flex-shrink-0" /> <span className="truncate">{item.link}</span>
-               </a>
-            )}
-       
+        <CardContent className="flex-grow pt-0 pb-3 text-sm text-secondary-700 space-y-2">
+          {item.notes && (
+            <p className="line-clamp-2 text-xs italic text-secondary-500">Notes: {item.notes}</p>
+          )}
+          {daysOverdue !== null && (
+            <p className="text-red-600 font-medium text-xs flex items-center">
+              <FiAlertCircle className="mr-1 flex-shrink-0" /> Overdue by {daysOverdue} day{daysOverdue > 1 ? 's' : ''}
+            </p>
+          )}
+          {item.link && (
+            <a 
+              href={item.link} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-primary-600 hover:underline text-xs flex items-center truncate"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <FiExternalLink className="mr-1 flex-shrink-0" /> <span className="truncate">{item.link}</span>
+            </a>
+          )}
         </CardContent>
-         <CardFooter className="bg-gray-50 text-xs text-gray-500 py-2 px-4 border-t flex justify-between items-center">
+        <CardFooter className="bg-secondary-50 text-xs text-secondary-500 py-3 px-4 border-t flex justify-between items-center">
+          <div className="grid grid-cols-2 gap-3 flex-1">
             <div className="flex items-center" title={`Sent on ${formattedSentDate}`}>
-               <FiClock className="mr-1" />
-               <span>Waiting: {timeWaiting}</span>
+              <FiClock className="mr-1 text-secondary-400" />
+              <span className="truncate">{timeWaiting}</span>
             </div>
             <div className="flex items-center" title={`Deadline: ${formattedDeadline}`}>
-               <FiCalendar className="mr-1" />
-               <span>Due: {formattedDeadline}</span>
+              <FiCalendar className="mr-1 text-secondary-400" />
+              <span className="truncate">{formattedDeadline}</span>
             </div>
-            {item.project && (
-                <Link 
-                   to={`/projects/${item.projectId}`}
-                   className="text-xs text-blue-600 hover:underline truncate ml-2"
-                   onClick={(e) => e.stopPropagation()} // Prevent card link navigation
-                >
-                   ({item.projectName})
-                </Link>
-              )}
-            <div className="flex items-center">
-              <button
-                onClick={handleEditClick}
-                className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-50 rounded-full"
-                title="Edit Request"
-              >
-                <FiEdit2 className="h-5 w-5" />
-              </button>
-              <button
-                onClick={handleDeleteClick}
-                className="p-2 text-secondary-600 hover:text-red-600 hover:bg-red-50 rounded-full"
-                title="Delete"
-              >
-                <FiTrash2 className="h-5 w-5" />
-              </button>
-              <Link
-                to={`/waiting-items/${item.id}`}
-                className="p-2 text-secondary-600 hover:text-secondary-900 hover:bg-secondary-50 rounded-full"
-                title="View Details"
-              >
-                <FiChevronRight className="h-5 w-5" />
-              </Link>
-            </div>
-         </CardFooter>
+          </div>
+          <div className="flex items-center ml-2">
+            <button
+              onClick={handleEditClick}
+              className="p-1.5 text-secondary-400 hover:text-secondary-900 hover:bg-white rounded-full transition-colors"
+              title="Edit Request"
+            >
+              <FiEdit2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              className="p-1.5 text-secondary-400 hover:text-red-600 hover:bg-white rounded-full transition-colors"
+              title="Delete"
+            >
+              <FiTrash2 className="h-4 w-4" />
+            </button>
+            <Link
+              to={`/waiting-items/${item.id}`}
+              className="p-1.5 text-secondary-400 hover:text-primary-600 hover:bg-white rounded-full transition-colors"
+              title="View Details"
+            >
+              <FiChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </CardFooter>
       </Card>
       {/* Edit Modal */}
       {showEditModal && (

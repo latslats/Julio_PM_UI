@@ -69,10 +69,9 @@ const performPause = async (entryId, entryLastResumedAt, entryTotalPausedDuratio
             `UPDATE time_entries
              SET "isPaused" = true,
                  "pausedAt" = $1,
-                 -- "totalPausedDuration" = $2, -- No change needed here
-                 duration = COALESCE(duration, 0) + $3 -- Update total duration up to the pause point
-             WHERE id = $4`,
-            [now, /* newTotalPausedDuration, */ lastSegmentDuration, entryId]
+                 duration = COALESCE(duration, 0) + $2 -- Update total duration up to the pause point
+             WHERE id = $3`,
+            [now, lastSegmentDuration, entryId]
             // Using COALESCE for duration in case it was NULL (first run segment)
         );
         console.log(`[Auto-Pause] Paused time entry ${entryId} at ${now.toISOString()}`);
