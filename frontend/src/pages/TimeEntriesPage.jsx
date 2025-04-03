@@ -105,15 +105,25 @@ const TimeEntriesPage = () => {
     const totalDuration = filtered.reduce((sum, entry) => {
       // For completed entries, use the duration
       if (entry.endTime && entry.duration) {
-        return sum + entry.duration;
+        return sum + parseFloat(entry.duration);
       }
       // For active entries, calculate current duration
       else if (!entry.endTime) {
-        const currentElapsed = entry.currentElapsedSeconds || 0;
+        const currentElapsed = parseFloat(entry.currentElapsedSeconds || 0);
         return sum + currentElapsed;
       }
       return sum;
     }, 0);
+    
+    console.log('Total duration calculation:', {
+      totalDuration,
+      entries: filtered.map(e => ({
+        id: e.id,
+        duration: e.duration,
+        currentElapsedSeconds: e.currentElapsedSeconds,
+        endTime: e.endTime
+      }))
+    });
     
     const activeEntries = filtered.filter(entry => !entry.endTime).length;
     
@@ -398,7 +408,10 @@ const TimeEntriesPage = () => {
       )}
 
       {/* Time Entries List */}
-      <TimeEntriesList />
+      <TimeEntriesList 
+        projectId={selectedProject !== 'all' ? selectedProject : undefined}
+        key={`${selectedProject}-${dateRange}-${searchQuery}`} // Add key to force re-render when filters change
+      />
     </div>
   );
 };

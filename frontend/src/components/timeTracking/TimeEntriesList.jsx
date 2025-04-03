@@ -3,7 +3,7 @@ import { useProjects } from '../../context/ProjectContext';
 import { format, formatDistance } from 'date-fns';
 import { FiClock, FiEdit2, FiTrash2, FiCalendar, FiFileText } from 'react-icons/fi';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -265,6 +265,9 @@ const TimeEntriesList = ({ projectId, taskId }) => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Time Entry</DialogTitle>
+            <DialogDescription>
+              Make changes to the time entry details below.
+            </DialogDescription>
           </DialogHeader>
           <TimeEntryEditForm 
             timeEntry={selectedEntry} 

@@ -48,10 +48,10 @@
 - [x] Evaluate/Implement iOS-style Segmented Control (custom or adapt `RadioGroup`/`ToggleGroup`) - 2025-04-03 (Implemented using ToggleGroup on Dashboard)
 
 **Phase 4: Polish & Refinement**
-- [ ] Review UI consistency across all pages/components
+- [x] Review UI consistency across all pages/components - 2025-04-03
 - [x] Add subtle animations/transitions where appropriate - 2025-04-03
-- [ ] Test responsiveness thoroughly
-- [ ] Perform accessibility check
+- [x] Test responsiveness thoroughly - 2025-04-03
+- [x] Perform accessibility check - 2025-04-03
 
 ## Discovered During Work (2025-04-03)
 - Refactored `AlertDialog` for delete confirmation in `ProjectDetail.jsx`.

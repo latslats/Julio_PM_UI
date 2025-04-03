@@ -68,8 +68,29 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
       return;
     }
     
-    // Calculate duration if start and end times are provided
+    // Prepare the data for submission - convert formatted dates back to ISO strings
     let updatedEntry = { ...editableEntry };
+    
+    // Convert startTime from form format to ISO string
+    if (updatedEntry.startTime) {
+      const start = new Date(updatedEntry.startTime);
+      if (!isNaN(start.getTime())) {
+        updatedEntry.startTime = start.toISOString();
+      }
+    }
+    
+    // Convert endTime from form format to ISO string if it exists
+    if (updatedEntry.endTime) {
+      const end = new Date(updatedEntry.endTime);
+      if (!isNaN(end.getTime())) {
+        updatedEntry.endTime = end.toISOString();
+      }
+    } else {
+      // If endTime is empty string, set it to null explicitly
+      updatedEntry.endTime = null;
+    }
+    
+    // Calculate duration if start and end times are provided
     if (updatedEntry.startTime && updatedEntry.endTime) {
       const start = new Date(updatedEntry.startTime);
       const end = new Date(updatedEntry.endTime);
@@ -77,9 +98,19 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
       updatedEntry.duration = durationInSeconds;
     }
     
+    // Remove any properties that might cause issues with the backend
+    const cleanedEntry = {
+      startTime: updatedEntry.startTime,
+      endTime: updatedEntry.endTime,
+      duration: updatedEntry.duration,
+      notes: updatedEntry.notes
+    };
+    
+    console.log('Submitting time entry update:', cleanedEntry);
+    
     // Submit form if validation passes
     try {
-      const result = await updateTimeEntry(timeEntry.id, updatedEntry);
+      const result = await updateTimeEntry(timeEntry.id, cleanedEntry);
       if (result.success) {
         toast({
           title: "Time Entry Updated",

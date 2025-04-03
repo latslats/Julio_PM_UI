@@ -69,7 +69,23 @@ const ProjectDetail = () => {
         const projectTimeEntries = timeEntries.filter(entry => 
           filteredTasks.some(task => task.id === entry.taskId) && entry.duration
         )
-        const totalTrackedHours = projectTimeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) / 3600
+        
+        // Debug log to see what's happening with the time entries
+        console.log('Project time entries:', {
+          projectId: id,
+          entries: projectTimeEntries.map(e => ({
+            id: e.id,
+            taskId: e.taskId,
+            duration: e.duration,
+            parsedDuration: parseFloat(e.duration || 0)
+          }))
+        });
+        
+        const totalTrackedHours = projectTimeEntries.reduce((sum, entry) => {
+          // Ensure we're working with numbers by explicitly parsing
+          const duration = parseFloat(entry.duration || 0);
+          return sum + duration;
+        }, 0) / 3600;
         
         setStats({
           totalTasks: filteredTasks.length,
