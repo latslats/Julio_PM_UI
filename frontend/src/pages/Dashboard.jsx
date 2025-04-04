@@ -7,11 +7,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { motion } from "framer-motion"
+import logo from "../assets/taskflow_logo.png"
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
 import TaskItem from '../components/tasks/TaskItem'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
+import WaitingListWidget from '../components/waiting-list/WaitingListWidget'
 
 const Dashboard = () => {
   const { projects, tasks, timeEntries, loading, projectStats } = useProjects()
@@ -103,14 +105,19 @@ const Dashboard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="space-y-8"
+      className="space-y-8 relative"
     >
+      {/* Pug logo backdrop */}
+      <div className="absolute inset-x-0 mx-auto top-[-70px] flex justify-center opacity-[0.07] pointer-events-none z-[1] overflow-hidden">
+        <img src={logo} alt="Pugress Logo" className="w-[400px] object-contain" />
+      </div>
+
       {/* Header with welcome message */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl"
+        className="flex flex-col sm:flex-row sm:items-center justify-between bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl relative z-10"
       >
         <div>
           <h1 className="text-2xl font-semibold text-secondary-900">Welcome Back</h1>
@@ -126,7 +133,7 @@ const Dashboard = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10"
       >
         <Card className="transition-all duration-300 hover:shadow-md">
           <CardContent className="pt-6">
@@ -190,7 +197,7 @@ const Dashboard = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="flex justify-center"
+        className="flex justify-center relative z-10"
       >
         <ToggleGroup 
           type="single" 
@@ -299,6 +306,8 @@ const Dashboard = () => {
               </Card>
               
               <TimeTrackingWidget />
+              
+              <WaitingListWidget />
             </div>
           </div>
         )}

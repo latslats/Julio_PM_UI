@@ -1,11 +1,17 @@
 # TaskFlow - Task List
 ## Current Focus (High Priority)
+- [Enhancement] Put the logo on the main dashboard as well in the background
+- [Feature] Add a new "Waiting On" section to the dashboard
+- [Enhancement] Completelly remove the  'Need help? Check our documentation or contact support.' section.
+
+
 ## Backlog / To-Do
 ### Backend
 ### Database
 ### General
-### UI Overhaul (iOS-Inspired Minimalism with shadcn/ui) - 2025-04-03
 
+## Completed (2025-04-03)
+### UI Overhaul (iOS-Inspired Minimalism with shadcn/ui) - 2025-04-03
 **Phase 1: Setup & Core Elements**
 - [x] Setup `shadcn/ui` (init command) - 2025-04-02
 - [x] Define base styles (colors, typography) in Tailwind config and global CSS - 2025-04-03

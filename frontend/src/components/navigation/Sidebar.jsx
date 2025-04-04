@@ -3,6 +3,7 @@ import { FiHome, FiFolder, FiBarChart2, FiSettings, FiX, FiAlertCircle } from 'r
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import logo from "../../assets/taskflow_logo.png"
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const navItems = [
@@ -33,8 +34,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           {/* Sidebar header */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-secondary-100">
             <div className="flex items-center">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-primary-500 to-accent-500"></div>
-              <span className="ml-2 text-xl font-semibold text-secondary-900">TaskFlow</span>
+              <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center">
+                <img src={logo} alt="Pugress Logo" className="h-8 w-8 object-contain" />
+              </div>
+              <span className="ml-2 text-xl font-semibold text-secondary-900">Pugress Tracker</span>
             </div>
             {/* Refactored Close Button */}
             <Button 

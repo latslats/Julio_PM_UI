@@ -1,4 +1,4 @@
-# TaskFlow - Project Management Application
+# Pugress Tracker - Project Management Application
 
 A clean, effective, and modern project management application that allows users to manage projects, nested tasks, and track time spent on activities.
 
