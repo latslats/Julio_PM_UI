@@ -140,42 +140,39 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Projects */}
-        <div className="lg:col-span-2">
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-secondary-900">Recent Projects</h2>
-              <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
-                View All
-              </Link>
-            </div>
-            
-            {recentProjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {recentProjects.map(project => {
-                  // Enhance project with stats from projectStats
-                  const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
-                  const enhancedProject = {
-                    ...project,
-                    totalTasks: stats.totalTasks,
-                    completedTasks: stats.completedTasks,
-                    totalHours: stats.totalHours,
-                    progress: stats.progress
-                  };
-                  return <ProjectCard key={project.id} project={enhancedProject} />;
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-secondary-50 rounded-lg">
-                <p className="text-secondary-600 mb-3">No projects yet</p>
-                <Link 
-                  to="/projects" 
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg hover:bg-primary-600"
-                >
-                  <FiPlus className="mr-2 h-4 w-4" />
-                  Create Project
+        <div className="card lg:col-span-2">
+          <div className="card-body">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-secondary-900">Recent Projects</h2>
+                <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+                  View All
                 </Link>
               </div>
-            )}
+              
+              {recentProjects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {recentProjects.map(project => {
+                    // Enhance project with stats from projectStats
+                    const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
+                    const enhancedProject = {
+                      ...project,
+                      totalTasks: stats.totalTasks,
+                      completedTasks: stats.completedTasks,
+                      totalHours: stats.totalHours,
+                      progress: stats.progress
+                    };
+                    return <ProjectCard key={project.id} project={enhancedProject} />;
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-secondary-50 rounded-lg">
+                  <p className="text-secondary-600 mb-3">No projects yet</p>
+                  <Link to="/projects" className="btn btn-primary">
+                    <FiPlus className="mr-2 h-4 w-4" />
+                    Create Project
+                  </Link>
+                </div>
+              )}
           </div>
         </div>
 
@@ -186,26 +183,26 @@ const Dashboard = () => {
       </div>
 
       {/* Upcoming Tasks */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-secondary-900">Upcoming Tasks</h2>
-          <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
-            View All Tasks
-          </Link>
+      <div className="card card-body">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-secondary-900">Upcoming Tasks</h2>
+            <Link to="/projects" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+              View All Tasks
+            </Link>
+          </div>
+          
+          {upcomingTasks.length > 0 ? (
+            <div className="divide-y divide-secondary-100">
+              {upcomingTasks.map(task => (
+                <TaskItem key={task.id} task={task} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-secondary-50 rounded-lg">
+              <p className="text-secondary-600">No upcoming tasks</p>
+            </div>
+          )}
         </div>
-        
-        {upcomingTasks.length > 0 ? (
-          <div className="divide-y divide-secondary-100">
-            {upcomingTasks.map(task => (
-              <TaskItem key={task.id} task={task} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-secondary-50 rounded-lg">
-            <p className="text-secondary-600">No upcoming tasks</p>
-          </div>
-        )}
-      </div>
     </div>
   )
 }
