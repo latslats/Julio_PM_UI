@@ -180,7 +180,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       const result = await apiRequest(`/projects`, {
         method: 'POST',
-        body: JSON.stringify(projectData),
+        body: projectData,
       });
       
       if (result.success) {
@@ -206,7 +206,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       const result = await apiRequest(`/projects/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(projectData),
+        body: projectData,
       });
       
       if (result.success) {
@@ -264,7 +264,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       const result = await apiRequest(`/tasks`, {
         method: 'POST',
-        body: JSON.stringify(taskData),
+        body: taskData,
       });
       
       if (result.success) {
@@ -289,7 +289,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       const result = await apiRequest(`/tasks/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(taskData),
+        body: taskData,
       });
       
       if (result.success) {
@@ -482,7 +482,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       const result = await apiRequest(`/time-entries/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(timeEntryData),
+        body: timeEntryData,
       });
       
       if (result.success) {

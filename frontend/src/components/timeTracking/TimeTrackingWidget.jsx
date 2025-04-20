@@ -1,28 +1,27 @@
 import { useState, useEffect } from 'react'
-import { useProjects } from '../../context/ProjectContext'
 import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader } from 'react-icons/fi'
 import { Button } from "@/components/ui/button"; 
-import { cn } from "@/lib/utils"; 
+import { cn } from "../../lib/utils"; 
 import { useToast } from "@/hooks/use-toast"; 
 import { 
   Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription 
 } from "@/components/ui/card"
 
-const TimeTrackingWidget = () => {
-  const {
-    projects,
-    tasks,
-    timeEntries,
-    stopTimeTracking,
-    startTimeTracking,
-    pauseTimeTracking,
-    resumeTimeTracking,
-    loading,
-    fetchActiveTimers
-  } = useProjects()
+// Accept props instead of using context directly
+const TimeTrackingWidget = ({ 
+  timeEntries = [], // Default to empty array
+  tasks = [], 
+  projects = [],
+  stopTimeTracking = () => {}, // Default to no-op functions
+  startTimeTracking = () => {},
+  pauseTimeTracking = () => {},
+  resumeTimeTracking = () => {},
+  loading = false, // Default loading state
+  fetchActiveTimers = () => {}
+}) => {
   const { toast } = useToast()
 
-  // Find all active entries from the context state
+  // Find all active entries from the passed prop
   const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
   // Use the first active entry for the main display if available
   const activeTimeEntry = activeTimeEntries.length > 0 ? activeTimeEntries[0] : null
