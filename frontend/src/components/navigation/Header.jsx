@@ -14,16 +14,20 @@ const Header = () => {
   return (
     <header className="bg-white shadow-soft z-10">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex-1">
+          {/* Intentionally empty or for potential future elements like a menu button */}
+        </div>
+
+        <div className="flex items-center justify-center">
           <Link to="/" className="flex items-center">
             <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center mr-2">
               <img src={logo} alt="Pugress Logo" className="h-8 w-8 object-contain" />
             </div>
-            <span className="text-xl font-semibold text-secondary-900">Pugress</span>
+            <span className="text-xl font-semibold text-secondary-900">Pugress Tracker</span>
           </Link>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex-1 flex justify-end items-center space-x-3">
           {/* Quick access buttons */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
