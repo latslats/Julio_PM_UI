@@ -128,10 +128,10 @@ export function WaitingItemProvider({ children }) {
       });
       
       if (result.success) {
-        setWaitingItems(prev => [result.data, ...prev]);
+        await fetchWaitingItems();
         showNotification('success', `Request "${waitingItemData.requestType}" created successfully`);
         await fetchStats(waitingItemData.projectId);
-        return { success: true, data: result.data };
+        return { success: true };
       } else {
         showNotification('error', `Failed to create request: ${result.message}`);
         return result;

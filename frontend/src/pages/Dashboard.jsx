@@ -469,7 +469,7 @@ const Dashboard = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {filteredWaitingItems.length > 0 ? (
+                        {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
                           <div className="space-y-3">
                             {filteredWaitingItems.slice(0, 3).map(item => (
                               <WaitingItemCard 
@@ -591,7 +591,7 @@ const Dashboard = () => {
                   
                   {/* Waiting Items List */}
                   
-                  {filteredWaitingItems.length > 0 ? (
+                  {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
                     <div className="space-y-3">
                       {filteredWaitingItems.map(item => (
                         <WaitingItemCard 

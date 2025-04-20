@@ -25,8 +25,23 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const { deleteWaitingItem } = useWaitingItems();
   const { projects } = useProjects();
   
+  // Helper function to safely parse dates
+  const safeParseISO = (dateString) => {
+    if (!dateString) return null;
+    try {
+      const parsed = parseISO(dateString);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    } catch (e) {
+      console.error("Error parsing date:", dateString, e);
+      return null;
+    }
+  };
+  
+  const parsedSentDate = safeParseISO(item.sentDate);
+  const parsedDeadlineDate = safeParseISO(item.deadlineDate);
+
   // Check if deadline is passed
-  const isDeadlinePassed = item.deadlineDate && isAfter(new Date(), parseISO(item.deadlineDate));
+  const isDeadlinePassed = parsedDeadlineDate && isAfter(new Date(), parsedDeadlineDate);
   
   // Handle edit button click
   const handleEditClick = () => {
@@ -57,13 +72,13 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const statusColor = getStatusClass(item.status);
   const priorityColor = getPriorityClass(item.priority);
 
-  const timeWaiting = item.sentDate ? formatDistanceToNow(parseISO(item.sentDate), { addSuffix: false }) : 'N/A';
-  const daysOverdue = item.deadlineDate && item.status !== 'Received' && isAfter(new Date(), parseISO(item.deadlineDate))
-    ? Math.round((new Date() - parseISO(item.deadlineDate)) / (1000 * 3600 * 24))
+  const timeWaiting = parsedSentDate ? formatDistanceToNow(parsedSentDate, { addSuffix: false }) : 'N/A';
+  const daysOverdue = isDeadlinePassed
+    ? Math.round((new Date() - parsedDeadlineDate) / (1000 * 3600 * 24))
     : null;
 
-  const formattedSentDate = item.sentDate ? format(parseISO(item.sentDate), 'MMM d, yyyy') : 'N/A';
-  const formattedDeadline = item.deadlineDate ? format(parseISO(item.deadlineDate), 'MMM d, yyyy') : 'None';
+  const formattedSentDate = parsedSentDate ? format(parsedSentDate, 'MMM d, yyyy') : 'N/A';
+  const formattedDeadline = parsedDeadlineDate ? format(parsedDeadlineDate, 'MMM d, yyyy') : 'None';
 
   return (
     <div>
