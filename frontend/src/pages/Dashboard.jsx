@@ -79,9 +79,30 @@ const Dashboard = () => {
   // Effect for main dashboard data
   useEffect(() => {
     if (!loading) {
-      // Get recent projects (last 4)
-      const sortedProjects = [...projects].sort((a, b) =>
-        new Date(b.updatedAt) - new Date(a.updatedAt)
+      // Calculate stats for each project
+      const projectsWithStats = projects.map(project => {
+        const projectTasks = tasks.filter(task => task.projectId === project.id);
+        const completed = projectTasks.filter(task => task.status === 'completed').length;
+        const total = projectTasks.length;
+        
+        const projectTimeEntries = timeEntries.filter(entry => 
+          projectTasks.some(task => task.id === entry.taskId) && entry.duration
+        );
+        const totalTrackedSeconds = projectTimeEntries.reduce((sum, entry) => sum + parseFloat(entry.duration || 0), 0);
+        const totalHours = parseFloat((totalTrackedSeconds / 3600).toFixed(1)); // Round to 1 decimal place
+
+        return {
+          ...project,
+          totalTasks: total,
+          completedTasks: completed,
+          totalHours: totalHours
+        };
+      });
+
+      // Get recent projects (last 4) with stats
+      const sortedProjects = [...projectsWithStats].sort((a, b) =>
+        // Sort by createdAt or updatedAt - choose one, e.g., createdAt for newest projects
+        new Date(b.createdAt) - new Date(a.createdAt) // Or use b.updatedAt if preferred
       ).slice(0, 4)
       setRecentProjects(sortedProjects)
 
