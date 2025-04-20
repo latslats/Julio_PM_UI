@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
-// import { useWaitingItems } from '../context/WaitingItemContext'
+import { useWaitingItems } from '../context/WaitingItemContext'
 import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
@@ -16,9 +16,9 @@ import logo from "../assets/taskflow_logo.png"
 import ProjectCard from '../components/projects/ProjectCard'
 import TaskItem from '../components/tasks/TaskItem'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
-// import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
-// import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
-// import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
+import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
+import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
+import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
 
 const Dashboard = () => {
   const { 
@@ -35,7 +35,7 @@ const Dashboard = () => {
   } = useProjects()
 
   // Safely get waiting items context with error handling
-  /*
+  
   let waitingItemsContext = { waitingItems: [], loading: false };
   try {
     waitingItemsContext = useWaitingItems() || { waitingItems: [], loading: false };
@@ -55,7 +55,7 @@ const Dashboard = () => {
       total: 0
     }
   } = waitingItemsContext;
-  */
+  
 
   const [recentProjects, setRecentProjects] = useState([])
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
@@ -66,15 +66,15 @@ const Dashboard = () => {
     pendingTasks: 0,
     trackedHoursToday: 0
   })
-  // const [showWaitingStats, setShowWaitingStats] = useState(true)
-  // const [showAddWaitingModal, setShowAddWaitingModal] = useState(false)
-  // const [hideCompletedItems, setHideCompletedItems] = useState(true)
-  // const [waitingFeaturesAvailable, setWaitingFeaturesAvailable] = useState(false)
+  const [showWaitingStats, setShowWaitingStats] = useState(true)
+  const [showAddWaitingModal, setShowAddWaitingModal] = useState(false)
+  const [hideCompletedItems, setHideCompletedItems] = useState(true)
+  const [waitingFeaturesAvailable, setWaitingFeaturesAvailable] = useState(false)
 
   // Refs to prevent multiple simultaneous API calls
-  // const waitingItemsLoaded = useRef(false);
-  // const waitingFetchAttempts = useRef(0);
-  // const MAX_FETCH_ATTEMPTS = 2;
+  const waitingItemsLoaded = useRef(false);
+  const waitingFetchAttempts = useRef(0);
+  const MAX_FETCH_ATTEMPTS = 2;
 
   // Effect for main dashboard data
   useEffect(() => {
@@ -137,7 +137,7 @@ const Dashboard = () => {
   }, [projects, tasks, timeEntries, loading])
 
   // Fetch waiting items and stats when component mounts, with attempt limiting
-  /*
+  
   useEffect(() => {
     // Skip if already loaded or too many attempts
     if (waitingItemsLoaded.current || waitingFetchAttempts.current >= MAX_FETCH_ATTEMPTS) {
@@ -173,7 +173,7 @@ const Dashboard = () => {
       loadWaitingItems();
     }
   }, [activeTab, fetchWaitingItems, fetchStats]); // Added dependencies
-  */
+  
 
   // Derived state for "My Tasks" view - sorted non-completed tasks
   const myTasks = useMemo(() => {
@@ -202,8 +202,9 @@ const Dashboard = () => {
   }, [myTasks]);
 
   // Filter waiting items for display
-  /*
+  
   const filteredWaitingItems = useMemo(() => {
+    // Return early if waiting features are not available or still loading, or no items exist
     if (!waitingFeaturesAvailable || waitingLoading || !waitingItems?.length) return [];
 
     try {
@@ -225,7 +226,7 @@ const Dashboard = () => {
       return [];
     }
   }, [waitingItems, waitingLoading, hideCompletedItems, waitingFeaturesAvailable]);
-  */
+  
 
   // Get status class for badge
   const getStatusClass = (status) => {
@@ -260,6 +261,14 @@ const Dashboard = () => {
   // Handler for tab changes
   const handleTabChange = (value) => {
     setActiveTab(value);
+  };
+
+  const handleAddWaitingClick = () => {
+    setShowAddWaitingModal(true);
+  };
+
+  const handleWaitingFormClose = () => {
+    setShowAddWaitingModal(false);
   };
 
   if (loading) {
@@ -348,7 +357,7 @@ const Dashboard = () => {
             <TabsList className="mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-              {/* <TabsTrigger value="waitingOn">Waiting On</TabsTrigger> */}
+              <TabsTrigger value="waitingOn">Waiting On</TabsTrigger> 
               <TabsTrigger value="timeTracking">Time Tracking</TabsTrigger>
             </TabsList>
             
@@ -445,7 +454,7 @@ const Dashboard = () => {
                   </Card>
                   
                   {/* Waiting On (Preview) */}
-                  {/*
+                  
                   {waitingFeaturesAvailable && (
                     <Card>
                       <CardHeader className="pb-3">
@@ -463,7 +472,13 @@ const Dashboard = () => {
                         {filteredWaitingItems.length > 0 ? (
                           <div className="space-y-3">
                             {filteredWaitingItems.slice(0, 3).map(item => (
-                              <WaitingItemCard key={item.id} item={item} compact />
+                              <WaitingItemCard 
+                                key={item.id} 
+                                item={item} 
+                                getStatusClass={getStatusClass} 
+                                getPriorityClass={getPriorityClass} 
+                                compact 
+                              />
                             ))}
                           </div>
                         ) : (
@@ -482,7 +497,7 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
                   )}
-                  */}
+                  
                 </div>
               </div>
             </TabsContent>
@@ -522,7 +537,7 @@ const Dashboard = () => {
             </TabsContent>
             
             {/* Waiting On Tab */}
-            {/*
+            
             <TabsContent value="waitingOn" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -551,14 +566,14 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Stats Section */}
-                  {/*
+                  
                   {showWaitingStats && waitingFeaturesAvailable && (
                     <WaitingItemStats stats={waitingStats} />
                   )}
-                  */}
+                  
                   
                   {/* Filter Toggle */}
-                  {/*
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-secondary-500 font-medium">
                       {filteredWaitingItems.length} items
@@ -572,14 +587,19 @@ const Dashboard = () => {
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
-                  */}
+                  
                   
                   {/* Waiting Items List */}
-                  {/*
+                  
                   {filteredWaitingItems.length > 0 ? (
                     <div className="space-y-3">
                       {filteredWaitingItems.map(item => (
-                        <WaitingItemCard key={item.id} item={item} />
+                        <WaitingItemCard 
+                          key={item.id} 
+                          item={item} 
+                          getStatusClass={getStatusClass} 
+                          getPriorityClass={getPriorityClass} 
+                        />
                       ))}
                     </div>
                   ) : (
@@ -594,10 +614,10 @@ const Dashboard = () => {
                       }
                     />
                   )}
-                  */}
-                {/* </CardContent> */}
-              {/* </Card> */}
-            {/* </TabsContent> */}
+                  
+                 </CardContent> 
+               </Card> 
+             </TabsContent> 
             
             {/* Time Tracking Tab */}
             <TabsContent value="timeTracking" className="space-y-6">
@@ -625,11 +645,11 @@ const Dashboard = () => {
       </div>
       
       {/* Waiting Item Form Modal */}
-      {/*
+      
       {showAddWaitingModal && (
         <WaitingItemForm onClose={handleWaitingFormClose} />
       )}
-      */}
+      
     </div>
   )
 }
