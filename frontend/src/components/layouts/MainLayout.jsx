@@ -1,16 +1,15 @@
 import { Outlet } from 'react-router-dom'
-import Sidebar from '../navigation/Sidebar'
+// import Sidebar from '../navigation/Sidebar' // Removed Sidebar import
 import Header from '../navigation/Header'
 import { useState, useEffect } from 'react'
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "../../components/ui/toaster" // Corrected path alias
 
 const MainLayout = () => {
-  // Initialize with a default, then update in useEffect
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Sidebar state logic is no longer needed
+  // const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Update sidebar state on window resize
+  /* Sidebar resize logic removed
   useEffect(() => {
-    // Set initial state based on screen size
     setSidebarOpen(window.innerWidth >= 1024);
     
     const handleResize = () => {
@@ -24,20 +23,24 @@ const MainLayout = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [sidebarOpen]);
+  */
   
   return (
-    <div className="flex h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
-      <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+    // Removed outer flex container, let this div be the main container
+    <div className="flex h-screen bg-gradient-to-br from-secondary-50 to-primary-50 flex-col overflow-hidden">
+      {/* Sidebar component removed */}
+      {/* <Sidebar isOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} /> */}
       
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
-        <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
-          </div>
-        </main>
-      </div>
+      {/* This div now directly holds header and main content */}
+      {/* Removed flex-1 and transition from this div as it's the main column now */}
+      <Header /> {/* Removed toggleSidebar prop */}
+      
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          <Outlet />
+        </div>
+      </main>
+      
       {/* Add Toaster for displaying notifications */}
       <Toaster /> 
     </div>
