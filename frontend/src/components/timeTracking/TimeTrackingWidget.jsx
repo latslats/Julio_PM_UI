@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
-import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader } from 'react-icons/fi'
-import { Button } from "@/components/ui/button"; 
-import { cn } from "../../lib/utils"; 
-import { useToast } from "@/hooks/use-toast"; 
-import { 
-  Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription 
+import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader, FiPlus } from 'react-icons/fi'
+import { Button } from "@/components/ui/button";
+import { cn } from "../../lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import ManualTimeEntryForm from './ManualTimeEntryForm'
 
 // Accept props instead of using context directly
-const TimeTrackingWidget = ({ 
+const TimeTrackingWidget = ({
   timeEntries = [], // Default to empty array
-  tasks = [], 
+  tasks = [],
   projects = [],
   stopTimeTracking = () => {}, // Default to no-op functions
   startTimeTracking = () => {},
@@ -30,6 +32,8 @@ const TimeTrackingWidget = ({
   const [elapsedTimes, setElapsedTimes] = useState({})
   // Track loading state for each entry separately
   const [actionLoadingMap, setActionLoadingMap] = useState({})
+  // State for manual time entry dialog
+  const [showManualEntryDialog, setShowManualEntryDialog] = useState(false)
 
   // Helper function to get task and project for a time entry
   const getEntryDetails = (entry) => {
@@ -57,7 +61,7 @@ const TimeTrackingWidget = ({
           const lastResume = new Date(entry.lastResumedAt).getTime();
           currentElapsedTime += (now - lastResume) / 1000;
         }
-        
+
         setElapsedTimes(prev => ({
           ...prev,
           [entry.id]: Math.floor(currentElapsedTime)
@@ -98,7 +102,7 @@ const TimeTrackingWidget = ({
     try {
       // Set loading state for this specific entry
       setActionLoadingMap(prev => ({ ...prev, [entryId]: 'stop' }));
-      
+
       const result = await stopTimeTracking(entryId);
       if (result.success) {
         toast({
@@ -136,7 +140,7 @@ const TimeTrackingWidget = ({
     try {
       // Set loading state for this specific entry
       setActionLoadingMap(prev => ({ ...prev, [entry.id]: 'pauseResume' }));
-      
+
       let result;
       if (entry.isPaused) {
         result = await resumeTimeTracking(entry.id);
@@ -161,7 +165,7 @@ const TimeTrackingWidget = ({
           });
         }
       }
-      
+
       // Refresh active timers to ensure UI is up-to-date
       await fetchActiveTimers();
     } catch (err) {
@@ -189,11 +193,11 @@ const TimeTrackingWidget = ({
     const isStopping = isLoading === 'stop';
 
     return (
-      <Card 
-        key={entry.id} 
+      <Card
+        key={entry.id}
         className={cn(
           "overflow-hidden",
-          isFirstEntry 
+          isFirstEntry
           ? 'border-primary/30 shadow-sm' // Subtle primary border/shadow for the first
           : 'border-secondary-200' // Standard border otherwise
         )}
@@ -253,8 +257,28 @@ const TimeTrackingWidget = ({
     );
   }
 
+  // Handle manual time entry form submission
+  const handleManualEntrySave = (data) => {
+    setShowManualEntryDialog(false);
+    // Refresh the time entries list
+    fetchActiveTimers();
+  };
+
   return (
     <div className="h-full flex flex-col">
+      {/* Add Manual Time Entry Button */}
+      <div className="mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center justify-center"
+          onClick={() => setShowManualEntryDialog(true)}
+        >
+          <FiPlus className="mr-1.5 h-4 w-4" />
+          Add Manual Time Entry
+        </Button>
+      </div>
+
       {activeTimeEntries.length > 0 ? (
         <div className="flex-1 flex flex-col overflow-y-auto pr-1 -mr-1"> {/* Added overflow */}
           <div className="space-y-4">
@@ -272,6 +296,22 @@ const TimeTrackingWidget = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Manual Time Entry Dialog */}
+      <Dialog open={showManualEntryDialog} onOpenChange={setShowManualEntryDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Manual Time Entry</DialogTitle>
+            <p className="text-sm text-secondary-500 mt-1.5">
+              Add time spent on a task retroactively.
+            </p>
+          </DialogHeader>
+          <ManualTimeEntryForm
+            onClose={() => setShowManualEntryDialog(false)}
+            onSave={handleManualEntrySave}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

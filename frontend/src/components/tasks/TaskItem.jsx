@@ -18,21 +18,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 /**
  * TaskItem component displays a task with time tracking functionality
  * Enhanced with animations and improved accessibility
- * 
+ *
  * @param {Object} task - The task data to display
  * @returns {JSX.Element} - The rendered task item
  */
 const TaskItem = ({ task }) => {
-  const { 
-    projects, 
-    updateTask, 
-    deleteTask, 
-    startTimeTracking, 
-    stopTimeTracking, 
+  const {
+    projects,
+    updateTask,
+    deleteTask,
+    startTimeTracking,
+    stopTimeTracking,
     pauseTimeTracking,
     resumeTimeTracking,
     fetchActiveTimers,
-    timeEntries 
+    timeEntries
   } = useProjects()
   const { showNotification } = useNotification()
   const [isTracking, setIsTracking] = useState(false)
@@ -46,17 +46,38 @@ const TaskItem = ({ task }) => {
 
   // Check if task has an active time entry
   const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
-  
+
   // State to track elapsed time for active timer
   const [elapsedTime, setElapsedTime] = useState(0)
-  
+
+  // Calculate total time spent on this task (from completed time entries)
+  const [totalTimeSpent, setTotalTimeSpent] = useState(0)
+
+  // Calculate total time spent on this task
+  useEffect(() => {
+    const taskTimeEntries = timeEntries.filter(entry => entry.taskId === task.id)
+
+    // Sum up durations from completed time entries
+    const completedTime = taskTimeEntries
+      .filter(entry => entry.endTime !== null)
+      .reduce((sum, entry) => sum + parseFloat(entry.duration || 0), 0)
+
+    // If there's an active time entry, add the current elapsed time
+    let totalTime = completedTime
+    if (activeTimeEntry && elapsedTime > 0) {
+      totalTime += elapsedTime
+    }
+
+    setTotalTimeSpent(totalTime)
+  }, [task.id, timeEntries, activeTimeEntry, elapsedTime])
+
   // Calculate and update elapsed time for active timer
   useEffect(() => {
     if (!activeTimeEntry) {
       setElapsedTime(0)
       return
     }
-    
+
     // Calculate initial elapsed time
     const calculateElapsed = () => {
       let currentElapsedTime = parseFloat(activeTimeEntry.totalPausedDuration) || 0
@@ -67,33 +88,44 @@ const TaskItem = ({ task }) => {
       }
       setElapsedTime(Math.floor(currentElapsedTime))
     }
-    
+
     // Calculate once immediately
     calculateElapsed()
-    
+
     // If entry is running (not paused), update every second
     let interval
     if (!activeTimeEntry.isPaused) {
       interval = setInterval(calculateElapsed, 1000)
     }
-    
+
     // Cleanup function to clear interval
     return () => {
       if (interval) clearInterval(interval)
     }
   }, [activeTimeEntry])
-  
+
   // Format time as HH:MM:SS
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600)
     const m = Math.floor((seconds % 3600) / 60)
     const s = seconds % 60
-    
+
     return [
       h.toString().padStart(2, '0'),
       m.toString().padStart(2, '0'),
       s.toString().padStart(2, '0')
     ].join(':')
+  }
+
+  // Format time as HH.MM for display (e.g., 5.25h)
+  const formatHoursMinutes = (seconds) => {
+    const hours = seconds / 3600
+    // If less than 0.1 hours (6 minutes), show as minutes
+    if (hours < 0.1) {
+      const minutes = Math.round(seconds / 60)
+      return `${minutes}m`
+    }
+    return hours.toFixed(2) + 'h'
   }
 
   // Format due date with visual indication if it's overdue or due today
@@ -125,13 +157,13 @@ const TaskItem = ({ task }) => {
   const toggleTimeTracking = async () => {
     try {
       setIsActionLoading(true);
-      
+
       if (activeTimeEntry) {
         if (activeTimeEntry.isPaused) {
           // If paused, resume it
           const result = await resumeTimeTracking(activeTimeEntry.id);
           if (result.success) {
-            showNotification('success', `Resumed tracking for "${task.title}"`); 
+            showNotification('success', `Resumed tracking for "${task.title}"`);
             await fetchActiveTimers();
           } else {
             showNotification('error', `Failed to resume tracking: ${result.message || 'Unknown error'}`);
@@ -164,12 +196,12 @@ const TaskItem = ({ task }) => {
       setIsActionLoading(false);
     }
   }
-  
+
   // Handle stopping time tracking
   const handleStopTracking = async () => {
     try {
       setIsActionLoading(true);
-      
+
       if (activeTimeEntry) {
         const result = await stopTimeTracking(activeTimeEntry.id);
         if (result.success) {
@@ -219,12 +251,12 @@ const TaskItem = ({ task }) => {
 
   return (
     <>
-      <div 
+      <div
         className={`px-6 py-4 border-b border-secondary-100 hover:bg-secondary-50/70 ${
           task.status?.toLowerCase() === 'completed' ? 'bg-secondary-300/90' : ''
         }`}
       >
-        <motion.div 
+        <motion.div
           className="flex items-center justify-between group"
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
@@ -253,11 +285,11 @@ const TaskItem = ({ task }) => {
 
             <div className="ml-3">
               <div className="flex items-center">
-                <motion.p 
+                <motion.p
                   className={`text-sm font-medium ${
                     task.status === 'completed' || task.status === 'Completed' ? 'text-secondary-500 line-through' : 'text-secondary-900'
                   }`}
-                  animate={{ 
+                  animate={{
                     opacity: task.status === 'completed' || task.status === 'Completed' ? 0.7 : 1,
                     textDecoration: task.status === 'completed' || task.status === 'Completed' ? 'line-through' : 'none'
                   }}
@@ -268,7 +300,7 @@ const TaskItem = ({ task }) => {
 
                 <AnimatePresence>
                   {task.priority === 'high' && (
-                    <motion.span 
+                    <motion.span
                       className="ml-2 px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-800"
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -288,37 +320,43 @@ const TaskItem = ({ task }) => {
 
                 {formatDueDate()}
 
-                {task.estimatedHours && (
-                  <span className="text-xs text-secondary-500 flex items-center">
-                    <FiClock className="mr-1 h-3 w-3" aria-hidden="true" />
-                    {task.estimatedHours}h
-                    {activeTimeEntry && (
-                      <motion.span 
-                        className="ml-1 text-primary-600 font-medium"
-                        animate={{ 
-                          color: activeTimeEntry.isPaused ? '#4f46e5' : '#06b6d4',
-                        }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        {activeTimeEntry.isPaused 
-                          ? '(paused)' 
-                          : (
-                            <span className="inline-flex items-center">
-                              (running: 
-                              <motion.span
-                                animate={{ opacity: [1, 0.7, 1] }}
-                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                                className="ml-1"
-                              >
-                                {formatTime(elapsedTime)}
-                              </motion.span>
-                              )
-                            </span>
-                          )}
-                      </motion.span>
-                    )}
+                <span className="text-xs text-secondary-500 flex items-center">
+                  <FiClock className="mr-1 h-3 w-3" aria-hidden="true" />
+                  {/* Show actual/estimated time */}
+                  <span className={totalTimeSpent > (task.estimatedHours * 3600 || 0) ? "text-amber-600 font-medium" : ""}>
+                    {formatHoursMinutes(totalTimeSpent)}
                   </span>
-                )}
+                  {task.estimatedHours && (
+                    <span className="text-secondary-400">/{task.estimatedHours}h</span>
+                  )}
+
+                  {/* Show active timer status if running */}
+                  {activeTimeEntry && (
+                    <motion.span
+                      className="ml-1 text-primary-600 font-medium"
+                      animate={{
+                        color: activeTimeEntry.isPaused ? '#4f46e5' : '#06b6d4',
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {activeTimeEntry.isPaused
+                        ? '(paused)'
+                        : (
+                          <span className="inline-flex items-center">
+                            (running:
+                            <motion.span
+                              animate={{ opacity: [1, 0.7, 1] }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                              className="ml-1"
+                            >
+                              {formatTime(elapsedTime)}
+                            </motion.span>
+                            )
+                          </span>
+                        )}
+                    </motion.span>
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -386,15 +424,15 @@ const TaskItem = ({ task }) => {
                       : 'text-secondary-600 hover:bg-secondary-50' // Running - show pause
                     : 'text-primary-600 hover:bg-primary-50' // Not tracking - show play
                 }`}
-                title={activeTimeEntry 
-                  ? activeTimeEntry.isPaused 
-                    ? 'Resume tracking' 
-                    : 'Pause tracking' 
+                title={activeTimeEntry
+                  ? activeTimeEntry.isPaused
+                    ? 'Resume tracking'
+                    : 'Pause tracking'
                   : 'Start tracking'}
-                aria-label={activeTimeEntry 
-                  ? activeTimeEntry.isPaused 
-                    ? 'Resume time tracking' 
-                    : 'Pause time tracking' 
+                aria-label={activeTimeEntry
+                  ? activeTimeEntry.isPaused
+                    ? 'Resume time tracking'
+                    : 'Pause time tracking'
                   : 'Start time tracking'}
                 disabled={isActionLoading}
               >
@@ -433,7 +471,7 @@ const TaskItem = ({ task }) => {
       {/* Edit Task Modal */}
       <AnimatePresence>
         {showEditModal && editableTask && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -443,7 +481,7 @@ const TaskItem = ({ task }) => {
             aria-modal="true"
             aria-labelledby="edit-task-title"
           >
-            <motion.div 
+            <motion.div
               className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
@@ -495,8 +533,8 @@ const TaskItem = ({ task }) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor={`edit-priority-${task.id}`} className="text-sm font-medium">Priority</Label>
-                        <Select 
-                          value={editableTask.priority} 
+                        <Select
+                          value={editableTask.priority}
                           onValueChange={(value) => setEditableTask({ ...editableTask, priority: value })}
                         >
                           <SelectTrigger id={`edit-priority-${task.id}`} className="mt-1 w-full">
@@ -512,8 +550,8 @@ const TaskItem = ({ task }) => {
 
                       <div>
                         <Label htmlFor={`edit-status-${task.id}`} className="text-sm font-medium">Status</Label>
-                        <Select 
-                          value={editableTask.status} 
+                        <Select
+                          value={editableTask.status}
                           onValueChange={(value) => setEditableTask({ ...editableTask, status: value })}
                         >
                           <SelectTrigger id={`edit-status-${task.id}`} className="mt-1 w-full">

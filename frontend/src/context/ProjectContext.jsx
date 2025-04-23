@@ -48,7 +48,7 @@ export const ProjectProvider = ({ children }) => {
 
       } catch (err) {
         console.error("Error fetching data:", err)
-        
+
         // Handle axios error
         let errorMessage = 'Could not load data. Please try again later.'
         if (err.response) {
@@ -62,10 +62,10 @@ export const ProjectProvider = ({ children }) => {
           // Something happened in setting up the request that triggered an Error
           errorMessage = err.message
         }
-        
+
         setError(errorMessage)
         // Keep existing state or clear it depending on desired UX
-        // setProjects([]); setTasks([]); setTimeEntries([]); 
+        // setProjects([]); setTasks([]); setTimeEntries([]);
       } finally {
         setLoading(false)
       }
@@ -73,7 +73,7 @@ export const ProjectProvider = ({ children }) => {
 
     fetchData()
   }, []) // Empty dependency array means this runs once on mount
-  
+
   // Function to fetch only active timers
   const fetchActiveTimers = async () => {
     setLoading(true)
@@ -81,9 +81,9 @@ export const ProjectProvider = ({ children }) => {
       const response = await api.get('/time-entries', {
         params: { active: true }
       })
-      
+
       const activeTimersData = response.data
-      
+
       // Update timeEntries state by replacing active entries and keeping completed ones
       setTimeEntries(prev => {
         // Keep entries that have an endTime (completed)
@@ -91,11 +91,11 @@ export const ProjectProvider = ({ children }) => {
         // Add all active entries from the new data
         return [...activeTimersData, ...completedEntries]
       })
-      
+
       return { success: true, data: activeTimersData }
     } catch (err) {
       console.error("Error fetching active timers:", err)
-      
+
       // Handle axios error
       let errorMessage = 'Could not load active timers. Please try again later.'
       if (err.response) {
@@ -105,7 +105,7 @@ export const ProjectProvider = ({ children }) => {
       } else {
         errorMessage = err.message
       }
-      
+
       setError(errorMessage)
       return { success: false, message: errorMessage }
     } finally {
@@ -116,14 +116,14 @@ export const ProjectProvider = ({ children }) => {
   // --- Helper Functions (Consider moving to a utils file later) ---
   /**
    * Helper function to make API requests using axios
-   * 
+   *
    * Advantages over fetch:
    * - Automatic JSON transformation
    * - Better error handling
    * - Request/response interceptors
    * - Automatic transforms of JSON data
    * - Client-side protection against XSRF
-   * 
+   *
    * @param {string} url - The URL to make the request to
    * @param {Object} options - The options for the request
    * @returns {Promise<Object>} - A promise that resolves to the response data
@@ -132,7 +132,7 @@ export const ProjectProvider = ({ children }) => {
     try {
       // Extract method and body from options
       const { method = 'GET', body, headers, ...restOptions } = options;
-      
+
       // Prepare request config
       const config = {
         method,
@@ -142,22 +142,22 @@ export const ProjectProvider = ({ children }) => {
         },
         ...restOptions,
       };
-      
+
       // Add data if body is provided
       if (body) {
         config.data = body;
       }
-      
+
       console.log(`Making API request to: ${config.url}`);
-      
+
       // Make the request
       const response = await api(config);
-      
+
       // Return success with data
       return { success: true, data: response.data };
     } catch (err) {
       console.error('API Request Error:', err);
-      
+
       // Handle axios error
       if (err.response) {
         // The request was made and the server responded with a status code
@@ -182,7 +182,7 @@ export const ProjectProvider = ({ children }) => {
         method: 'POST',
         body: projectData,
       });
-      
+
       if (result.success) {
         setProjects(prev => [result.data, ...prev]);
         showNotification('success', `Project "${projectData.name}" created successfully`);
@@ -208,7 +208,7 @@ export const ProjectProvider = ({ children }) => {
         method: 'PUT',
         body: projectData,
       });
-      
+
       if (result.success) {
         setProjects(prev => prev.map(p => p.id === id ? result.data : p));
         showNotification('success', `Project "${projectData.name || 'Unknown'}" updated successfully`);
@@ -232,11 +232,11 @@ export const ProjectProvider = ({ children }) => {
       // Get project name before deletion for notification
       const projectToDelete = projects.find(p => p.id === id);
       const projectName = projectToDelete?.name || 'Unknown';
-      
+
       const result = await apiRequest(`/projects/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (result.success) {
         setProjects(prev => prev.filter(p => p.id !== id));
         // Remove associated tasks and time entries from frontend state
@@ -266,7 +266,7 @@ export const ProjectProvider = ({ children }) => {
         method: 'POST',
         body: taskData,
       });
-      
+
       if (result.success) {
         setTasks(prev => [result.data, ...prev]);
         showNotification('success', `Task "${taskData.title}" created successfully`);
@@ -291,7 +291,7 @@ export const ProjectProvider = ({ children }) => {
         method: 'PUT',
         body: taskData,
       });
-      
+
       if (result.success) {
         setTasks(prev => prev.map(t => t.id === id ? result.data : t));
         showNotification('success', `Task "${taskData.title || 'Unknown'}" updated successfully`);
@@ -315,11 +315,11 @@ export const ProjectProvider = ({ children }) => {
       // Get task title before deletion for notification
       const taskToDelete = tasks.find(t => t.id === id);
       const taskTitle = taskToDelete?.title || 'Unknown';
-      
+
       const result = await apiRequest(`/tasks/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (result.success) {
         setTasks(prev => prev.filter(t => t.id !== id));
         // Remove associated time entries from frontend state
@@ -345,13 +345,13 @@ export const ProjectProvider = ({ children }) => {
     // Just start a new timer for the selected task
     console.log(`Starting time tracking for task: ${taskId}`);
     setLoading(true);
-    
+
     try {
       const result = await apiRequest(`/time-entries/start`, {
         method: 'POST',
         body: JSON.stringify({ taskId }),
       });
-      
+
       if (result.success) {
         console.log('Time tracking started successfully:', result.data);
         // Add the new time entry to the list without removing other active ones
@@ -374,12 +374,12 @@ export const ProjectProvider = ({ children }) => {
   const stopTimeTracking = async (timeEntryId) => {
     console.log(`Stopping time tracking for entry: ${timeEntryId}`);
     setLoading(true);
-    
+
     try {
       const result = await apiRequest(`/time-entries/stop/${timeEntryId}`, {
         method: 'PUT',
       });
-      
+
       if (result.success) {
         console.log('Time tracking stopped successfully:', result.data);
         // Replace the entry with the updated one from the server
@@ -398,16 +398,16 @@ export const ProjectProvider = ({ children }) => {
       setLoading(false);
     }
   }
-  
+
   const pauseTimeTracking = async (timeEntryId) => {
     console.log(`Pausing time tracking for entry: ${timeEntryId}`);
     setLoading(true);
-    
+
     try {
       const result = await apiRequest(`/time-entries/pause/${timeEntryId}`, {
         method: 'PUT',
       });
-      
+
       if (result.success) {
         console.log('Time tracking paused successfully:', result.data);
         setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te));
@@ -429,12 +429,12 @@ export const ProjectProvider = ({ children }) => {
   const resumeTimeTracking = async (timeEntryId) => {
     console.log(`Resuming time tracking for entry: ${timeEntryId}`);
     setLoading(true);
-    
+
     try {
       const result = await apiRequest(`/time-entries/resume/${timeEntryId}`, {
         method: 'PUT',
       });
-      
+
       if (result.success) {
         console.log('Time tracking resumed successfully:', result.data);
         setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te));
@@ -459,7 +459,7 @@ export const ProjectProvider = ({ children }) => {
       const result = await apiRequest(`/time-entries/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (result.success) {
         setTimeEntries(prev => prev.filter(te => te.id !== id));
         showNotification('success', 'Time entry deleted successfully');
@@ -484,7 +484,7 @@ export const ProjectProvider = ({ children }) => {
         method: 'PUT',
         body: timeEntryData,
       });
-      
+
       if (result.success) {
         // Update the time entry in the state
         setTimeEntries(prev => prev.map(te => te.id === id ? result.data : te));
@@ -503,16 +503,79 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Create a manual time entry
+   *
+   * @param {Object} timeEntryData - Data for the new time entry
+   * @param {string} timeEntryData.taskId - ID of the task
+   * @param {string} timeEntryData.startTime - Start time (ISO string)
+   * @param {string} timeEntryData.endTime - End time (ISO string)
+   * @param {number} timeEntryData.duration - Duration in seconds
+   * @param {string} timeEntryData.notes - Optional notes
+   * @returns {Promise<Object>} - Result object with success flag and data or error message
+   */
+  const createManualTimeEntry = async (timeEntryData) => {
+    setLoading(true);
+    try {
+      // First, start a new time entry
+      const startResult = await apiRequest('/time-entries/start', {
+        method: 'POST',
+        body: JSON.stringify({ taskId: timeEntryData.taskId }),
+      });
+
+      if (!startResult.success) {
+        showNotification('error', `Failed to create time entry: ${startResult.message || 'Unknown error'}`);
+        return startResult;
+      }
+
+      // Get the ID of the newly created time entry
+      const timeEntryId = startResult.data.id;
+
+      // Now update it with the correct start time, end time, and duration
+      const updateResult = await apiRequest(`/time-entries/${timeEntryId}`, {
+        method: 'PUT',
+        body: {
+          startTime: timeEntryData.startTime,
+          endTime: timeEntryData.endTime,
+          duration: timeEntryData.duration,
+          notes: timeEntryData.notes
+        },
+      });
+
+      if (updateResult.success) {
+        // Update the time entry in the state
+        setTimeEntries(prev => {
+          // Remove the initial entry that was created
+          const filtered = prev.filter(entry => entry.id !== timeEntryId);
+          // Add the updated entry
+          return [updateResult.data, ...filtered];
+        });
+
+        showNotification('success', 'Manual time entry added successfully');
+        return { success: true, data: updateResult.data };
+      } else {
+        showNotification('error', `Failed to update time entry: ${updateResult.message || 'Unknown error'}`);
+        return updateResult;
+      }
+    } catch (err) {
+      console.error('Error adding manual time entry:', err);
+      showNotification('error', `Failed to add manual time entry: ${err.message || 'Unknown error'}`);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- Calculated Values (Memoized) ---
   const projectStats = useMemo(() => {
     return projects.reduce((acc, project) => {
       const projectTasks = tasks.filter(task => task.projectId === project.id)
       const completedTasks = projectTasks.filter(task => task.status === 'completed').length
-      const projectTimeEntries = timeEntries.filter(entry => 
+      const projectTimeEntries = timeEntries.filter(entry =>
         projectTasks.some(task => task.id === entry.taskId) && entry.duration
       )
       const totalHours = projectTimeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) / 3600 // Assuming duration is in seconds
-      
+
       acc[project.id] = {
         totalTasks: projectTasks.length,
         completedTasks: completedTasks,
@@ -534,8 +597,8 @@ export const ProjectProvider = ({ children }) => {
       ...projects.map(p => ({ ...p, type: 'project', date: p.createdAt || new Date(0) })),
       ...tasks.map(t => ({ ...t, type: 'task', date: t.createdAt || new Date(0) })),
       // ...timeEntries.map(te => ({ ...te, type: 'time', date: te.createdAt || new Date(0) }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date)); 
-    
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
     // Format for display
     return activities.slice(0, 5).map(activity => {
         let action = 'created'; // Default
@@ -557,19 +620,19 @@ export const ProjectProvider = ({ children }) => {
 
   /**
    * Note on State Management:
-   * 
+   *
    * The React Context API is currently sufficient for managing multiple active timers in this application.
    * Reasons:
    * 1. The state updates are predictable and follow a clear pattern
    * 2. The number of active timers is typically small (< 10)
    * 3. Timer updates are infrequent and don't cause performance issues
    * 4. The component tree is not deeply nested, so prop drilling is not a significant issue
-   * 
+   *
    * If the application grows to include:
    * - Many more concurrent timers (dozens or hundreds)
    * - More complex state interactions
    * - Performance issues with Context re-renders
-   * 
+   *
    * Then consider migrating to a more robust state management solution like:
    * - Zustand (lightweight, hooks-based)
    * - Redux Toolkit (more structured, better for complex state)
@@ -594,6 +657,7 @@ export const ProjectProvider = ({ children }) => {
       resumeTimeTracking,
       deleteTimeEntry, // Provide deleteTimeEntry
       updateTimeEntry, // Provide updateTimeEntry
+      createManualTimeEntry, // Provide createManualTimeEntry
       fetchActiveTimers, // Provide the new function
       projectStats,
       totalTrackedHours,
