@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWaitingItems } from '../context/WaitingItemContext';
 import { useProjects } from '../context/ProjectContext';
-import { FiPlus, FiFilter, FiSearch, FiClock, FiCalendar, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiFilter, FiSearch, FiClock, FiCalendar, FiAlertCircle, FiCheckCircle, FiChevronLeft } from 'react-icons/fi';
 import { format, formatDistanceToNow } from 'date-fns';
 
 // Components
@@ -131,6 +131,10 @@ const WaitingItems = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <Link to="/" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900 mb-1">
+            <FiChevronLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
           <h1 className="text-2xl font-semibold text-secondary-900">Waiting On</h1>
           <p className="text-secondary-600">
             Track and manage items you're waiting on from external parties

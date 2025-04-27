@@ -48,7 +48,13 @@ const Projects = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
+        <div>
+          <Link to="/" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900 mb-1">
+            <FiChevronLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
+        </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="btn btn-primary flex items-center"

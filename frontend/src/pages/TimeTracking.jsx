@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useNotification } from '../context/NotificationContext'
-import { FiPlay, FiClock, FiCalendar, FiFilter, FiSearch, FiChevronDown, FiTrash2, FiX } from 'react-icons/fi'
+import { FiPlay, FiClock, FiCalendar, FiFilter, FiSearch, FiChevronDown, FiTrash2, FiX, FiChevronLeft } from 'react-icons/fi'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, parseISO, startOfMonth, endOfMonth, subDays, subWeeks, subMonths, isWithinInterval } from 'date-fns'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
 import RunningTimersWidget from '../components/timeTracking/RunningTimersWidget'
@@ -207,7 +208,13 @@ const TimeTracking = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Time Tracking</h1>
+        <div>
+          <Link to="/" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900 mb-1">
+            <FiChevronLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-semibold text-secondary-900">Time Tracking</h1>
+        </div>
         <div className="flex items-center space-x-2">
           <div className="relative">
             <select 
