@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCalendar, FiClock, FiAlertCircle, FiExternalLink, FiChevronRight, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns';
+import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "../../lib/utils";
@@ -81,7 +82,11 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
   const formattedDeadline = parsedDeadlineDate ? format(parsedDeadlineDate, 'MMM d, yyyy') : 'None';
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <Card className={`overflow-hidden transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] rounded-xl h-full flex flex-col ${
         item.status?.toLowerCase() === 'completed' ? 'bg-secondary-300/90' : ''
       }`}>
@@ -206,7 +211,7 @@ const WaitingItemCard = ({ item, getStatusClass, getPriorityClass }) => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

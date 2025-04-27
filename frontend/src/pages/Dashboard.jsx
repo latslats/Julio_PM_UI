@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group"
 import { Badge } from "../components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import logo from "../assets/taskflow_logo.png"
 
 // Components
@@ -544,19 +544,17 @@ const Dashboard = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>Waiting On</CardTitle>
                     <div className="flex items-center mt-2 sm:mt-0 space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => setShowWaitingStats(!showWaitingStats)}>
-                        {showWaitingStats ? (
-                          <>
-                            <FiChevronUp className="mr-1.5 h-4 w-4" />
-                            <span>Hide Stats</span>
-                          </>
-                        ) : (
-                          <>
-                            <FiChevronDown className="mr-1.5 h-4 w-4" />
-                            <span>Show Stats</span>
-                          </>
-                        )}
+                      {/* Toggle Stats Button - Icon Only */}
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => setShowWaitingStats(!showWaitingStats)}
+                        title={showWaitingStats ? "Hide Stats" : "Show Stats"}
+                        className="h-8 w-8"
+                      >
+                        <FiBarChart2 className="h-4 w-4" />
                       </Button>
+                      {/* Add Item Button */}
                       <Button size="sm" onClick={handleAddWaitingClick}>
                         <FiPlus className="mr-1.5 h-4 w-4" />
                         <span>Add Item</span>
@@ -565,11 +563,20 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Stats Section */}
-                  
-                  {showWaitingStats && waitingFeaturesAvailable && (
-                    <WaitingItemStats stats={waitingStats} />
-                  )}
+                  {/* Stats Section with Animation */}
+                  <AnimatePresence>
+                    {showWaitingStats && waitingFeaturesAvailable && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        style={{ overflow: 'hidden' }} // Prevents content spill during animation
+                      >
+                        <WaitingItemStats stats={waitingStats} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   
                   
                   {/* Filter Toggle */}
