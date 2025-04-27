@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
-import { FiChevronLeft, FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList, FiSliders, FiPieChart, FiAlertCircle } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList, FiSliders, FiPieChart, FiAlertCircle } from 'react-icons/fi'
+import BackButton from '../components/common/BackButton'; // Import the new BackButton
 import { format } from 'date-fns'
 import {
     Card, CardContent, CardHeader, CardTitle
@@ -329,10 +330,8 @@ const ProjectDetail = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <Link to="/projects" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900 mb-1">
-            <FiChevronLeft className="mr-1 h-4 w-4" />
-            Back to Projects
-          </Link>
+          {/* Use the BackButton component */}
+          <BackButton to="/projects" className="mb-0 -ml-2" />
           <h1 className="text-2xl font-semibold text-secondary-900 mt-1">{project.name}</h1>
           <div className="flex items-center mt-1 space-x-2">
             {project.client && <span className="text-sm text-secondary-600">{project.client}</span>}

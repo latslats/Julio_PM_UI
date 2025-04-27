@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { FiPlus, FiFilter, FiSearch, FiX } from 'react-icons/fi'
+import BackButton from '../components/common/BackButton'; // Import BackButton
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +71,10 @@ const Projects = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
+        <div className="flex items-center gap-2">
+          <BackButton to="/" className="-ml-2" />
+          <h1 className="text-2xl font-semibold text-secondary-900">Projects</h1>
+        </div>
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
           <DialogTrigger asChild>
              <Button>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useProjects } from '../context/ProjectContext'
 import { FiDownload, FiCalendar, FiPieChart, FiBarChart2, FiTrendingUp } from 'react-icons/fi'
+import BackButton from '../components/common/BackButton';
 import TimeTrackingChart from '../components/reports/TimeTrackingChart'
 import ProjectProgressChart from '../components/reports/ProjectProgressChart'
 import TaskCompletionChart from '../components/reports/TaskCompletionChart'
@@ -282,7 +283,10 @@ const Reports = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Reports</h1>
+        <div className="flex items-center gap-2">
+          <BackButton to="/" className="-ml-2" />
+          <h1 className="text-2xl font-semibold text-secondary-900">Reports</h1>
+        </div>
         <button 
           onClick={handleExportData} 
           className="btn btn-secondary flex items-center"

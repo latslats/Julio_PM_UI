@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import BackButton from '../components/common/BackButton';
 import axios from 'axios';
 import { FiSettings, FiClock, FiSave, FiLoader, FiList, FiChevronRight } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
@@ -152,7 +153,10 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Settings</h1>
+        <div className="flex items-center gap-2">
+          <BackButton to="/" className="-ml-2" />
+          <h1 className="text-2xl font-semibold text-secondary-900">Settings</h1>
+        </div>
       </div>
 
       <Card className="max-w-2xl">

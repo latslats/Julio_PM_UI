@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWaitingItems } from '../context/WaitingItemContext';
 import { useProjects } from '../context/ProjectContext';
 import { FiPlus, FiFilter, FiSearch, FiClock, FiCalendar, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import BackButton from '../components/common/BackButton';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -133,8 +134,11 @@ const WaitingItems = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-primary-500/5 to-accent-500/5 p-6 rounded-2xl">
         <div>
-          <h1 className="text-2xl font-semibold text-secondary-900">Waiting On</h1>
-          <p className="text-secondary-600 mt-1">
+          <div className="flex items-center gap-2">
+            <BackButton to="/" className="-ml-2" />
+            <h1 className="text-2xl font-semibold text-secondary-900">Waiting On</h1>
+          </div>
+          <p className="text-secondary-600 mt-1 ml-8"> {/* Added ml-8 for alignment */}
             Track and manage items you're waiting on from external parties
           </p>
         </div>

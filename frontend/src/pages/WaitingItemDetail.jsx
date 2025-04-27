@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow, isAfter } from 'date-fns';
 import { 
-  FiChevronLeft, FiCalendar, FiClock, FiAlertCircle, FiCheckCircle, 
+  FiCalendar, FiClock, FiAlertCircle, FiCheckCircle, 
   FiExternalLink, FiEdit2, FiTrash2, FiPlus, FiX, FiMessageCircle 
 } from 'react-icons/fi';
+import BackButton from '../components/common/BackButton'; // Import BackButton
 import { useWaitingItems } from '../context/WaitingItemContext';
 import { useProjects } from '../context/ProjectContext';
 import WaitingItemForm from '../components/waitingItems/WaitingItemForm';
@@ -247,10 +248,7 @@ const WaitingItemDetail = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <Link to="/waiting-items" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900">
-            <FiChevronLeft className="mr-1 h-4 w-4" />
-            Back to Waiting Items
-          </Link>
+          <BackButton to="/waiting-items" className="mb-0 -ml-2" />
           <h1 className="text-2xl font-semibold text-secondary-900 mt-1">{waitingItem.requestType}</h1>
           <div className="flex items-center mt-1">
             <span className="text-sm text-secondary-600">Requested from {waitingItem.requestedFrom}</span>

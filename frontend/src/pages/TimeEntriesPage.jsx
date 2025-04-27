@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useProjects } from '../context/ProjectContext';
 import { Link } from 'react-router-dom';
 import { FiClock, FiFilter, FiCalendar, FiSearch, FiX, FiArrowLeft } from 'react-icons/fi';
+import BackButton from '../components/common/BackButton';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -177,12 +178,8 @@ const TimeEntriesPage = () => {
             <span className="mx-2">/</span>
             <span className="text-secondary-700">Time Entries</span>
           </div>
-          <div className="flex items-center">
-            <Link to="/settings" className="inline-flex mr-3">
-              <Button variant="outline" size="icon" className="mr-2" title="Back to Settings">
-                <FiArrowLeft className="h-4 w-4" />
-              </Button>
-            </Link>
+          <div className="flex items-center gap-2">
+            <BackButton to="/" className="-ml-2" />
             <h1 className="text-2xl font-semibold text-secondary-900">Time Entries</h1>
           </div>
         </div>
