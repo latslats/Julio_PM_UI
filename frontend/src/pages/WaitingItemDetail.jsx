@@ -248,7 +248,7 @@ const WaitingItemDetail = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <BackButton to="/waiting-items" className="mb-0 -ml-2" />
+          <BackButton to="/" className="mb-0 -ml-2" />
           <h1 className="text-2xl font-semibold text-secondary-900 mt-1">{waitingItem.requestType}</h1>
           <div className="flex items-center mt-1">
             <span className="text-sm text-secondary-600">Requested from {waitingItem.requestedFrom}</span>
