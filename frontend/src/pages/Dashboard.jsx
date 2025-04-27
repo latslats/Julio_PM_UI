@@ -289,111 +289,111 @@ const Dashboard = () => {
 
   return (
     <div className="relative">
-      {/* Background Logo */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0">
-        <img src={logo} alt="TaskFlow Logo" className="w-1/2 max-w-md" />
+      {/* Background Logo - More subtle */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] z-0">
+        <img src={logo} alt="TaskFlow Logo" className="w-1/3 max-w-md" />
       </div>
       
       {/* Main Dashboard Content */}
       <div className="relative z-10">
-        <div className="flex flex-col space-y-6">
-          {/* Dashboard Header */}
+        <div className="flex flex-col space-y-8">
+          {/* Dashboard Header - Refined spacing and typography */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-secondary-900">Dashboard</h1>
-              <p className="text-secondary-500 mt-1">Your project overview and quick actions</p>
+              <h1 className="text-2xl font-medium tracking-tight text-secondary-900">Dashboard</h1>
+              <p className="text-secondary-500/80 mt-1.5 text-sm">Your project overview and quick actions</p>
             </div>
             
-            <div className="flex mt-4 md:mt-0 space-x-2">
-              <Button asChild variant="outline" size="sm" className="hidden md:flex">
+            <div className="flex mt-5 md:mt-0 space-x-3">
+              <Button asChild variant="ghost" size="sm" className="hidden md:flex">
                 <Link to="/settings" className="flex items-center">
-                  <FiSettings className="mr-1.5 h-4 w-4" />
-                  <span>Settings</span>
+                  <FiSettings className="mr-1.5 h-4 w-4 opacity-70" />
+                  <span className="font-normal">Settings</span>
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="sm" className="hidden md:flex">
+              <Button asChild variant="ghost" size="sm" className="hidden md:flex">
                 <Link to="/reports" className="flex items-center">
-                  <FiBarChart2 className="mr-1.5 h-4 w-4" />
-                  <span>Reports</span>
+                  <FiBarChart2 className="mr-1.5 h-4 w-4 opacity-70" />
+                  <span className="font-normal">Reports</span>
                 </Link>
               </Button>
             </div>
           </div>
           
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Stats Overview - Cleaner, more minimal cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatCard 
               icon={<FiFolder />} 
               value={stats.totalProjects}
               label="Projects"
-              bgColor="bg-blue-50"
-              textColor="text-blue-600"
+              bgColor="bg-blue-50/50"
+              textColor="text-blue-600/80"
             />
             <StatCard 
               icon={<FiActivity />} 
               value={stats.pendingTasks}
               label="Active Tasks"
-              bgColor="bg-purple-50"
-              textColor="text-purple-600"
+              bgColor="bg-purple-50/50"
+              textColor="text-purple-600/80"
             />
             <StatCard 
               icon={<FiCheckCircle />} 
               value={stats.completedTasks}
               label="Completed"
-              bgColor="bg-green-50"
-              textColor="text-green-600"
+              bgColor="bg-green-50/50"
+              textColor="text-green-600/80"
             />
             <StatCard 
               icon={<FiClock />} 
               value={stats.trackedHoursToday}
               label="Hours Today"
-              bgColor="bg-amber-50"
-              textColor="text-amber-600"
+              bgColor="bg-amber-50/50"
+              textColor="text-amber-600/80"
             />
           </div>
           
-          {/* Main Content with Tabs */}
+          {/* Main Content with Tabs - More subtle and refined */}
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-              <TabsTrigger value="waitingOn">Waiting On</TabsTrigger> 
-              <TabsTrigger value="timeTracking">Time Tracking</TabsTrigger>
+            <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
+              <TabsTrigger value="overview" className="rounded-lg text-sm font-normal">Overview</TabsTrigger>
+              <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
+              <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger> 
+              <TabsTrigger value="timeTracking" className="rounded-lg text-sm font-normal">Time Tracking</TabsTrigger>
             </TabsList>
             
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Overview Tab - Refined with iOS-inspired minimalism */}
+            <TabsContent value="overview" className="space-y-8">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* Left Column */}
-                <div className="xl:col-span-2 space-y-6">
-                  {/* Recent Projects */}
-                  <Card>
-                    <CardHeader className="pb-3">
+                <div className="xl:col-span-2 space-y-8">
+                  {/* Recent Projects - Cleaner card design */}
+                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                    <CardHeader className="pb-3 pt-5 px-6">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold">Recent Projects</CardTitle>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to="/projects" className="flex items-center text-sm">
+                        <CardTitle className="text-base font-medium text-secondary-900">Recent Projects</CardTitle>
+                        <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
+                          <Link to="/projects" className="flex items-center text-xs">
                             <span>View All</span>
-                            <FiArrowRight className="ml-1 h-4 w-4" />
+                            <FiArrowRight className="ml-1 h-3.5 w-3.5" />
                           </Link>
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-6 pb-5">
                       {recentProjects.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           {recentProjects.map(project => (
                             <ProjectCard key={project.id} project={project} compact />
                           ))}
                         </div>
                       ) : (
                         <EmptyState 
-                          icon={<FiFolder className="h-8 w-8" />}
+                          icon={<FiFolder className="h-7 w-7" />}
                           title="No projects yet"
                           description="Create your first project to get started"
                           action={
                             <Link to="/projects">
-                              <Button>Create Project</Button>
+                              <Button size="sm" variant="outline" className="mt-2">Create Project</Button>
                             </Link>
                           }
                         />
@@ -401,27 +401,27 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Upcoming Tasks */}
-                  <Card>
-                    <CardHeader className="pb-3">
+                  {/* Upcoming Tasks - Cleaner card design */}
+                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                    <CardHeader className="pb-3 pt-5 px-6">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold">Upcoming Tasks</CardTitle>
-                        <Button variant="ghost" size="sm" className="text-sm">
+                        <CardTitle className="text-base font-medium text-secondary-900">Upcoming Tasks</CardTitle>
+                        <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary text-xs">
                           <span>View Calendar</span>
-                          <FiArrowRight className="ml-1 h-4 w-4" />
+                          <FiArrowRight className="ml-1 h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-6 pb-5">
                       {upcomingTasks.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {upcomingTasks.map(task => (
                             <TaskItem key={task.id} task={task} />
                           ))}
                         </div>
                       ) : (
                         <EmptyState 
-                          icon={<FiCoffee className="h-8 w-8" />}
+                          icon={<FiCoffee className="h-7 w-7" />}
                           title="No upcoming tasks"
                           description="You're all caught up!"
                           compact
@@ -432,13 +432,13 @@ const Dashboard = () => {
                 </div>
                 
                 {/* Right Column */}
-                <div className="space-y-6">
-                  {/* Time Tracking */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold">Time Tracking</CardTitle>
+                <div className="space-y-8">
+                  {/* Time Tracking - Cleaner card design */}
+                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                    <CardHeader className="pb-3 pt-5 px-6">
+                      <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-6 pb-5">
                       <TimeTrackingWidget 
                         timeEntries={timeEntries}
                         tasks={tasks}
@@ -453,24 +453,24 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Waiting On (Preview) */}
+                  {/* Waiting On (Preview) - Cleaner card design */}
                   
                   {waitingFeaturesAvailable && (
-                    <Card>
-                      <CardHeader className="pb-3">
+                    <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                      <CardHeader className="pb-3 pt-5 px-6">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-semibold">Waiting On</CardTitle>
-                          <Button variant="ghost" size="sm" asChild>
-                            <span className="cursor-pointer flex items-center text-sm" onClick={() => setActiveTab("waitingOn")}>
+                          <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
+                          <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
+                            <span className="cursor-pointer flex items-center text-xs" onClick={() => setActiveTab("waitingOn")}>
                               <span>See All</span>
-                              <FiArrowRight className="ml-1 h-4 w-4" />
+                              <FiArrowRight className="ml-1 h-3.5 w-3.5" />
                             </span>
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="px-6 pb-5">
                         {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             {filteredWaitingItems.slice(0, 3).map(item => (
                               <WaitingItemCard 
                                 key={item.id} 
@@ -483,11 +483,11 @@ const Dashboard = () => {
                           </div>
                         ) : (
                           <EmptyState 
-                            icon={<FiAlertCircle className="h-8 w-8" />}
+                            icon={<FiAlertCircle className="h-7 w-7" />}
                             title="No waiting items"
                             description="Track things you're waiting on others for"
                             action={
-                              <Button onClick={handleAddWaitingClick}>
+                              <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
                                 Add Item
                               </Button>
                             }
@@ -502,32 +502,32 @@ const Dashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Tasks Tab */}
-            <TabsContent value="tasks" className="space-y-6">
-              <Card>
-                <CardHeader>
+            {/* Tasks Tab - Refined with iOS-inspired minimalism */}
+            <TabsContent value="tasks" className="space-y-8">
+              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                <CardHeader className="pb-3 pt-5 px-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>My Tasks</CardTitle>
+                    <CardTitle className="text-base font-medium text-secondary-900">My Tasks</CardTitle>
                     <div className="flex items-center mt-2 sm:mt-0">
-                      <Button variant="ghost" size="sm" className="text-sm" asChild>
+                      <Button variant="ghost" size="sm" className="text-xs text-primary/80 hover:text-primary" asChild>
                         <Link to="/projects" className="flex items-center">
-                          <FiFilter className="mr-1.5 h-4 w-4" />
+                          <FiFilter className="mr-1.5 h-3.5 w-3.5 opacity-70" />
                           <span>Filter</span>
                         </Link>
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-5">
                   {myTasks.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {myTasks.map(task => (
                         <TaskItem key={task.id} task={task} />
                       ))}
                     </div>
                   ) : (
                     <EmptyState 
-                      icon={<FiCoffee className="h-8 w-8" />}
+                      icon={<FiCoffee className="h-7 w-7" />}
                       title="No active tasks"
                       description="You're all caught up!"
                     />
@@ -536,33 +536,33 @@ const Dashboard = () => {
               </Card>
             </TabsContent>
             
-            {/* Waiting On Tab */}
+            {/* Waiting On Tab - Refined with iOS-inspired minimalism */}
             
-            <TabsContent value="waitingOn" className="space-y-6">
-              <Card>
-                <CardHeader>
+            <TabsContent value="waitingOn" className="space-y-8">
+              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                <CardHeader className="pb-3 pt-5 px-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle>Waiting On</CardTitle>
-                    <div className="flex items-center mt-2 sm:mt-0 space-x-2">
+                    <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
+                    <div className="flex items-center mt-2 sm:mt-0 space-x-3">
                       {/* Toggle Stats Button - Icon Only */}
                       <Button 
-                        variant="outline" 
+                        variant="ghost" 
                         size="icon" 
                         onClick={() => setShowWaitingStats(!showWaitingStats)}
                         title={showWaitingStats ? "Hide Stats" : "Show Stats"}
-                        className="h-8 w-8"
+                        className="h-8 w-8 text-primary/70 hover:text-primary"
                       >
-                        <FiBarChart2 className="h-4 w-4" />
+                        <FiBarChart2 className="h-3.5 w-3.5" />
                       </Button>
                       {/* Add Item Button */}
-                      <Button size="sm" onClick={handleAddWaitingClick}>
-                        <FiPlus className="mr-1.5 h-4 w-4" />
+                      <Button size="sm" variant="outline" onClick={handleAddWaitingClick} className="text-xs">
+                        <FiPlus className="mr-1.5 h-3.5 w-3.5" />
                         <span>Add Item</span>
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="px-6 pb-5 space-y-5">
                   {/* Stats Section with Animation */}
                   <AnimatePresence>
                     {showWaitingStats && waitingFeaturesAvailable && (
@@ -579,17 +579,22 @@ const Dashboard = () => {
                   </AnimatePresence>
                   
                   
-                  {/* Filter Toggle */}
+                  {/* Filter Toggle - More subtle and refined */}
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-secondary-500 font-medium">
+                    <span className="text-xs text-secondary-500/80">
                       {filteredWaitingItems.length} items
                     </span>
-                    <ToggleGroup type="single" defaultValue={hideCompletedItems ? "active" : "all"} onValueChange={(value) => setHideCompletedItems(value === "active")}>
-                      <ToggleGroupItem value="active" size="sm" className="text-xs">
+                    <ToggleGroup 
+                      type="single" 
+                      defaultValue={hideCompletedItems ? "active" : "all"} 
+                      onValueChange={(value) => setHideCompletedItems(value === "active")}
+                      className="bg-secondary-50/70 p-0.5 rounded-lg"
+                    >
+                      <ToggleGroupItem value="active" size="sm" className="text-xs px-3 py-1 rounded">
                         Active Only
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="all" size="sm" className="text-xs">
+                      <ToggleGroupItem value="all" size="sm" className="text-xs px-3 py-1 rounded">
                         Show All
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -599,7 +604,7 @@ const Dashboard = () => {
                   {/* Waiting Items List */}
                   
                   {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {filteredWaitingItems.map(item => (
                         <WaitingItemCard 
                           key={item.id} 
@@ -611,11 +616,11 @@ const Dashboard = () => {
                     </div>
                   ) : (
                     <EmptyState 
-                      icon={<FiAlertCircle className="h-8 w-8" />}
+                      icon={<FiAlertCircle className="h-7 w-7" />}
                       title={hideCompletedItems ? "No active waiting items" : "No waiting items"}
                       description="Track things you're waiting on others for"
                       action={
-                        <Button onClick={handleAddWaitingClick}>
+                        <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
                           Add Item
                         </Button>
                       }
@@ -626,13 +631,13 @@ const Dashboard = () => {
                </Card> 
              </TabsContent> 
             
-            {/* Time Tracking Tab */}
-            <TabsContent value="timeTracking" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Time Tracking</CardTitle>
+            {/* Time Tracking Tab - Refined with iOS-inspired minimalism */}
+            <TabsContent value="timeTracking" className="space-y-8">
+              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                <CardHeader className="pb-3 pt-5 px-6">
+                  <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-6 pb-5">
                   <TimeTrackingWidget 
                     timeEntries={timeEntries}
                     tasks={tasks}
@@ -651,39 +656,43 @@ const Dashboard = () => {
         </div>
       </div>
       
-      {/* Waiting Item Form Modal */}
+      {/* Waiting Item Form Modal - More subtle and refined */}
       
       {showAddWaitingModal && (
-        <WaitingItemForm onClose={handleWaitingFormClose} />
+        <div className="fixed inset-0 bg-black/5 backdrop-blur-[2px] z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 overflow-hidden border border-secondary-100/80">
+            <WaitingItemForm onClose={handleWaitingFormClose} />
+          </div>
+        </div>
       )}
       
     </div>
   )
 }
 
-// Keep these helper components
+// Keep these helper components - Refined with iOS-inspired minimalism
 const StatCard = ({ icon, value, label, bgColor, textColor }) => (
-  <Card className="overflow-hidden">
+  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
     <div className="flex h-full">
-      <div className={`${bgColor} ${textColor} flex items-center justify-center p-4`}>
-        <div className="text-xl">{icon}</div>
+      <div className={`${bgColor} ${textColor} flex items-center justify-center p-3.5 rounded-r-xl`}>
+        <div className="text-lg">{icon}</div>
       </div>
       <div className="flex-1 p-4">
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="text-sm text-secondary-500">{label}</div>
+        <div className="text-xl font-medium tracking-tight">{value}</div>
+        <div className="text-xs text-secondary-500/80 mt-0.5">{label}</div>
       </div>
     </div>
   </Card>
 )
 
 const EmptyState = ({ icon, title, description, action, compact = false }) => (
-  <div className={`text-center ${compact ? 'py-4' : 'py-8'}`}>
-    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-secondary-100 text-secondary-500">
+  <div className={`text-center ${compact ? 'py-4' : 'py-6'}`}>
+    <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-secondary-50 text-secondary-400 border border-secondary-100/50">
       {icon}
     </div>
-    <h3 className={`mt-2 text-sm font-medium text-secondary-900 ${compact ? 'text-sm' : 'text-base'}`}>{title}</h3>
-    <p className={`mt-1 text-secondary-500 ${compact ? 'text-xs' : 'text-sm'}`}>{description}</p>
-    {action && <div className="mt-4">{action}</div>}
+    <h3 className={`mt-3 font-medium text-secondary-800 ${compact ? 'text-xs' : 'text-sm'}`}>{title}</h3>
+    <p className={`mt-1 text-secondary-500/80 ${compact ? 'text-[10px]' : 'text-xs'}`}>{description}</p>
+    {action && <div className="mt-3">{action}</div>}
   </div>
 )
 
