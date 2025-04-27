@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
-import { FiDownload, FiCalendar, FiPieChart, FiBarChart2, FiTrendingUp } from 'react-icons/fi'
+import { FiDownload, FiCalendar, FiPieChart, FiBarChart2, FiTrendingUp, FiChevronLeft } from 'react-icons/fi'
 import TimeTrackingChart from '../components/reports/TimeTrackingChart'
 import ProjectProgressChart from '../components/reports/ProjectProgressChart'
 import TaskCompletionChart from '../components/reports/TaskCompletionChart'
@@ -282,7 +283,13 @@ const Reports = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-secondary-900">Reports</h1>
+        <div>
+          <Link to="/" className="inline-flex items-center text-sm text-secondary-600 hover:text-secondary-900 mb-1">
+            <FiChevronLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-semibold text-secondary-900">Reports</h1>
+        </div>
         <button 
           onClick={handleExportData} 
           className="btn btn-secondary flex items-center"
