@@ -401,34 +401,7 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                   
-                  {/* Upcoming Tasks - Cleaner card design */}
-                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                    <CardHeader className="pb-3 pt-5 px-6">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-medium text-secondary-900">Upcoming Tasks</CardTitle>
-                        <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary text-xs">
-                          <span>View Calendar</span>
-                          <FiArrowRight className="ml-1 h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-5">
-                      {upcomingTasks.length > 0 ? (
-                        <div className="space-y-2">
-                          {upcomingTasks.map(task => (
-                            <TaskItem key={task.id} task={task} />
-                          ))}
-                        </div>
-                      ) : (
-                        <EmptyState 
-                          icon={<FiCoffee className="h-7 w-7" />}
-                          title="No upcoming tasks"
-                          description="You're all caught up!"
-                          compact
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
+
                 </div>
                 
                 {/* Right Column */}
@@ -504,10 +477,11 @@ const Dashboard = () => {
             
             {/* Tasks Tab - Refined with iOS-inspired minimalism */}
             <TabsContent value="tasks" className="space-y-8">
+              {/* Active Tasks */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">My Tasks</CardTitle>
+                    <CardTitle className="text-base font-medium text-secondary-900">Active Tasks</CardTitle>
                     <div className="flex items-center mt-2 sm:mt-0">
                       <Button variant="ghost" size="sm" className="text-xs text-primary/80 hover:text-primary" asChild>
                         <Link to="/projects" className="flex items-center">
@@ -530,6 +504,35 @@ const Dashboard = () => {
                       icon={<FiCoffee className="h-7 w-7" />}
                       title="No active tasks"
                       description="You're all caught up!"
+                    />
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Upcoming Tasks */}
+              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                <CardHeader className="pb-3 pt-5 px-6">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-medium text-secondary-900">Upcoming Tasks</CardTitle>
+                    <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary text-xs">
+                      <span>View Calendar</span>
+                      <FiArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 pb-5">
+                  {upcomingTasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {upcomingTasks.map(task => (
+                        <TaskItem key={task.id} task={task} />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState 
+                      icon={<FiCoffee className="h-7 w-7" />}
+                      title="No upcoming tasks"
+                      description="You're all caught up!"
+                      compact
                     />
                   )}
                 </CardContent>
