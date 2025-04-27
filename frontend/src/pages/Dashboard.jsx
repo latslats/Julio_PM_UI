@@ -955,11 +955,8 @@ const Dashboard = () => {
                  </CardContent> 
                </Card> 
              </TabsContent>
+              </Tabs>
             </>
-          )}
-          
-          {!focusModeActive && (
-            </Tabs>
           )}
         </div>
       </div>
