@@ -372,10 +372,34 @@ const Dashboard = () => {
       });
   }, [tasks, loading]);
 
-  // Get upcoming tasks
-  const upcomingTasks = useMemo(() => {
+  // Get active tasks (in progress)
+  const activeTasks = useMemo(() => {
     return myTasks
-      .filter(t => t.dueDate && isAfter(parseISO(t.dueDate), new Date())) // Use isAfter and parseISO
+      .filter(task => task.status === 'in progress')
+      .sort((a, b) => {
+        // Sort by due date (earliest first)
+        const dateA = a.dueDate ? parseISO(a.dueDate) : new Date(9999, 11, 31);
+        const dateB = b.dueDate ? parseISO(b.dueDate) : new Date(9999, 11, 31);
+        return dateA - dateB;
+      });
+  }, [myTasks]);
+
+  // Get upcoming tasks (not started yet, with future due dates)
+  const upcomingTasks = useMemo(() => {
+    const now = new Date();
+    return myTasks
+      .filter(task =>
+        // Not in progress
+        task.status !== 'in progress' &&
+        // Has a due date
+        task.dueDate &&
+        // Due date is in the future
+        isAfter(parseISO(task.dueDate), now)
+      )
+      .sort((a, b) => {
+        // Sort by due date (earliest first)
+        return parseISO(a.dueDate) - parseISO(b.dueDate);
+      })
       .slice(0, 5);
   }, [myTasks]);
 
@@ -1113,11 +1137,11 @@ const Dashboard = () => {
 
             {/* Tasks Tab - Refined with iOS-inspired minimalism */}
             <TabsContent value="tasks" className="space-y-8">
-              {/* Active Tasks */}
+              {/* In Progress Tasks */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Active Tasks</CardTitle>
+                    <CardTitle className="text-base font-medium text-secondary-900">In Progress Tasks</CardTitle>
                     <div className="flex items-center mt-2 sm:mt-0">
                       <Button variant="ghost" size="sm" className="text-xs text-primary/80 hover:text-primary" asChild>
                         <Link to="/projects" className="flex items-center">
@@ -1129,27 +1153,27 @@ const Dashboard = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
-                  {myTasks.length > 0 ? (
+                  {activeTasks.length > 0 ? (
                     <div className="space-y-2">
-                      {myTasks.map(task => (
+                      {activeTasks.map(task => (
                         <TaskItem key={task.id} task={task} />
                       ))}
                     </div>
                   ) : (
                     <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
-                      title="No active tasks"
+                      title="No tasks in progress"
                       description="You're all caught up!"
                     />
                   )}
                 </CardContent>
               </Card>
 
-              {/* Upcoming Tasks */}
+              {/* Scheduled Tasks */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Upcoming Tasks</CardTitle>
+                    <CardTitle className="text-base font-medium text-secondary-900">Scheduled Tasks</CardTitle>
                     <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary text-xs">
                       <span>View Calendar</span>
                       <FiArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -1166,8 +1190,8 @@ const Dashboard = () => {
                   ) : (
                     <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
-                      title="No upcoming tasks"
-                      description="You're all caught up!"
+                      title="No scheduled tasks"
+                      description="No future tasks scheduled yet"
                       compact
                     />
                   )}
