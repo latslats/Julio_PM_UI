@@ -474,7 +474,7 @@ const SettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <Label htmlFor="pause-tasks-during-break" className="cursor-pointer">Pause Tasks During Breaks</Label>
-                          <p className="text-xs text-secondary-500 mt-1">Automatically pause all running task timers when a break starts</p>
+                          <p className="text-xs text-secondary-500 mt-1">Automatically pause all running task timers when a Pomodoro break starts</p>
                         </div>
                         <Switch
                           id="pause-tasks-during-break"
@@ -486,7 +486,7 @@ const SettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <Label htmlFor="resume-tasks-after-break" className="cursor-pointer">Resume Tasks After Breaks</Label>
-                          <p className="text-xs text-secondary-500 mt-1">Automatically resume paused task timers when a break ends</p>
+                          <p className="text-xs text-secondary-500 mt-1">Automatically resume tasks that were paused by the Pomodoro timer during breaks</p>
                         </div>
                         <Switch
                           id="resume-tasks-after-break"

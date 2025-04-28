@@ -162,6 +162,12 @@ const Dashboard = () => {
     return false;
   })
 
+  // Track tasks that were auto-paused during breaks
+  const [autoPausedTasks, setAutoPausedTasks] = useState(() => {
+    const savedTasks = localStorage.getItem('pomodoro_auto_paused_tasks');
+    return savedTasks ? JSON.parse(savedTasks) : [];
+  })
+
   const pomodoroTimerRef = useRef(null)
 
   // Refs to prevent multiple simultaneous API calls
@@ -257,6 +263,15 @@ const Dashboard = () => {
   useEffect(() => {
     fetchPomodoroSettings();
   }, [fetchPomodoroSettings]);
+
+  // Save auto-paused tasks to localStorage when they change
+  useEffect(() => {
+    if (autoPausedTasks.length > 0) {
+      localStorage.setItem('pomodoro_auto_paused_tasks', JSON.stringify(autoPausedTasks));
+    } else {
+      localStorage.removeItem('pomodoro_auto_paused_tasks');
+    }
+  }, [autoPausedTasks]);
 
   // Update elapsed times for active time entries
   useEffect(() => {
@@ -484,14 +499,25 @@ const Dashboard = () => {
               lastSavedAt: Date.now()
             };
 
-            // Resume paused tasks if setting is enabled
-            if (pomodoroSettings.resumeTasksAfterBreak) {
-              // Get all paused time entries
-              const pausedEntries = timeEntries.filter(entry => entry.isPaused && entry.endTime === null);
-              // Resume each paused entry
-              pausedEntries.forEach(entry => {
-                resumeTimeTracking(entry.id).catch(e => console.error('Error resuming time entry:', e));
+            // Resume auto-paused tasks if setting is enabled
+            if (pomodoroSettings.resumeTasksAfterBreak && autoPausedTasks.length > 0) {
+              // Resume only tasks that were auto-paused during the break
+              autoPausedTasks.forEach(taskId => {
+                // Check if the task is still paused and not completed
+                const taskEntry = timeEntries.find(entry =>
+                  entry.id === taskId && entry.isPaused && entry.endTime === null
+                );
+
+                if (taskEntry) {
+                  resumeTimeTracking(taskId).catch(e =>
+                    console.error('Error resuming auto-paused task:', e)
+                  );
+                }
               });
+
+              // Clear the auto-paused tasks list
+              setAutoPausedTasks([]);
+              localStorage.removeItem('pomodoro_auto_paused_tasks');
             }
           } else {
             // If we were working, go to a break
@@ -512,10 +538,18 @@ const Dashboard = () => {
             if (pomodoroSettings.pauseTasksDuringBreak) {
               // Get all active (non-paused) time entries
               const activeEntries = timeEntries.filter(entry => !entry.isPaused && entry.endTime === null);
-              // Pause each active entry
-              activeEntries.forEach(entry => {
-                pauseTimeTracking(entry.id).catch(e => console.error('Error pausing time entry:', e));
-              });
+
+              if (activeEntries.length > 0) {
+                // Store the IDs of tasks that will be auto-paused
+                const taskIdsToAutoPause = activeEntries.map(entry => entry.id);
+                setAutoPausedTasks(taskIdsToAutoPause);
+                localStorage.setItem('pomodoro_auto_paused_tasks', JSON.stringify(taskIdsToAutoPause));
+
+                // Pause each active entry
+                activeEntries.forEach(entry => {
+                  pauseTimeTracking(entry.id).catch(e => console.error('Error pausing time entry:', e));
+                });
+              }
             }
           }
 
@@ -556,6 +590,12 @@ const Dashboard = () => {
 
     setPomodoroState(newState);
     localStorage.setItem('pomodoroState', JSON.stringify(newState));
+
+    // Clear auto-paused tasks when stopping the timer
+    if (autoPausedTasks.length > 0) {
+      setAutoPausedTasks([]);
+      localStorage.removeItem('pomodoro_auto_paused_tasks');
+    }
   }
 
   // Function to toggle pomodoro mode on/off
