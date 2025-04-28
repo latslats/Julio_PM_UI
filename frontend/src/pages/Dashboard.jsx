@@ -21,21 +21,21 @@ import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
 import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
 
 const Dashboard = () => {
-  const { 
-    projects, 
-    tasks, 
-    timeEntries, 
-    loading, 
-    projectStats, 
-    stopTimeTracking, 
-    startTimeTracking, 
-    pauseTimeTracking, 
-    resumeTimeTracking, 
-    fetchActiveTimers 
+  const {
+    projects,
+    tasks,
+    timeEntries,
+    loading,
+    projectStats,
+    stopTimeTracking,
+    startTimeTracking,
+    pauseTimeTracking,
+    resumeTimeTracking,
+    fetchActiveTimers
   } = useProjects()
 
   // Safely get waiting items context with error handling
-  
+
   let waitingItemsContext = { waitingItems: [], loading: false };
   try {
     waitingItemsContext = useWaitingItems() || { waitingItems: [], loading: false };
@@ -55,7 +55,7 @@ const Dashboard = () => {
       total: 0
     }
   } = waitingItemsContext;
-  
+
 
   const [recentProjects, setRecentProjects] = useState([])
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
@@ -66,11 +66,15 @@ const Dashboard = () => {
     pendingTasks: 0,
     trackedHoursToday: 0
   })
+  // Define activeTimeEntries for Focus Mode
+  const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
+  // Track elapsed time for active entries in Focus Mode
+  const [elapsedTimes, setElapsedTimes] = useState({})
   const [showWaitingStats, setShowWaitingStats] = useState(true)
   const [showAddWaitingModal, setShowAddWaitingModal] = useState(false)
   const [hideCompletedItems, setHideCompletedItems] = useState(true)
   const [waitingFeaturesAvailable, setWaitingFeaturesAvailable] = useState(false)
-  
+
   // Focus Mode states
   const [focusModeActive, setFocusModeActive] = useState(false)
   const [pomodoroActive, setPomodoroActive] = useState(false)
@@ -101,8 +105,8 @@ const Dashboard = () => {
         const projectTasks = tasks.filter(task => task.projectId === project.id);
         const completed = projectTasks.filter(task => task.status === 'completed').length;
         const total = projectTasks.length;
-        
-        const projectTimeEntries = timeEntries.filter(entry => 
+
+        const projectTimeEntries = timeEntries.filter(entry =>
           projectTasks.some(task => task.id === entry.taskId) && entry.duration
         );
         const totalTrackedSeconds = projectTimeEntries.reduce((sum, entry) => sum + parseFloat(entry.duration || 0), 0);
@@ -161,7 +165,49 @@ const Dashboard = () => {
       }
     };
   }, []);
-  
+
+  // Calculate elapsed time for active time entries (for Focus Mode)
+  useEffect(() => {
+    let intervals = [];
+
+    // Clear previous state if no active entries
+    if (activeTimeEntries.length === 0) {
+      setElapsedTimes({});
+      return () => {};
+    }
+
+    // Initialize elapsed times for all active entries
+    activeTimeEntries.forEach(entry => {
+      const calculateElapsed = () => {
+        let currentElapsedTime = parseFloat(entry.totalPausedDuration) || 0;
+        if (!entry.isPaused && entry.lastResumedAt) {
+          const now = new Date().getTime();
+          const lastResume = new Date(entry.lastResumedAt).getTime();
+          currentElapsedTime += (now - lastResume) / 1000;
+        }
+
+        setElapsedTimes(prev => ({
+          ...prev,
+          [entry.id]: Math.floor(currentElapsedTime)
+        }));
+      };
+
+      // Calculate once immediately
+      calculateElapsed();
+
+      // If entry is running (not paused), update every second
+      if (!entry.isPaused) {
+        const interval = setInterval(calculateElapsed, 1000);
+        intervals.push(interval);
+      }
+    });
+
+    // Cleanup function to clear all intervals
+    return () => {
+      intervals.forEach(interval => clearInterval(interval));
+    };
+  }, [activeTimeEntries]);
+
   // Fetch waiting items and stats when component mounts, with attempt limiting
   useEffect(() => {
     // Skip if already loaded or too many attempts
@@ -198,7 +244,7 @@ const Dashboard = () => {
       loadWaitingItems();
     }
   }, [activeTab, fetchWaitingItems, fetchStats]); // Added dependencies
-  
+
 
   // Derived state for "My Tasks" view - sorted non-completed tasks
   const myTasks = useMemo(() => {
@@ -227,7 +273,7 @@ const Dashboard = () => {
   }, [myTasks]);
 
   // Filter waiting items for display
-  
+
   const filteredWaitingItems = useMemo(() => {
     // Return early if waiting features are not available or still loading, or no items exist
     if (!waitingFeaturesAvailable || waitingLoading || !waitingItems?.length) return [];
@@ -251,7 +297,7 @@ const Dashboard = () => {
       return [];
     }
   }, [waitingItems, waitingLoading, hideCompletedItems, waitingFeaturesAvailable]);
-  
+
 
   // Get status class for badge
   const getStatusClass = (status) => {
@@ -295,18 +341,18 @@ const Dashboard = () => {
   const handleWaitingFormClose = () => {
     setShowAddWaitingModal(false);
   };
-  
+
   // Focus Mode handlers
   const toggleFocusMode = () => {
     setFocusModeActive(prev => !prev);
-    
+
     // If turning off focus mode, also turn off pomodoro
     if (focusModeActive) {
       stopPomodoroTimer();
       setPomodoroActive(false);
     }
   };
-  
+
   // Pomodoro timer functions
   const togglePomodoroMode = () => {
     if (!pomodoroActive) {
@@ -326,33 +372,33 @@ const Dashboard = () => {
       setPomodoroActive(false);
     }
   };
-  
+
   const startPomodoroTimer = () => {
     // Clear any existing timer
     if (pomodoroTimerRef.current) {
       clearInterval(pomodoroTimerRef.current);
     }
-    
+
     // Start a new timer that ticks every second
     pomodoroTimerRef.current = setInterval(() => {
       setPomodoroState(prev => {
         // If timer is not active, don't update
         if (!prev.timerActive) return prev;
-        
+
         const newTimeRemaining = prev.timeRemaining - 1;
-        
+
         // If timer reached zero
         if (newTimeRemaining <= 0) {
           // Play notification sound
           const audio = new Audio('/notification.mp3');
           audio.play().catch(e => console.log('Error playing notification sound:', e));
-          
+
           // Determine what's next (work or break)
           if (prev.isBreak) {
             // If we were on a break, go back to work
             const nextSession = prev.currentSession + 1;
             const isSessionComplete = nextSession > pomodoroSettings.sessionsBeforeLongBreak;
-            
+
             return {
               isBreak: false,
               currentSession: isSessionComplete ? 1 : nextSession,
@@ -362,10 +408,10 @@ const Dashboard = () => {
           } else {
             // If we were working, go to a break
             const isLongBreakDue = prev.currentSession >= pomodoroSettings.sessionsBeforeLongBreak;
-            const breakDuration = isLongBreakDue 
-              ? pomodoroSettings.longBreakDuration 
+            const breakDuration = isLongBreakDue
+              ? pomodoroSettings.longBreakDuration
               : pomodoroSettings.breakDuration;
-              
+
             return {
               isBreak: true,
               currentSession: prev.currentSession,
@@ -374,7 +420,7 @@ const Dashboard = () => {
             };
           }
         }
-        
+
         // Normal tick, just update remaining time
         return {
           ...prev,
@@ -383,26 +429,26 @@ const Dashboard = () => {
       });
     }, 1000);
   };
-  
+
   const stopPomodoroTimer = () => {
     if (pomodoroTimerRef.current) {
       clearInterval(pomodoroTimerRef.current);
       pomodoroTimerRef.current = null;
     }
-    
+
     setPomodoroState(prev => ({
       ...prev,
       timerActive: false
     }));
   };
-  
+
   const pauseResumePomodoroTimer = () => {
     setPomodoroState(prev => ({
       ...prev,
       timerActive: !prev.timerActive
     }));
   };
-  
+
   const resetPomodoroTimer = () => {
     stopPomodoroTimer();
     setPomodoroState({
@@ -412,12 +458,25 @@ const Dashboard = () => {
       timerActive: false
     });
   };
-  
+
   // Format time as MM:SS
   const formatPomodoroTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Format time as HH:MM:SS for time tracking
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+
+    return [
+      h.toString().padStart(2, '0'),
+      m.toString().padStart(2, '0'),
+      s.toString().padStart(2, '0')
+    ].join(':');
   };
 
   if (loading) {
@@ -442,7 +501,7 @@ const Dashboard = () => {
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] z-0">
         <img src={logo} alt="TaskFlow Logo" className="w-1/3 max-w-md" />
       </div>
-      
+
       {/* Main Dashboard Content */}
       <div className="relative z-10">
         <div className="flex flex-col space-y-8">
@@ -452,11 +511,11 @@ const Dashboard = () => {
               <h1 className="text-2xl font-medium tracking-tight text-secondary-900">Dashboard</h1>
               <p className="text-secondary-500/80 mt-1.5 text-sm">Your project overview and quick actions</p>
             </div>
-            
+
             <div className="flex mt-5 md:mt-0 space-x-3">
-              <Button 
-                variant={focusModeActive ? "default" : "outline"} 
-                size="sm" 
+              <Button
+                variant={focusModeActive ? "default" : "outline"}
+                size="sm"
                 className="flex items-center"
                 onClick={toggleFocusMode}
               >
@@ -477,7 +536,7 @@ const Dashboard = () => {
               </Button>
             </div>
           </div>
-          
+
           {/* Conditional rendering based on Focus Mode */}
           {focusModeActive ? (
             /* Focus Mode UI */
@@ -486,14 +545,14 @@ const Dashboard = () => {
               <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 rounded-xl p-8 border border-secondary-100/80 shadow-sm">
                 <div className="flex items-center space-x-4 mb-6">
                   <h2 className="text-xl font-medium text-secondary-900">
-                    {pomodoroState.isBreak 
-                      ? `Break ${Math.ceil(pomodoroState.currentSession / pomodoroSettings.sessionsBeforeLongBreak)}` 
+                    {pomodoroState.isBreak
+                      ? `Break ${Math.ceil(pomodoroState.currentSession / pomodoroSettings.sessionsBeforeLongBreak)}`
                       : `Focus Session ${pomodoroState.currentSession}`}
                   </h2>
                   <div className="flex items-center space-x-2">
-                    <Button 
-                      variant={pomodoroActive ? "default" : "outline"} 
-                      size="sm" 
+                    <Button
+                      variant={pomodoroActive ? "default" : "outline"}
+                      size="sm"
                       onClick={togglePomodoroMode}
                       className={`${pomodoroActive ? 'bg-red-500 hover:bg-red-600' : ''}`}
                     >
@@ -501,24 +560,24 @@ const Dashboard = () => {
                     </Button>
                   </div>
                 </div>
-                
+
                 {pomodoroActive && (
                   <div className="flex flex-col items-center">
                     <div className="text-5xl font-mono font-medium mb-4 tracking-wider">
                       {formatPomodoroTime(pomodoroState.timeRemaining)}
                     </div>
                     <div className="flex items-center space-x-3">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={pauseResumePomodoroTimer}
                         className="h-10 w-10 rounded-full"
                       >
                         {pomodoroState.timerActive ? <FiPause /> : <FiPlay />}
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={resetPomodoroTimer}
                         className="h-10 w-10 rounded-full"
                       >
@@ -526,14 +585,14 @@ const Dashboard = () => {
                       </Button>
                     </div>
                     <div className="mt-4 text-sm text-secondary-500">
-                      {pomodoroState.isBreak 
-                        ? "Take a break! Stretch, hydrate, or rest your eyes." 
+                      {pomodoroState.isBreak
+                        ? "Take a break! Stretch, hydrate, or rest your eyes."
                         : "Focus on your task. Minimize distractions."}
                     </div>
                   </div>
                 )}
               </div>
-              
+
               {/* Active Tasks with Time Tracking */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
@@ -568,13 +627,13 @@ const Dashboard = () => {
                                   )}
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center space-x-2">
                                 {activeTimeEntries.find(entry => entry.taskId === task.id) ? (
                                   <>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
                                       onClick={() => {
                                         const entry = activeTimeEntries.find(e => e.taskId === task.id);
                                         if (entry) {
@@ -587,13 +646,13 @@ const Dashboard = () => {
                                       }}
                                       className="h-8 w-8 p-0 rounded-full"
                                     >
-                                      {activeTimeEntries.find(entry => entry.taskId === task.id)?.isPaused 
-                                        ? <FiPlay className="h-4 w-4" /> 
+                                      {activeTimeEntries.find(entry => entry.taskId === task.id)?.isPaused
+                                        ? <FiPlay className="h-4 w-4" />
                                         : <FiPause className="h-4 w-4" />}
                                     </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
                                       onClick={() => {
                                         const entry = activeTimeEntries.find(e => e.taskId === task.id);
                                         if (entry) {
@@ -606,9 +665,9 @@ const Dashboard = () => {
                                     </Button>
                                   </>
                                 ) : (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => startTimeTracking(task.id)}
                                     className="h-8 px-3 rounded-full"
                                   >
@@ -618,7 +677,7 @@ const Dashboard = () => {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Show active timer if any */}
                             {activeTimeEntries.find(entry => entry.taskId === task.id) && (
                               <div className="mt-3 text-sm font-mono text-primary-600">
@@ -629,7 +688,7 @@ const Dashboard = () => {
                         ))}
                     </div>
                   ) : (
-                    <EmptyState 
+                    <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
                       title="No active tasks"
                       description="You're all caught up!"
@@ -642,36 +701,36 @@ const Dashboard = () => {
             <>
               {/* Stats Overview - Cleaner, more minimal cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <StatCard 
-                  icon={<FiFolder />} 
+                <StatCard
+                  icon={<FiFolder />}
                   value={stats.totalProjects}
                   label="Projects"
                   bgColor="bg-blue-50/50"
                   textColor="text-blue-600/80"
                 />
-                <StatCard 
-                  icon={<FiActivity />} 
+                <StatCard
+                  icon={<FiActivity />}
                   value={stats.pendingTasks}
                   label="Active Tasks"
                   bgColor="bg-purple-50/50"
                   textColor="text-purple-600/80"
                 />
-                <StatCard 
-                  icon={<FiCheckCircle />} 
+                <StatCard
+                  icon={<FiCheckCircle />}
                   value={stats.completedTasks}
                   label="Completed"
                   bgColor="bg-green-50/50"
                   textColor="text-green-600/80"
                 />
-                <StatCard 
-                  icon={<FiClock />} 
+                <StatCard
+                  icon={<FiClock />}
                   value={stats.trackedHoursToday}
                   label="Hours Today"
                   bgColor="bg-amber-50/50"
                   textColor="text-amber-600/80"
                 />
               </div>
-              
+
               {/* Main Content with Tabs - More subtle and refined */}
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
@@ -679,7 +738,7 @@ const Dashboard = () => {
                   <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
                   <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
                 </TabsList>
-                
+
                 {/* Overview Tab - Refined with iOS-inspired minimalism */}
                 <TabsContent value="overview" className="space-y-8">
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -706,7 +765,7 @@ const Dashboard = () => {
                           ))}
                         </div>
                       ) : (
-                        <EmptyState 
+                        <EmptyState
                           icon={<FiFolder className="h-7 w-7" />}
                           title="No projects yet"
                           description="Create your first project to get started"
@@ -719,10 +778,10 @@ const Dashboard = () => {
                       )}
                     </CardContent>
                   </Card>
-                  
+
 
                 </div>
-                
+
                 {/* Right Column */}
                 <div className="space-y-8">
                   {/* Time Tracking - Cleaner card design */}
@@ -731,7 +790,7 @@ const Dashboard = () => {
                       <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
                     </CardHeader>
                     <CardContent className="px-6 pb-5">
-                      <TimeTrackingWidget 
+                      <TimeTrackingWidget
                         timeEntries={timeEntries}
                         tasks={tasks}
                         projects={projects}
@@ -744,9 +803,9 @@ const Dashboard = () => {
                       />
                     </CardContent>
                   </Card>
-                  
+
                   {/* Waiting On (Preview) - Cleaner card design */}
-                  
+
                   {waitingFeaturesAvailable && (
                     <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                       <CardHeader className="pb-3 pt-5 px-6">
@@ -764,17 +823,17 @@ const Dashboard = () => {
                         {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
                           <div className="space-y-2">
                             {filteredWaitingItems.slice(0, 3).map(item => (
-                              <WaitingItemCard 
-                                key={item.id} 
-                                item={item} 
-                                getStatusClass={getStatusClass} 
-                                getPriorityClass={getPriorityClass} 
-                                compact 
+                              <WaitingItemCard
+                                key={item.id}
+                                item={item}
+                                getStatusClass={getStatusClass}
+                                getPriorityClass={getPriorityClass}
+                                compact
                               />
                             ))}
                           </div>
                         ) : (
-                          <EmptyState 
+                          <EmptyState
                             icon={<FiAlertCircle className="h-7 w-7" />}
                             title="No waiting items"
                             description="Track things you're waiting on others for"
@@ -789,11 +848,11 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
                   )}
-                  
+
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Tasks Tab - Refined with iOS-inspired minimalism */}
             <TabsContent value="tasks" className="space-y-8">
               {/* Active Tasks */}
@@ -819,7 +878,7 @@ const Dashboard = () => {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState 
+                    <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
                       title="No active tasks"
                       description="You're all caught up!"
@@ -827,7 +886,7 @@ const Dashboard = () => {
                   )}
                 </CardContent>
               </Card>
-              
+
               {/* Upcoming Tasks */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
@@ -847,7 +906,7 @@ const Dashboard = () => {
                       ))}
                     </div>
                   ) : (
-                    <EmptyState 
+                    <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
                       title="No upcoming tasks"
                       description="You're all caught up!"
@@ -857,9 +916,9 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             {/* Waiting On Tab - Refined with iOS-inspired minimalism */}
-            
+
             <TabsContent value="waitingOn" className="space-y-8">
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                 <CardHeader className="pb-3 pt-5 px-6">
@@ -867,9 +926,9 @@ const Dashboard = () => {
                     <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
                     <div className="flex items-center mt-2 sm:mt-0 space-x-3">
                       {/* Toggle Stats Button - Icon Only */}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setShowWaitingStats(!showWaitingStats)}
                         title={showWaitingStats ? "Hide Stats" : "Show Stats"}
                         className="h-8 w-8 text-primary/70 hover:text-primary"
@@ -899,17 +958,17 @@ const Dashboard = () => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  
-                  
+
+
                   {/* Filter Toggle - More subtle and refined */}
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-secondary-500/80">
                       {filteredWaitingItems.length} items
                     </span>
-                    <ToggleGroup 
-                      type="single" 
-                      defaultValue={hideCompletedItems ? "active" : "all"} 
+                    <ToggleGroup
+                      type="single"
+                      defaultValue={hideCompletedItems ? "active" : "all"}
                       onValueChange={(value) => setHideCompletedItems(value === "active")}
                       className="bg-secondary-50/70 p-0.5 rounded-lg"
                     >
@@ -921,23 +980,23 @@ const Dashboard = () => {
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
-                  
-                  
+
+
                   {/* Waiting Items List */}
-                  
+
                   {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
                     <div className="space-y-2">
                       {filteredWaitingItems.map(item => (
-                        <WaitingItemCard 
-                          key={item.id} 
-                          item={item} 
-                          getStatusClass={getStatusClass} 
-                          getPriorityClass={getPriorityClass} 
+                        <WaitingItemCard
+                          key={item.id}
+                          item={item}
+                          getStatusClass={getStatusClass}
+                          getPriorityClass={getPriorityClass}
                         />
                       ))}
                     </div>
                   ) : (
-                    <EmptyState 
+                    <EmptyState
                       icon={<FiAlertCircle className="h-7 w-7" />}
                       title={hideCompletedItems ? "No active waiting items" : "No waiting items"}
                       description="Track things you're waiting on others for"
@@ -948,18 +1007,18 @@ const Dashboard = () => {
                       }
                     />
                   )}
-                  
-                 </CardContent> 
-               </Card> 
+
+                 </CardContent>
+               </Card>
              </TabsContent>
               </Tabs>
             </>
           )}
         </div>
       </div>
-      
+
       {/* Waiting Item Form Modal - More subtle and refined */}
-      
+
       {showAddWaitingModal && (
         <div className="fixed inset-0 bg-black/5 backdrop-blur-[2px] z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 overflow-hidden border border-secondary-100/80">
@@ -967,7 +1026,7 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      
+
     </div>
   )
 }
