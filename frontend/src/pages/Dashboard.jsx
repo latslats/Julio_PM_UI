@@ -479,48 +479,7 @@ const Dashboard = () => {
           </div>
           
           {/* Conditional rendering based on Focus Mode */}
-          {!focusModeActive ? (
-            <>
-              {/* Stats Overview - Cleaner, more minimal cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <StatCard 
-                  icon={<FiFolder />} 
-                  value={stats.totalProjects}
-                  label="Projects"
-                  bgColor="bg-blue-50/50"
-                  textColor="text-blue-600/80"
-                />
-                <StatCard 
-                  icon={<FiActivity />} 
-                  value={stats.pendingTasks}
-                  label="Active Tasks"
-                  bgColor="bg-purple-50/50"
-                  textColor="text-purple-600/80"
-                />
-                <StatCard 
-                  icon={<FiCheckCircle />} 
-                  value={stats.completedTasks}
-                  label="Completed"
-                  bgColor="bg-green-50/50"
-                  textColor="text-green-600/80"
-                />
-                <StatCard 
-                  icon={<FiClock />} 
-                  value={stats.trackedHoursToday}
-                  label="Hours Today"
-                  bgColor="bg-amber-50/50"
-                  textColor="text-amber-600/80"
-                />
-              </div>
-              
-              {/* Main Content with Tabs - More subtle and refined */}
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
-                  <TabsTrigger value="overview" className="rounded-lg text-sm font-normal">Overview</TabsTrigger>
-                  <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
-                  <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
-                </TabsList>
-          ) : (
+          {focusModeActive ? (
             /* Focus Mode UI */
             <div className="space-y-8">
               {/* Pomodoro Timer */}
@@ -679,12 +638,50 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
-          )}
-          
-          {!focusModeActive && (
+          ) : (
             <>
-              {/* Overview Tab - Refined with iOS-inspired minimalism */}
-              <TabsContent value="overview" className="space-y-8">
+              {/* Stats Overview - Cleaner, more minimal cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <StatCard 
+                  icon={<FiFolder />} 
+                  value={stats.totalProjects}
+                  label="Projects"
+                  bgColor="bg-blue-50/50"
+                  textColor="text-blue-600/80"
+                />
+                <StatCard 
+                  icon={<FiActivity />} 
+                  value={stats.pendingTasks}
+                  label="Active Tasks"
+                  bgColor="bg-purple-50/50"
+                  textColor="text-purple-600/80"
+                />
+                <StatCard 
+                  icon={<FiCheckCircle />} 
+                  value={stats.completedTasks}
+                  label="Completed"
+                  bgColor="bg-green-50/50"
+                  textColor="text-green-600/80"
+                />
+                <StatCard 
+                  icon={<FiClock />} 
+                  value={stats.trackedHoursToday}
+                  label="Hours Today"
+                  bgColor="bg-amber-50/50"
+                  textColor="text-amber-600/80"
+                />
+              </div>
+              
+              {/* Main Content with Tabs - More subtle and refined */}
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
+                  <TabsTrigger value="overview" className="rounded-lg text-sm font-normal">Overview</TabsTrigger>
+                  <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
+                  <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
+                </TabsList>
+                
+                {/* Overview Tab - Refined with iOS-inspired minimalism */}
+                <TabsContent value="overview" className="space-y-8">
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* Left Column */}
                 <div className="xl:col-span-2 space-y-8">
