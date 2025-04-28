@@ -228,7 +228,7 @@ const Dashboard = () => {
       // Clean up the timeout if the component unmounts
       return () => clearTimeout(timerId);
     }
-  }, [pomodoroActive, pomodoroState.timerActive, startPomodoroTimer]);
+  }, [pomodoroActive, pomodoroState.timerActive]);
 
   // Save pomodoro settings to localStorage when they change
   useEffect(() => {
@@ -421,8 +421,10 @@ const Dashboard = () => {
     // This allows the pomodoro to continue running in the background
   };
 
-  // Pomodoro timer functions - using useCallback to ensure stability
-  const startPomodoroTimer = useCallback(() => {
+  // Pomodoro timer functions - simplified to avoid circular dependencies
+
+  // Function to start the pomodoro timer
+  function startPomodoroTimer() {
     console.log('Starting pomodoro timer');
     // Clear any existing timer
     if (pomodoroTimerRef.current) {
@@ -494,9 +496,10 @@ const Dashboard = () => {
         return updatedState;
       });
     }, 1000);
-  }, [pomodoroSettings]);
+  }
 
-  const stopPomodoroTimer = useCallback(() => {
+  // Function to stop the pomodoro timer
+  function stopPomodoroTimer() {
     if (pomodoroTimerRef.current) {
       clearInterval(pomodoroTimerRef.current);
       pomodoroTimerRef.current = null;
@@ -510,9 +513,10 @@ const Dashboard = () => {
 
     setPomodoroState(newState);
     localStorage.setItem('pomodoroState', JSON.stringify(newState));
-  }, [pomodoroState]);
+  }
 
-  const togglePomodoroMode = useCallback(() => {
+  // Function to toggle pomodoro mode on/off
+  function togglePomodoroMode() {
     if (!pomodoroActive) {
       // Starting pomodoro
       setPomodoroActive(true);
@@ -543,9 +547,10 @@ const Dashboard = () => {
       };
       localStorage.setItem('pomodoroState', JSON.stringify(stoppedState));
     }
-  }, [pomodoroActive, pomodoroSettings, pomodoroState, startPomodoroTimer, stopPomodoroTimer]);
+  }
 
-  const pauseResumePomodoroTimer = useCallback(() => {
+  // Function to pause/resume the pomodoro timer
+  function pauseResumePomodoroTimer() {
     const newState = {
       ...pomodoroState,
       timerActive: !pomodoroState.timerActive,
@@ -559,9 +564,10 @@ const Dashboard = () => {
     if (!pomodoroState.timerActive) {
       startPomodoroTimer();
     }
-  }, [pomodoroState, startPomodoroTimer]);
+  }
 
-  const resetPomodoroTimer = useCallback(() => {
+  // Function to reset the pomodoro timer
+  function resetPomodoroTimer() {
     stopPomodoroTimer();
 
     const newState = {
@@ -574,7 +580,7 @@ const Dashboard = () => {
 
     setPomodoroState(newState);
     localStorage.setItem('pomodoroState', JSON.stringify(newState));
-  }, [pomodoroSettings, stopPomodoroTimer]);
+  }
 
   // Format time as MM:SS
   const formatPomodoroTime = (seconds) => {
