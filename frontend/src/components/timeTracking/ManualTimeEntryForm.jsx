@@ -192,155 +192,146 @@ const ManualTimeEntryForm = ({ projectId, onClose, onSave }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {/* Project Selection */}
       <div>
-        <Label htmlFor="project" className="text-sm font-medium">Project *</Label>
+        <Label htmlFor="project" className="text-xs font-medium">Project *</Label>
         <Select value={selectedProject} onValueChange={handleProjectChange} required>
-          <SelectTrigger id="project" className="mt-1">
+          <SelectTrigger id="project" className="mt-1 h-8 text-sm">
             <SelectValue placeholder="Select a project" />
           </SelectTrigger>
           <SelectContent>
             {projects.map(project => (
-              <SelectItem key={project.id} value={project.id}>
+              <SelectItem key={project.id} value={project.id} className="text-sm">
                 {project.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         {formErrors.project && (
-          <p className="mt-1 text-sm text-red-600">{formErrors.project}</p>
+          <p className="mt-1 text-xs text-red-600">{formErrors.project}</p>
         )}
       </div>
 
       {/* Task Selection */}
       <div>
-        <Label htmlFor="taskId" className="text-sm font-medium">Task *</Label>
+        <Label htmlFor="taskId" className="text-xs font-medium">Task *</Label>
         <Select
           value={formData.taskId}
           onValueChange={handleTaskChange}
           disabled={!selectedProject}
           required
         >
-          <SelectTrigger id="taskId" className="mt-1">
+          <SelectTrigger id="taskId" className="mt-1 h-8 text-sm">
             <SelectValue placeholder={selectedProject ? "Select a task" : "Select a project first"} />
           </SelectTrigger>
           <SelectContent>
             {projectTasks.map(task => (
-              <SelectItem key={task.id} value={task.id}>
+              <SelectItem key={task.id} value={task.id} className="text-sm">
                 {task.title}
               </SelectItem>
             ))}
-            <SelectItem value="new-task" className="text-primary-600 font-medium">
+            <SelectItem value="new-task" className="text-primary font-medium text-sm">
               <div className="flex items-center">
-                <FiPlus className="mr-1.5 h-4 w-4" />
+                <FiPlus className="mr-1.5 h-3.5 w-3.5" />
                 Create new task
               </div>
             </SelectItem>
           </SelectContent>
         </Select>
         {formErrors.taskId && !showNewTaskInput && (
-          <p className="mt-1 text-sm text-red-600">{formErrors.taskId}</p>
+          <p className="mt-1 text-xs text-red-600">{formErrors.taskId}</p>
         )}
       </div>
 
       {/* New Task Input (conditionally shown) */}
       {showNewTaskInput && (
         <div>
-          <Label htmlFor="newTaskTitle" className="text-sm font-medium">New Task Title *</Label>
+          <Label htmlFor="newTaskTitle" className="text-xs font-medium">New Task Title *</Label>
           <Input
             id="newTaskTitle"
             name="newTaskTitle"
             type="text"
             value={formData.newTaskTitle}
             onChange={handleChange}
-            className="mt-1"
+            className="mt-1 h-8 text-sm"
             placeholder="Enter task title"
             required
           />
           {formErrors.newTaskTitle && (
-            <p className="mt-1 text-sm text-red-600">{formErrors.newTaskTitle}</p>
+            <p className="mt-1 text-xs text-red-600">{formErrors.newTaskTitle}</p>
           )}
         </div>
       )}
 
-      {/* Date Selection */}
+      {/* Date Selection - Simplified */}
       <div>
-        <Label htmlFor="entryDate" className="text-sm font-medium">Date *</Label>
-        <div className="mt-1">
-          <div className="grid grid-cols-3 gap-2">
+        <Label htmlFor="entryDate" className="text-xs font-medium">Date *</Label>
+        <div className="mt-1 flex gap-2">
+          <div className="grid grid-cols-3 gap-2 flex-1">
             {/* Day */}
-            <div>
-              <Label htmlFor="day" className="text-xs text-secondary-500">Day</Label>
-              <Select
-                value={formData.entryDate ? format(formData.entryDate, 'd') : format(new Date(), 'd')}
-                onValueChange={(value) => handleDateComponentChange('day', value)}
-              >
-                <SelectTrigger id="day" className="mt-1">
-                  <SelectValue placeholder="Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                    <SelectItem key={day} value={day.toString()}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={formData.entryDate ? format(formData.entryDate, 'd') : format(new Date(), 'd')}
+              onValueChange={(value) => handleDateComponentChange('day', value)}
+            >
+              <SelectTrigger id="day" className="h-8 text-sm">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                  <SelectItem key={day} value={day.toString()} className="text-sm">
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Month */}
-            <div>
-              <Label htmlFor="month" className="text-xs text-secondary-500">Month</Label>
-              <Select
-                value={formData.entryDate ? format(formData.entryDate, 'M') : format(new Date(), 'M')}
-                onValueChange={(value) => handleDateComponentChange('month', value)}
-              >
-                <SelectTrigger id="month" className="mt-1">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    { value: '1', label: 'January' },
-                    { value: '2', label: 'February' },
-                    { value: '3', label: 'March' },
-                    { value: '4', label: 'April' },
-                    { value: '5', label: 'May' },
-                    { value: '6', label: 'June' },
-                    { value: '7', label: 'July' },
-                    { value: '8', label: 'August' },
-                    { value: '9', label: 'September' },
-                    { value: '10', label: 'October' },
-                    { value: '11', label: 'November' },
-                    { value: '12', label: 'December' }
-                  ].map(month => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={formData.entryDate ? format(formData.entryDate, 'M') : format(new Date(), 'M')}
+              onValueChange={(value) => handleDateComponentChange('month', value)}
+            >
+              <SelectTrigger id="month" className="h-8 text-sm">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {[
+                  { value: '1', label: 'Jan' },
+                  { value: '2', label: 'Feb' },
+                  { value: '3', label: 'Mar' },
+                  { value: '4', label: 'Apr' },
+                  { value: '5', label: 'May' },
+                  { value: '6', label: 'Jun' },
+                  { value: '7', label: 'Jul' },
+                  { value: '8', label: 'Aug' },
+                  { value: '9', label: 'Sep' },
+                  { value: '10', label: 'Oct' },
+                  { value: '11', label: 'Nov' },
+                  { value: '12', label: 'Dec' }
+                ].map(month => (
+                  <SelectItem key={month.value} value={month.value} className="text-sm">
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Year */}
-            <div>
-              <Label htmlFor="year" className="text-xs text-secondary-500">Year</Label>
-              <Select
-                value={formData.entryDate ? format(formData.entryDate, 'yyyy') : format(new Date(), 'yyyy')}
-                onValueChange={(value) => handleDateComponentChange('year', value)}
-              >
-                <SelectTrigger id="year" className="mt-1">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={formData.entryDate ? format(formData.entryDate, 'yyyy') : format(new Date(), 'yyyy')}
+              onValueChange={(value) => handleDateComponentChange('year', value)}
+            >
+              <SelectTrigger id="year" className="h-8 text-sm">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                  <SelectItem key={year} value={year.toString()} className="text-sm">
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Today button */}
@@ -348,119 +339,49 @@ const ManualTimeEntryForm = ({ projectId, onClose, onSave }) => {
             type="button"
             variant="outline"
             size="sm"
-            className="w-full mt-2 text-xs"
+            className="h-8 text-xs"
             onClick={() => setFormData(prev => ({ ...prev, entryDate: new Date() }))}
           >
-            <FiCalendar className="mr-1.5 h-3 w-3" />
-            Set to Today
+            <FiCalendar className="mr-1 h-3 w-3" />
+            Today
           </Button>
         </div>
       </div>
 
-      {/* Duration Input */}
+      {/* Duration Input - Simplified */}
       <div>
-        <Label className="text-sm font-medium">Duration *</Label>
-        <div className="flex items-center space-x-2 mt-1">
+        <Label className="text-xs font-medium">Duration *</Label>
+        <div className="flex items-center gap-2 mt-1">
           <div className="flex-1">
             <div className="relative">
-              <Label htmlFor="hours" className="text-xs text-secondary-500">Hours</Label>
-              <div className="flex items-center mt-1">
-                <Input
-                  id="hours"
-                  name="hours"
-                  type="number"
-                  min="0"
-                  value={formData.hours}
-                  onChange={handleNumberChange}
-                  className="pr-12"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center mt-5 pr-3 pointer-events-none">
-                  <span className="text-xs text-secondary-500">hr</span>
-                </div>
-                <div className="absolute inset-y-0 right-0 flex items-center mt-5 space-x-1 pr-10">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-secondary-500 hover:text-secondary-700"
-                    onClick={() => {
-                      const currentHours = parseInt(formData.hours, 10) || 0;
-                      if (currentHours > 0) {
-                        setFormData(prev => ({ ...prev, hours: currentHours - 1 }));
-                      }
-                    }}
-                  >
-                    <span className="text-lg font-bold">-</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-secondary-500 hover:text-secondary-700"
-                    onClick={() => {
-                      const currentHours = parseInt(formData.hours, 10) || 0;
-                      setFormData(prev => ({ ...prev, hours: currentHours + 1 }));
-                    }}
-                  >
-                    <span className="text-lg font-bold">+</span>
-                  </Button>
-                </div>
+              <Input
+                id="hours"
+                name="hours"
+                type="number"
+                min="0"
+                value={formData.hours}
+                onChange={handleNumberChange}
+                className="h-8 text-sm pr-8"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <span className="text-xs text-secondary-500">hr</span>
               </div>
             </div>
           </div>
           <div className="flex-1">
             <div className="relative">
-              <Label htmlFor="minutes" className="text-xs text-secondary-500">Minutes</Label>
-              <div className="flex items-center mt-1">
-                <Input
-                  id="minutes"
-                  name="minutes"
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={formData.minutes}
-                  onChange={handleNumberChange}
-                  className="pr-12"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center mt-5 pr-3 pointer-events-none">
-                  <span className="text-xs text-secondary-500">min</span>
-                </div>
-                <div className="absolute inset-y-0 right-0 flex items-center mt-5 space-x-1 pr-10">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-secondary-500 hover:text-secondary-700"
-                    onClick={() => {
-                      const currentMinutes = parseInt(formData.minutes, 10) || 0;
-                      if (currentMinutes > 0) {
-                        setFormData(prev => ({ ...prev, minutes: currentMinutes - 1 }));
-                      }
-                    }}
-                  >
-                    <span className="text-lg font-bold">-</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-secondary-500 hover:text-secondary-700"
-                    onClick={() => {
-                      const currentMinutes = parseInt(formData.minutes, 10) || 0;
-                      if (currentMinutes < 59) {
-                        setFormData(prev => ({ ...prev, minutes: currentMinutes + 1 }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          minutes: 0,
-                          hours: (parseInt(prev.hours, 10) || 0) + 1
-                        }));
-                      }
-                    }}
-                  >
-                    <span className="text-lg font-bold">+</span>
-                  </Button>
-                </div>
+              <Input
+                id="minutes"
+                name="minutes"
+                type="number"
+                min="0"
+                max="59"
+                value={formData.minutes}
+                onChange={handleNumberChange}
+                className="h-8 text-sm pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <span className="text-xs text-secondary-500">min</span>
               </div>
             </div>
           </div>
@@ -474,7 +395,7 @@ const ManualTimeEntryForm = ({ projectId, onClose, onSave }) => {
               type="button"
               variant="outline"
               size="sm"
-              className="text-xs"
+              className="h-7 text-xs"
               onClick={() => {
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
@@ -487,40 +408,63 @@ const ManualTimeEntryForm = ({ projectId, onClose, onSave }) => {
         </div>
 
         {formErrors.duration && (
-          <p className="mt-1 text-sm text-red-600">{formErrors.duration}</p>
+          <p className="mt-1 text-xs text-red-600">{formErrors.duration}</p>
         )}
       </div>
 
       {/* Notes */}
       <div>
-        <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+        <Label htmlFor="notes" className="text-xs font-medium">Notes</Label>
         <Textarea
           id="notes"
           name="notes"
           value={formData.notes}
           onChange={handleChange}
-          className="mt-1"
-          placeholder="Add any notes about this time entry"
-          rows={3}
+          className="mt-1 text-sm"
+          placeholder="Add notes about this time entry..."
+          rows={2}
         />
       </div>
 
       {/* API Error */}
       {formErrors.api && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-          {formErrors.api}
+        <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+          <p>{formErrors.api}</p>
         </div>
       )}
 
       {/* Form Actions */}
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-          <FiX className="mr-1.5 h-4 w-4" />
+      <DialogFooter className="mt-4 gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={loading}
+          size="sm"
+          className="h-8"
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={loading}>
-          <FiSave className="mr-1.5 h-4 w-4" />
-          Save Time Entry
+        <Button
+          type="submit"
+          disabled={loading}
+          size="sm"
+          className="h-8"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-1.5 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </>
+          ) : (
+            <>
+              <FiSave className="mr-1.5 h-3.5 w-3.5" />
+              Save
+            </>
+          )}
         </Button>
       </DialogFooter>
     </form>
