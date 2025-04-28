@@ -1,6 +1,6 @@
 # TaskFlow: Project Plan
 
-**Date:** 2025-04-03 (Updated)
+**Date:** 2025-04-05 (Updated)
 
 ## 1. Project Overview
 
@@ -9,6 +9,7 @@
 **Core Features:**
 *   Project & Task Management (CRUD operations)
 *   Time Tracking (Start, Stop, Pause, Resume, Multiple Timers)
+*   Focus Mode with Pomodoro Timer
 *   Waiting Items Tracking
 *   Reporting (Basic summaries)
 *   Settings (e.g., Auto-pause)
@@ -77,11 +78,33 @@
 *   **Version Control:** Follow standard Git practices (feature branches, descriptive commits).
 *   **Task Management:** Use `TASKS.md`.
 
-## 5. Current High-Level Tasks (derived from `TASKS.md` / Memory)
+## 5. Focus Mode & Pomodoro Timer
+
+**Focus Mode** provides users with a distraction-free environment to concentrate on their tasks. Key features include:
+
+* **Toggle Interface**: Users can switch between standard dashboard view and focus mode view
+* **Persistent Status Indicator**: Badge in the dashboard header shows when focus mode is active
+* **Independent Pomodoro Timer**: Continues running even when focus mode is not active
+
+**Pomodoro Timer** helps users manage work sessions with timed breaks. Features include:
+
+* **Configurable Sessions**: 25-minute work periods (default) followed by 5-minute breaks
+* **Long Breaks**: Longer 15-minute breaks after completing 4 work sessions
+* **Controls**: Start/stop, pause/resume, and reset functionality
+* **Visual Indicator**: Compact widget appears in dashboard when active
+* **Audio Notifications**: Sound alerts when sessions end
+
+**Integration with Time Tracking**:
+* Time tracking continues to function independently of focus mode
+* Multiple timers can run concurrently with the pomodoro timer
+* Pause/resume functionality works for both pomodoro and task timers
+
+## 6. Current High-Level Tasks (derived from `TASKS.md` / Memory)
 
 *   Complete UI Overhaul (as detailed in Section 3).
 *   Remove the time tracking tab/page at `/time-tracking`. (Functionality likely moving elsewhere).
 *   Implement Settings page with auto-pause functionality.
 *   Implement manual editing of time entries.
+*   Enhance focus mode with backend integration.
 
 *(Further detailed tasks should be managed in TASKS.md)*

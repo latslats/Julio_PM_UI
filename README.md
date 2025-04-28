@@ -8,6 +8,8 @@ A clean, effective, and modern project management application that allows users 
 - **Task Management**: Organize tasks within projects with priority levels and status tracking
 - **Time Tracking**: Track time spent on individual tasks with start/stop/pause/resume functionality
 - **Multiple Concurrent Timers**: Track time on multiple tasks simultaneously
+- **Focus Mode**: Distraction-free environment with persistent status indicators
+- **Pomodoro Timer**: Structured work sessions with customizable breaks
 - **Waiting-On Management**: Track external dependencies and requests with timeline events and statistics
 - **Reporting**: View analytics and reports on project progress and time spent
 
@@ -321,6 +323,35 @@ Update an existing waiting item.
 Delete a waiting item.
 
 **Response**: Success message
+
+## Focus Mode & Pomodoro Timer
+
+### Focus Mode
+
+The Focus Mode feature provides a distraction-free environment for users to concentrate on their tasks:
+
+- **Toggle Interface**: Switch between standard dashboard and focus mode with a single click
+- **Persistent Status**: Focus mode status is clearly indicated in the dashboard header
+- **Task Concentration**: Simplified interface that highlights only active tasks
+- **Independent Operation**: Focus mode can be used with or without the Pomodoro timer
+
+### Pomodoro Timer
+
+The Pomodoro technique is a time management method that uses timed work sessions separated by short breaks:
+
+- **Work Sessions**: Default 25-minute focused work periods
+- **Short Breaks**: 5-minute breaks between work sessions
+- **Long Breaks**: 15-minute breaks after completing 4 work sessions
+- **Visual Timer**: Clear countdown display with session information
+- **Controls**: Intuitive buttons for start/stop, pause/resume, and reset
+- **Notifications**: Audio alerts when sessions end
+- **Persistent Display**: Timer remains visible in dashboard when active, even outside focus mode
+
+### Integration with Time Tracking
+
+- Both features work seamlessly with the task time tracking system
+- Multiple task timers can run concurrently with the pomodoro timer
+- Pause/resume functionality works independently for both systems
 
 ## Design Principles
 
