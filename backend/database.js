@@ -114,6 +114,13 @@ const initializeDatabase = async () => {
         id INT PRIMARY KEY DEFAULT 1, -- Use INT for single row constraint
         "auto_pause_enabled" BOOLEAN DEFAULT false,
         "auto_pause_time" TIME, -- e.g., '18:00:00'
+        "pomodoro_work_duration" INTEGER DEFAULT 1500, -- 25 minutes in seconds
+        "pomodoro_break_duration" INTEGER DEFAULT 300, -- 5 minutes in seconds
+        "pomodoro_long_break_duration" INTEGER DEFAULT 900, -- 15 minutes in seconds
+        "pomodoro_sessions_before_long_break" INTEGER DEFAULT 4,
+        "pomodoro_auto_start_next" BOOLEAN DEFAULT true,
+        "pomodoro_pause_tasks_during_break" BOOLEAN DEFAULT false,
+        "pomodoro_resume_tasks_after_break" BOOLEAN DEFAULT false,
         CONSTRAINT settings_pk CHECK (id = 1) -- Enforce single row
       );
     `);
@@ -123,10 +130,46 @@ const initializeDatabase = async () => {
     const settingsCheck = await client.query('SELECT COUNT(*) FROM settings');
     if (parseInt(settingsCheck.rows[0].count, 10) === 0) {
       await client.query(`
-        INSERT INTO settings (id, "auto_pause_enabled", "auto_pause_time")
-        VALUES (1, false, NULL);
+        INSERT INTO settings (
+          id,
+          "auto_pause_enabled",
+          "auto_pause_time",
+          "pomodoro_work_duration",
+          "pomodoro_break_duration",
+          "pomodoro_long_break_duration",
+          "pomodoro_sessions_before_long_break",
+          "pomodoro_auto_start_next",
+          "pomodoro_pause_tasks_during_break",
+          "pomodoro_resume_tasks_after_break"
+        )
+        VALUES (
+          1,
+          false,
+          NULL,
+          1500,
+          300,
+          900,
+          4,
+          true,
+          false,
+          false
+        );
       `);
       console.log('Inserted default settings row.');
+    }
+
+    // Add Pomodoro columns if they don't exist (for existing databases)
+    try {
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_work_duration" INTEGER DEFAULT 1500');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_break_duration" INTEGER DEFAULT 300');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_long_break_duration" INTEGER DEFAULT 900');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_sessions_before_long_break" INTEGER DEFAULT 4');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_auto_start_next" BOOLEAN DEFAULT true');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_pause_tasks_during_break" BOOLEAN DEFAULT false');
+      await client.query('ALTER TABLE settings ADD COLUMN IF NOT EXISTS "pomodoro_resume_tasks_after_break" BOOLEAN DEFAULT false');
+      console.log('Checked/added columns for Pomodoro functionality to settings.');
+    } catch (alterErr) {
+      console.error('Error adding Pomodoro columns to settings (may already exist):', alterErr.message);
     }
 
     // Add columns if they don't exist (for existing databases)

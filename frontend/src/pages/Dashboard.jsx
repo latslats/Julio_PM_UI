@@ -79,16 +79,39 @@ const Dashboard = () => {
     return savedState ? JSON.parse(savedState) : false;
   })
 
-  const [pomodoroSettings, setPomodoroSettings] = useState(() => {
-    // Load pomodoro settings from localStorage or use defaults
-    const savedSettings = localStorage.getItem('pomodoroSettings');
-    return savedSettings ? JSON.parse(savedSettings) : {
-      workDuration: 25 * 60, // 25 minutes in seconds
-      breakDuration: 5 * 60,  // 5 minutes in seconds
-      longBreakDuration: 15 * 60, // 15 minutes in seconds
-      sessionsBeforeLongBreak: 4
-    };
+  const [pomodoroSettings, setPomodoroSettings] = useState({
+    workDuration: 25 * 60, // 25 minutes in seconds
+    breakDuration: 5 * 60,  // 5 minutes in seconds
+    longBreakDuration: 15 * 60, // 15 minutes in seconds
+    sessionsBeforeLongBreak: 4,
+    autoStartNext: true,
+    pauseTasksDuringBreak: false,
+    resumeTasksAfterBreak: false
   })
+
+  // Fetch pomodoro settings from backend
+  const fetchPomodoroSettings = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/settings`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch pomodoro settings');
+      }
+      const data = await response.json();
+
+      setPomodoroSettings({
+        workDuration: data.pomodoro_work_duration || 25 * 60,
+        breakDuration: data.pomodoro_break_duration || 5 * 60,
+        longBreakDuration: data.pomodoro_long_break_duration || 15 * 60,
+        sessionsBeforeLongBreak: data.pomodoro_sessions_before_long_break || 4,
+        autoStartNext: data.pomodoro_auto_start_next !== undefined ? data.pomodoro_auto_start_next : true,
+        pauseTasksDuringBreak: data.pomodoro_pause_tasks_during_break || false,
+        resumeTasksAfterBreak: data.pomodoro_resume_tasks_after_break || false
+      });
+    } catch (error) {
+      console.error('Error fetching pomodoro settings:', error);
+      // Use default settings if fetch fails
+    }
+  }, [])
 
   const [pomodoroState, setPomodoroState] = useState(() => {
     // Load pomodoro state from localStorage or use defaults
@@ -230,10 +253,10 @@ const Dashboard = () => {
     }
   }, [pomodoroActive, pomodoroState.timerActive]);
 
-  // Save pomodoro settings to localStorage when they change
+  // Fetch pomodoro settings from backend when component mounts
   useEffect(() => {
-    localStorage.setItem('pomodoroSettings', JSON.stringify(pomodoroSettings));
-  }, [pomodoroSettings]);
+    fetchPomodoroSettings();
+  }, [fetchPomodoroSettings]);
 
   // Update elapsed times for active time entries
   useEffect(() => {
@@ -457,9 +480,19 @@ const Dashboard = () => {
               isBreak: false,
               currentSession: isSessionComplete ? 1 : nextSession,
               timeRemaining: pomodoroSettings.workDuration,
-              timerActive: true, // Auto-start the next work session
+              timerActive: pomodoroSettings.autoStartNext, // Auto-start based on settings
               lastSavedAt: Date.now()
             };
+
+            // Resume paused tasks if setting is enabled
+            if (pomodoroSettings.resumeTasksAfterBreak) {
+              // Get all paused time entries
+              const pausedEntries = timeEntries.filter(entry => entry.isPaused && entry.endTime === null);
+              // Resume each paused entry
+              pausedEntries.forEach(entry => {
+                resumeTimeTracking(entry.id).catch(e => console.error('Error resuming time entry:', e));
+              });
+            }
           } else {
             // If we were working, go to a break
             const isLongBreakDue = prev.currentSession >= pomodoroSettings.sessionsBeforeLongBreak;
@@ -471,9 +504,19 @@ const Dashboard = () => {
               isBreak: true,
               currentSession: prev.currentSession,
               timeRemaining: breakDuration,
-              timerActive: true, // Auto-start the break
+              timerActive: pomodoroSettings.autoStartNext, // Auto-start based on settings
               lastSavedAt: Date.now()
             };
+
+            // Pause active tasks if setting is enabled
+            if (pomodoroSettings.pauseTasksDuringBreak) {
+              // Get all active (non-paused) time entries
+              const activeEntries = timeEntries.filter(entry => !entry.isPaused && entry.endTime === null);
+              // Pause each active entry
+              activeEntries.forEach(entry => {
+                pauseTimeTracking(entry.id).catch(e => console.error('Error pausing time entry:', e));
+              });
+            }
           }
 
           // Save to localStorage
