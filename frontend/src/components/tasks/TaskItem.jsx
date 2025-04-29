@@ -264,11 +264,22 @@ const TaskItem = ({ task }) => {
 
   // Handle deleting the task
   const handleDeleteTask = async () => {
-    const result = await deleteTask(task.id)
-    if (result.success) {
-      setShowDeleteConfirm(false)
-    } else {
-      console.error('Failed to delete task:', result.message)
+    try {
+      setIsActionLoading(true);
+      const result = await deleteTask(task.id);
+
+      if (result.success) {
+        showNotification('success', `Task "${task.title}" deleted successfully`);
+        setShowDeleteConfirm(false);
+      } else {
+        console.error('Failed to delete task:', result.message);
+        showNotification('error', `Failed to delete task: ${result.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      showNotification('error', `Error deleting task: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsActionLoading(false);
     }
   }
 
@@ -670,6 +681,59 @@ const TaskItem = ({ task }) => {
                     </Button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-task-title"
+          >
+            <motion.div
+              className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <div className="p-6">
+                <h3 id="delete-task-title" className="text-lg font-medium text-secondary-900 mb-2">Delete Task</h3>
+                <p className="text-secondary-600 mb-4">
+                  Are you sure you want to delete this task? This action cannot be undone.
+                </p>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteTask}
+                    disabled={isActionLoading}
+                  >
+                    {isActionLoading ? (
+                      <span className="flex items-center">
+                        <FiLoader className="h-4 w-4 animate-spin mr-2" aria-hidden="true" />
+                        Deleting...
+                      </span>
+                    ) : (
+                      "Delete"
+                    )}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
