@@ -453,6 +453,69 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Reset a time entry by deleting it and creating a new one for the same task
+   * This effectively restarts the timer from zero while maintaining the task association
+   *
+   * @param {string} timeEntryId - ID of the time entry to reset
+   * @returns {Promise<Object>} - Result object with success flag and data or error message
+   */
+  const resetTimeTracking = async (timeEntryId) => {
+    console.log(`Resetting time tracking for entry: ${timeEntryId}`);
+    setLoading(true);
+
+    try {
+      // First, get the current time entry to retrieve its taskId
+      const timeEntry = timeEntries.find(entry => entry.id === timeEntryId);
+
+      if (!timeEntry) {
+        console.error(`Time entry with ID ${timeEntryId} not found`);
+        return { success: false, message: 'Time entry not found' };
+      }
+
+      const taskId = timeEntry.taskId;
+
+      // Delete the current time entry
+      const deleteResult = await apiRequest(`/time-entries/${timeEntryId}`, {
+        method: 'DELETE',
+      });
+
+      if (!deleteResult.success) {
+        console.error('Failed to delete time entry for reset:', deleteResult.message);
+        return deleteResult;
+      }
+
+      // Start a new time entry for the same task
+      const startResult = await apiRequest(`/time-entries/start`, {
+        method: 'POST',
+        body: JSON.stringify({ taskId }),
+      });
+
+      if (startResult.success) {
+        console.log('Time tracking reset successfully:', startResult.data);
+
+        // Update the time entries state
+        setTimeEntries(prev => {
+          // Remove the old entry
+          const filtered = prev.filter(entry => entry.id !== timeEntryId);
+          // Add the new entry
+          return [startResult.data, ...filtered];
+        });
+
+        return { success: true, data: startResult.data };
+      } else {
+        console.error('Failed to start new time entry after reset:', startResult.message);
+        return startResult;
+      }
+    } catch (err) {
+      console.error('Error resetting time tracking:', err);
+      setError(err.message || 'Failed to reset time tracking');
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteTimeEntry = async (id) => {
     setLoading(true);
     try {
@@ -655,6 +718,7 @@ export const ProjectProvider = ({ children }) => {
       stopTimeTracking,
       pauseTimeTracking,
       resumeTimeTracking,
+      resetTimeTracking, // Provide resetTimeTracking
       deleteTimeEntry, // Provide deleteTimeEntry
       updateTimeEntry, // Provide updateTimeEntry
       createManualTimeEntry, // Provide createManualTimeEntry

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader, FiPlus } from 'react-icons/fi'
+import { FiPlay, FiPause, FiClock, FiCheckCircle, FiLoader, FiPlus, FiRefreshCw } from 'react-icons/fi'
 import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +7,17 @@ import {
   Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import ManualTimeEntryForm from './ManualTimeEntryForm'
 
 // Accept props instead of using context directly
@@ -18,6 +29,7 @@ const TimeTrackingWidget = ({
   startTimeTracking = () => {},
   pauseTimeTracking = () => {},
   resumeTimeTracking = () => {},
+  resetTimeTracking = () => {}, // Add reset function
   loading = false, // Default loading state
   fetchActiveTimers = () => {}
 }) => {
@@ -34,6 +46,8 @@ const TimeTrackingWidget = ({
   const [actionLoadingMap, setActionLoadingMap] = useState({})
   // State for manual time entry dialog
   const [showManualEntryDialog, setShowManualEntryDialog] = useState(false)
+  // State for reset confirmation dialog
+  const [resetConfirmEntry, setResetConfirmEntry] = useState(null)
 
   // Helper function to get task and project for a time entry
   const getEntryDetails = (entry) => {
@@ -97,32 +111,32 @@ const TimeTrackingWidget = ({
     ].join(':')
   }
 
-  // Handle stop tracking for a specific entry
-  const handleStopTracking = async (entryId) => {
+  // Handle complete (formerly stop) tracking for a specific entry
+  const handleCompleteTracking = async (entryId) => {
     try {
       // Set loading state for this specific entry
-      setActionLoadingMap(prev => ({ ...prev, [entryId]: 'stop' }));
+      setActionLoadingMap(prev => ({ ...prev, [entryId]: 'complete' }));
 
       const result = await stopTimeTracking(entryId);
       if (result.success) {
         toast({
-          title: "Timer Stopped",
-          description: "Tracking successfully stopped.",
+          title: "Timer Completed",
+          description: "Time entry has been finalized.",
         });
         // Refresh active timers to ensure UI is up-to-date
         await fetchActiveTimers();
       } else {
         toast({
           variant: "destructive",
-          title: "Error Stopping Timer",
-          description: result.message || 'Failed to stop timer.'
+          title: "Error Completing Timer",
+          description: result.message || 'Failed to complete timer.'
         });
       }
     } catch (err) {
-      console.error('Error stopping timer:', err);
+      console.error('Error completing timer:', err);
       toast({
         variant: "destructive",
-        title: "Error Stopping Timer",
+        title: "Error Completing Timer",
         description: err.message || 'An unexpected error occurred.'
       });
     } finally {
@@ -132,6 +146,46 @@ const TimeTrackingWidget = ({
         delete newMap[entryId];
         return newMap;
       });
+    }
+  }
+
+  // Handle reset tracking for a specific entry
+  const handleResetTracking = async (entryId) => {
+    try {
+      // Set loading state for this specific entry
+      setActionLoadingMap(prev => ({ ...prev, [entryId]: 'reset' }));
+
+      const result = await resetTimeTracking(entryId);
+      if (result.success) {
+        toast({
+          title: "Timer Reset",
+          description: "Timer has been reset to zero.",
+        });
+        // Refresh active timers to ensure UI is up-to-date
+        await fetchActiveTimers();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error Resetting Timer",
+          description: result.message || 'Failed to reset timer.'
+        });
+      }
+    } catch (err) {
+      console.error('Error resetting timer:', err);
+      toast({
+        variant: "destructive",
+        title: "Error Resetting Timer",
+        description: err.message || 'An unexpected error occurred.'
+      });
+    } finally {
+      // Clear loading state for this entry
+      setActionLoadingMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[entryId];
+        return newMap;
+      });
+      // Clear reset confirmation
+      setResetConfirmEntry(null);
     }
   }
 
@@ -190,7 +244,8 @@ const TimeTrackingWidget = ({
     const { task, project } = getEntryDetails(entry);
     const isLoading = actionLoadingMap[entry.id];
     const isPausing = isLoading === 'pauseResume';
-    const isStopping = isLoading === 'stop';
+    const isCompleting = isLoading === 'complete';
+    const isResetting = isLoading === 'reset';
 
     return (
       <Card
@@ -222,36 +277,78 @@ const TimeTrackingWidget = ({
           </p>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2 px-4 pb-3 pt-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePauseResume(entry)}
-            disabled={loading || isLoading}
-            aria-label={entry.isPaused ? 'Resume Timer' : 'Pause Timer'}
-            className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
-          >
-            {isPausing ? (
-              <FiLoader className="h-4 w-4 animate-spin" />
-            ) : entry.isPaused ? (
-              <FiPlay className="h-4 w-4" />
-            ) : (
-              <FiPause className="h-4 w-4" />
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => handleStopTracking(entry.id)}
-            disabled={loading || isLoading}
-            aria-label="Stop Timer"
-            className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
-          >
-            {isStopping ? (
-              <FiLoader className="h-4 w-4 animate-spin" />
-            ) : (
-              <FiStopCircle className="h-4 w-4" />
-            )}
-          </Button>
+          <TooltipProvider>
+            {/* Pause/Resume Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePauseResume(entry)}
+                  disabled={loading || isLoading}
+                  aria-label={entry.isPaused ? 'Resume Timer' : 'Pause Timer'}
+                  className="w-9 h-9 p-0 flex items-center justify-center" // Ensure fixed size for icon
+                >
+                  {isPausing ? (
+                    <FiLoader className="h-4 w-4 animate-spin" />
+                  ) : entry.isPaused ? (
+                    <FiPlay className="h-4 w-4" />
+                  ) : (
+                    <FiPause className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{entry.isPaused ? 'Resume Timer' : 'Pause Timer'}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Reset Button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setResetConfirmEntry(entry)}
+                  disabled={loading || isLoading}
+                  aria-label="Reset Timer"
+                  className="w-9 h-9 p-0 flex items-center justify-center text-amber-600 hover:text-amber-700 hover:bg-amber-50" // Ensure fixed size for icon
+                >
+                  {isResetting ? (
+                    <FiLoader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FiRefreshCw className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reset Timer to Zero</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Complete Button (formerly Stop) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCompleteTracking(entry.id)}
+                  disabled={loading || isLoading}
+                  aria-label="Complete Timer"
+                  className="w-9 h-9 p-0 flex items-center justify-center text-green-600 hover:text-green-700 hover:bg-green-50" // Ensure fixed size for icon
+                >
+                  {isCompleting ? (
+                    <FiLoader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FiCheckCircle className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Complete Time Entry</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardFooter>
       </Card>
     );
@@ -312,6 +409,28 @@ const TimeTrackingWidget = ({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={!!resetConfirmEntry} onOpenChange={(open) => !open && setResetConfirmEntry(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Timer</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset the timer to zero and start a new time entry. The current elapsed time will be lost.
+              Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => resetConfirmEntry && handleResetTracking(resetConfirmEntry.id)}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Reset Timer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

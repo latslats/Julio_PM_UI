@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader, FiList } from 'react-icons/fi'
+import { FiClock, FiPlay, FiCheckCircle, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader, FiList, FiRefreshCw } from 'react-icons/fi'
 import { CalendarIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -31,6 +31,7 @@ const TaskItem = ({ task }) => {
     stopTimeTracking,
     pauseTimeTracking,
     resumeTimeTracking,
+    resetTimeTracking,
     fetchActiveTimers,
     timeEntries
   } = useProjects()
@@ -197,24 +198,46 @@ const TaskItem = ({ task }) => {
     }
   }
 
-  // Handle stopping time tracking
-  const handleStopTracking = async () => {
+  // Handle completing time tracking (formerly stopping)
+  const handleCompleteTracking = async () => {
     try {
       setIsActionLoading(true);
 
       if (activeTimeEntry) {
         const result = await stopTimeTracking(activeTimeEntry.id);
         if (result.success) {
-          showNotification('success', `Stopped tracking for "${task.title}"`);
+          showNotification('success', `Completed time entry for "${task.title}"`);
           setIsTracking(false);
           await fetchActiveTimers();
         } else {
-          showNotification('error', `Failed to stop tracking: ${result.message || 'Unknown error'}`);
+          showNotification('error', `Failed to complete time entry: ${result.message || 'Unknown error'}`);
         }
       }
     } catch (err) {
-      console.error('Error stopping time tracking:', err);
-      showNotification('error', `Error stopping timer: ${err.message || 'Unknown error'}`);
+      console.error('Error completing time entry:', err);
+      showNotification('error', `Error completing time entry: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsActionLoading(false);
+    }
+  }
+
+  // Handle resetting time tracking
+  const handleResetTracking = async () => {
+    try {
+      setIsActionLoading(true);
+
+      if (activeTimeEntry) {
+        const result = await resetTimeTracking(activeTimeEntry.id);
+        if (result.success) {
+          showNotification('success', `Reset timer for "${task.title}"`);
+          await fetchActiveTimers();
+        } else {
+          showNotification('error', `Failed to reset timer: ${result.message || 'Unknown error'}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error resetting timer:', err);
+      showNotification('error', `Error resetting timer: ${err.message || 'Unknown error'}`);
     } finally {
       setIsActionLoading(false);
     }
@@ -392,26 +415,48 @@ const TaskItem = ({ task }) => {
             </Button>
             <div className="flex space-x-1">
               {activeTimeEntry && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleStopTracking}
-                  className="p-2 rounded-lg text-red-600 hover:bg-red-50"
-                  title="Stop tracking"
-                  aria-label="Stop time tracking"
-                  disabled={isActionLoading}
-                >
-                  {isActionLoading ? (
-                    <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
-                      <FiSquare className="h-5 w-5" aria-hidden="true" />
-                    </motion.div>
-                  )}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleResetTracking}
+                    className="p-2 rounded-lg text-amber-600 hover:bg-amber-50"
+                    title="Reset timer"
+                    aria-label="Reset timer to zero"
+                    disabled={isActionLoading}
+                  >
+                    {isActionLoading ? (
+                      <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <FiRefreshCw className="h-4 w-4" aria-hidden="true" />
+                      </motion.div>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCompleteTracking}
+                    className="p-2 rounded-lg text-green-600 hover:bg-green-50"
+                    title="Complete time entry"
+                    aria-label="Complete time entry"
+                    disabled={isActionLoading}
+                  >
+                    {isActionLoading ? (
+                      <FiLoader className="h-5 w-5 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <FiCheckCircle className="h-4 w-4" aria-hidden="true" />
+                      </motion.div>
+                    )}
+                  </Button>
+                </>
               )}
               <Button
                 variant="ghost"

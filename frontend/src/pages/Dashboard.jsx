@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
-import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare, FiRefreshCw, FiX } from 'react-icons/fi'
+import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiRefreshCw, FiX } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -31,6 +31,7 @@ const Dashboard = () => {
     startTimeTracking,
     pauseTimeTracking,
     resumeTimeTracking,
+    resetTimeTracking,
     fetchActiveTimers
   } = useProjects()
 
@@ -1153,9 +1154,22 @@ const Dashboard = () => {
                                           stopTimeTracking(entry.id);
                                         }
                                       }}
-                                      className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600"
+                                      className="h-8 w-8 p-0 rounded-full text-green-500 hover:text-green-600"
                                     >
-                                      <FiSquare className="h-4 w-4" />
+                                      <FiCheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const entry = activeTimeEntries.find(e => e.taskId === task.id);
+                                        if (entry) {
+                                          resetTimeTracking(entry.id);
+                                        }
+                                      }}
+                                      className="h-8 w-8 p-0 rounded-full text-amber-500 hover:text-amber-600"
+                                    >
+                                      <FiRefreshCw className="h-4 w-4" />
                                     </Button>
                                   </>
                                 ) : (
@@ -1341,6 +1355,7 @@ const Dashboard = () => {
                         startTimeTracking={startTimeTracking}
                         pauseTimeTracking={pauseTimeTracking}
                         resumeTimeTracking={resumeTimeTracking}
+                        resetTimeTracking={resetTimeTracking}
                         loading={loading}
                         fetchActiveTimers={fetchActiveTimers}
                       />
