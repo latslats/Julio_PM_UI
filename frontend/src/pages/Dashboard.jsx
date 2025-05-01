@@ -426,9 +426,21 @@ const Dashboard = () => {
     return tasks
       .filter(task => task.status !== 'completed')
       .sort((a, b) => {
-        // Sort by status first ('in progress' comes first)
-        const statusOrder = { 'in progress': 0, 'pending': 1, 'not started': 2 }; // Adjust as needed
-        const statusComparison = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+        // Normalize status values for sorting (handle both formats with or without hyphen)
+        const normalizeStatus = (status) => {
+          if (!status) return 'unknown';
+          const lowerStatus = status.toLowerCase();
+          // Handle both 'in-progress' and 'in progress' formats
+          if (lowerStatus === 'in-progress' || lowerStatus === 'in progress') return 'in-progress';
+          if (lowerStatus === 'not-started' || lowerStatus === 'not started') return 'not-started';
+          return lowerStatus;
+        };
+
+        // Sort by status first ('in-progress' comes first)
+        const statusOrder = { 'in-progress': 0, 'pending': 1, 'not-started': 2 }; // Adjust as needed
+        const statusA = normalizeStatus(a.status);
+        const statusB = normalizeStatus(b.status);
+        const statusComparison = (statusOrder[statusA] ?? 99) - (statusOrder[statusB] ?? 99);
         if (statusComparison !== 0) return statusComparison;
 
         // Then sort by due date (earliest first)
@@ -440,8 +452,15 @@ const Dashboard = () => {
 
   // Get active tasks (in progress)
   const activeTasks = useMemo(() => {
+    // Helper function to check if a task is in progress (handles both formats)
+    const isInProgress = (status) => {
+      if (!status) return false;
+      const lowerStatus = status.toLowerCase();
+      return lowerStatus === 'in-progress' || lowerStatus === 'in progress';
+    };
+
     return myTasks
-      .filter(task => task.status === 'in progress')
+      .filter(task => isInProgress(task.status))
       .sort((a, b) => {
         // Sort by due date (earliest first)
         const dateA = a.dueDate ? parseISO(a.dueDate) : new Date(9999, 11, 31);
@@ -453,10 +472,18 @@ const Dashboard = () => {
   // Get upcoming tasks (not started yet, with future due dates)
   const upcomingTasks = useMemo(() => {
     const now = new Date();
+
+    // Helper function to check if a task is in progress (handles both formats)
+    const isInProgress = (status) => {
+      if (!status) return false;
+      const lowerStatus = status.toLowerCase();
+      return lowerStatus === 'in-progress' || lowerStatus === 'in progress';
+    };
+
     return myTasks
       .filter(task =>
         // Not in progress
-        task.status !== 'in progress' &&
+        !isInProgress(task.status) &&
         // Has a due date
         task.dueDate &&
         // Due date is in the future
@@ -498,17 +525,23 @@ const Dashboard = () => {
 
   // Get status class for badge
   const getStatusClass = (status) => {
-    switch (status?.toLowerCase()) { // Added null check and toLowerCase
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'; // Added border
-      case 'in-progress': // Consistent naming
-        return 'bg-blue-100 text-blue-800 border-blue-300'; // Added border
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-300'; // Added border
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800 border-gray-300'; // Added border
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'; // Added border
+    if (!status) return 'bg-gray-100 text-gray-800 border-gray-300';
+
+    const lowerStatus = status.toLowerCase();
+
+    // Handle both formats with and without hyphens
+    if (lowerStatus === 'pending') {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+    } else if (lowerStatus === 'in-progress' || lowerStatus === 'in progress') {
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    } else if (lowerStatus === 'completed') {
+      return 'bg-green-100 text-green-800 border-green-300';
+    } else if (lowerStatus === 'cancelled') {
+      return 'bg-gray-100 text-gray-800 border-gray-300';
+    } else if (lowerStatus === 'not-started' || lowerStatus === 'not started') {
+      return 'bg-gray-100 text-gray-800 border-gray-300';
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
