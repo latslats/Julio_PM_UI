@@ -297,15 +297,34 @@ router.put('/stop/:id', async (req, res, next) => {
       console.log(`Stopping time entry ${id}: Last active segment from ${lastResume.toISOString()} to ${endTime.toISOString()}`);
     } else if (entry.isPaused) {
       console.log(`Stopping time entry ${id} while paused. Total paused duration: ${totalPausedDuration}s`);
+      
+      // When stopping while paused, ensure we have the correct calculation
+      // We need to check if we already have accumulated time before the pause
+      if (totalPausedDuration > totalElapsedSeconds) {
+        console.warn(`Warning: totalPausedDuration (${totalPausedDuration}s) exceeds totalElapsedSeconds (${totalElapsedSeconds}s). Capping to avoid negative duration.`);
+        totalPausedDuration = totalElapsedSeconds;
+      }
     }
     
     // Final duration is the total elapsed time minus the total paused time
-    const finalDuration = Math.max(0, totalElapsedSeconds - totalPausedDuration);
+    let finalDuration = Math.max(0, totalElapsedSeconds - totalPausedDuration);
     
     console.log(`Time entry ${id} final stats: Total elapsed: ${totalElapsedSeconds}s, Total paused: ${totalPausedDuration}s, Final duration: ${finalDuration}s`);
     
 
     // Use quotes for camelCase identifiers
+    // Ensure we never record a zero duration when the user completes a time entry
+    // If the calculated duration is zero but time has actually elapsed, set a minimum duration
+    if (finalDuration === 0 && totalElapsedSeconds > 0) {
+      console.log(`Calculated zero duration but time has elapsed (${totalElapsedSeconds}s). Setting minimum duration.`);
+      
+      // Use at least 1 second or a small portion of the elapsed time, whichever is greater
+      const minDuration = Math.max(1, Math.ceil((totalElapsedSeconds - totalPausedDuration) || 1));
+      
+      console.log(`Setting minimum duration to ${minDuration}s`);
+      finalDuration = minDuration;
+    }
+    
     const updateSql = 'UPDATE time_entries SET "endTime" = $1, duration = $2, "isPaused" = false, "lastResumedAt" = NULL WHERE id = $3 RETURNING *';
     const updateParams = [endTime, finalDuration, id];
 
