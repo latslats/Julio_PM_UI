@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
-import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare, FiRefreshCw, FiX } from 'react-icons/fi'
+import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -77,20 +77,6 @@ const Dashboard = () => {
 
   // Focus Mode states
   const [focusModeActive, setFocusModeActive] = useState(false)
-  const [pomodoroActive, setPomodoroActive] = useState(false)
-  const [pomodoroSettings, setPomodoroSettings] = useState({
-    workDuration: 25 * 60, // 25 minutes in seconds
-    breakDuration: 5 * 60,  // 5 minutes in seconds
-    longBreakDuration: 15 * 60, // 15 minutes in seconds
-    sessionsBeforeLongBreak: 4
-  })
-  const [pomodoroState, setPomodoroState] = useState({
-    isBreak: false,
-    currentSession: 1,
-    timeRemaining: pomodoroSettings.workDuration,
-    timerActive: false
-  })
-  const pomodoroTimerRef = useRef(null)
 
   // Refs to prevent multiple simultaneous API calls
   const waitingItemsLoaded = useRef(false);
@@ -157,14 +143,6 @@ const Dashboard = () => {
     }
   }, [projects, tasks, timeEntries, loading])
 
-  // Cleanup Pomodoro timer on component unmount
-  useEffect(() => {
-    return () => {
-      if (pomodoroTimerRef.current) {
-        clearInterval(pomodoroTimerRef.current);
-      }
-    };
-  }, []);
 
   // Calculate elapsed time for active time entries (for Focus Mode)
   useEffect(() => {
@@ -345,126 +323,8 @@ const Dashboard = () => {
   // Focus Mode handlers
   const toggleFocusMode = () => {
     setFocusModeActive(prev => !prev);
-
-    // If turning off focus mode, also turn off pomodoro
-    if (focusModeActive) {
-      stopPomodoroTimer();
-      setPomodoroActive(false);
-    }
   };
 
-  // Pomodoro timer functions
-  const togglePomodoroMode = () => {
-    if (!pomodoroActive) {
-      // Starting pomodoro
-      setPomodoroActive(true);
-      setPomodoroState(prev => ({
-        ...prev,
-        isBreak: false,
-        currentSession: 1,
-        timeRemaining: pomodoroSettings.workDuration,
-        timerActive: true
-      }));
-      startPomodoroTimer();
-    } else {
-      // Stopping pomodoro
-      stopPomodoroTimer();
-      setPomodoroActive(false);
-    }
-  };
-
-  const startPomodoroTimer = () => {
-    // Clear any existing timer
-    if (pomodoroTimerRef.current) {
-      clearInterval(pomodoroTimerRef.current);
-    }
-
-    // Start a new timer that ticks every second
-    pomodoroTimerRef.current = setInterval(() => {
-      setPomodoroState(prev => {
-        // If timer is not active, don't update
-        if (!prev.timerActive) return prev;
-
-        const newTimeRemaining = prev.timeRemaining - 1;
-
-        // If timer reached zero
-        if (newTimeRemaining <= 0) {
-          // Play notification sound
-          const audio = new Audio('/notification.mp3');
-          audio.play().catch(e => console.log('Error playing notification sound:', e));
-
-          // Determine what's next (work or break)
-          if (prev.isBreak) {
-            // If we were on a break, go back to work
-            const nextSession = prev.currentSession + 1;
-            const isSessionComplete = nextSession > pomodoroSettings.sessionsBeforeLongBreak;
-
-            return {
-              isBreak: false,
-              currentSession: isSessionComplete ? 1 : nextSession,
-              timeRemaining: pomodoroSettings.workDuration,
-              timerActive: true // Auto-start the next work session
-            };
-          } else {
-            // If we were working, go to a break
-            const isLongBreakDue = prev.currentSession >= pomodoroSettings.sessionsBeforeLongBreak;
-            const breakDuration = isLongBreakDue
-              ? pomodoroSettings.longBreakDuration
-              : pomodoroSettings.breakDuration;
-
-            return {
-              isBreak: true,
-              currentSession: prev.currentSession,
-              timeRemaining: breakDuration,
-              timerActive: true // Auto-start the break
-            };
-          }
-        }
-
-        // Normal tick, just update remaining time
-        return {
-          ...prev,
-          timeRemaining: newTimeRemaining
-        };
-      });
-    }, 1000);
-  };
-
-  const stopPomodoroTimer = () => {
-    if (pomodoroTimerRef.current) {
-      clearInterval(pomodoroTimerRef.current);
-      pomodoroTimerRef.current = null;
-    }
-
-    setPomodoroState(prev => ({
-      ...prev,
-      timerActive: false
-    }));
-  };
-
-  const pauseResumePomodoroTimer = () => {
-    setPomodoroState(prev => ({
-      ...prev,
-      timerActive: !prev.timerActive
-    }));
-  };
-
-  const resetPomodoroTimer = () => {
-    stopPomodoroTimer();
-    setPomodoroState({
-      isBreak: false,
-      currentSession: 1,
-      timeRemaining: pomodoroSettings.workDuration,
-      timerActive: false
-    });
-  };
-
-  // Format time as MM:SS
-  const formatPomodoroTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   // Format time as HH:MM:SS for time tracking
   const formatTime = (seconds) => {
@@ -541,56 +401,15 @@ const Dashboard = () => {
           {focusModeActive ? (
             /* Focus Mode UI */
             <div className="space-y-8">
-              {/* Pomodoro Timer */}
+              {/* Focus Mode Header */}
               <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 rounded-xl p-8 border border-secondary-100/80 shadow-sm">
-                <div className="flex items-center space-x-4 mb-6">
-                  <h2 className="text-xl font-medium text-secondary-900">
-                    {pomodoroState.isBreak
-                      ? `Break ${Math.ceil(pomodoroState.currentSession / pomodoroSettings.sessionsBeforeLongBreak)}`
-                      : `Focus Session ${pomodoroState.currentSession}`}
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant={pomodoroActive ? "default" : "outline"}
-                      size="sm"
-                      onClick={togglePomodoroMode}
-                      className={`${pomodoroActive ? 'bg-red-500 hover:bg-red-600' : ''}`}
-                    >
-                      {pomodoroActive ? "Stop Pomodoro" : "Start Pomodoro"}
-                    </Button>
-                  </div>
+                <div className="flex items-center space-x-4 mb-4">
+                  <h2 className="text-xl font-medium text-secondary-900">Focus Mode</h2>
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
-
-                {pomodoroActive && (
-                  <div className="flex flex-col items-center">
-                    <div className="text-5xl font-mono font-medium mb-4 tracking-wider">
-                      {formatPomodoroTime(pomodoroState.timeRemaining)}
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={pauseResumePomodoroTimer}
-                        className="h-10 w-10 rounded-full"
-                      >
-                        {pomodoroState.timerActive ? <FiPause /> : <FiPlay />}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={resetPomodoroTimer}
-                        className="h-10 w-10 rounded-full"
-                      >
-                        <FiRefreshCw />
-                      </Button>
-                    </div>
-                    <div className="mt-4 text-sm text-secondary-500">
-                      {pomodoroState.isBreak
-                        ? "Take a break! Stretch, hydrate, or rest your eyes."
-                        : "Focus on your task. Minimize distractions."}
-                    </div>
-                  </div>
-                )}
+                <p className="text-sm text-secondary-600 text-center">
+                  Distraction-free environment to focus on your current tasks
+                </p>
               </div>
 
               {/* Active Tasks with Time Tracking */}
