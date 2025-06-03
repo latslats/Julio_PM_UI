@@ -451,9 +451,12 @@ const Dashboard = () => {
                                 {activeTimeEntries.find(entry => entry.taskId === task.id) ? (
                                   <>
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         const entry = activeTimeEntries.find(e => e.taskId === task.id);
                                         if (entry) {
                                           if (entry.isPaused) {
@@ -470,9 +473,12 @@ const Dashboard = () => {
                                         : <FiPause className="h-4 w-4" />}
                                     </Button>
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         const entry = activeTimeEntries.find(e => e.taskId === task.id);
                                         if (entry) {
                                           stopTimeTracking(entry.id);
@@ -485,9 +491,14 @@ const Dashboard = () => {
                                   </>
                                 ) : (
                                   <Button
+                                    type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => startTimeTracking(task.id)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      startTimeTracking(task.id);
+                                    }}
                                     className="h-8 px-3 rounded-full"
                                   >
                                     <FiPlay className="h-4 w-4 mr-1" />
@@ -841,7 +852,11 @@ const Dashboard = () => {
       {showAddWaitingModal && (
         <div className="fixed inset-0 bg-black/5 backdrop-blur-[2px] z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full mx-4 overflow-hidden border border-secondary-100/80">
-            <WaitingItemForm onClose={handleWaitingFormClose} />
+            <WaitingItemForm 
+              onClose={handleWaitingFormClose} 
+              projects={projects}
+              onSubmit={handleWaitingFormClose}
+            />
           </div>
         </div>
       )}

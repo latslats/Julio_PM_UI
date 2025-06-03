@@ -223,9 +223,14 @@ const TimeTrackingWidget = ({
         </CardContent>
         <CardFooter className="flex justify-end space-x-2 px-4 pb-3 pt-0">
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            onClick={() => handlePauseResume(entry)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handlePauseResume(entry);
+            }}
             disabled={loading || isLoading}
             aria-label={entry.isPaused ? 'Resume Timer' : 'Pause Timer'}
             className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
@@ -239,9 +244,14 @@ const TimeTrackingWidget = ({
             )}
           </Button>
           <Button
+            type="button"
             variant="destructive"
             size="sm"
-            onClick={() => handleStopTracking(entry.id)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleStopTracking(entry.id);
+            }}
             disabled={loading || isLoading}
             aria-label="Stop Timer"
             className="w-10 h-10 p-0 flex items-center justify-center" // Ensure fixed size for icon
@@ -258,7 +268,7 @@ const TimeTrackingWidget = ({
   }
 
   // Handle manual time entry form submission
-  const handleManualEntrySave = (data) => {
+  const handleManualEntrySave = () => {
     setShowManualEntryDialog(false);
     // Refresh the time entries list
     fetchActiveTimers();

@@ -401,9 +401,13 @@ export const ProjectProvider = ({ children }) => {
 
   const pauseTimeTracking = async (timeEntryId) => {
     console.log(`Pausing time tracking for entry: ${timeEntryId}`);
-    setLoading(true);
-
+    
     try {
+      // Optimistic update
+      setTimeEntries(prev => prev.map(te => 
+        te.id === timeEntryId ? { ...te, isPaused: true } : te
+      ));
+
       const result = await apiRequest(`/time-entries/pause/${timeEntryId}`, {
         method: 'PUT',
       });
@@ -414,23 +418,33 @@ export const ProjectProvider = ({ children }) => {
         return { success: true, data: result.data };
       } else {
         console.error('Failed to pause time tracking:', result.message);
+        // Revert optimistic update
+        setTimeEntries(prev => prev.map(te => 
+          te.id === timeEntryId ? { ...te, isPaused: false } : te
+        ));
         setError(result.message || 'Failed to pause time tracking');
         return result;
       }
     } catch (err) {
       console.error('Error pausing time tracking:', err);
+      // Revert optimistic update
+      setTimeEntries(prev => prev.map(te => 
+        te.id === timeEntryId ? { ...te, isPaused: false } : te
+      ));
       setError(err.message || 'Failed to pause time tracking');
       return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
     }
   };
 
   const resumeTimeTracking = async (timeEntryId) => {
     console.log(`Resuming time tracking for entry: ${timeEntryId}`);
-    setLoading(true);
-
+    
     try {
+      // Optimistic update
+      setTimeEntries(prev => prev.map(te => 
+        te.id === timeEntryId ? { ...te, isPaused: false, lastResumedAt: new Date().toISOString() } : te
+      ));
+
       const result = await apiRequest(`/time-entries/resume/${timeEntryId}`, {
         method: 'PUT',
       });
@@ -441,15 +455,21 @@ export const ProjectProvider = ({ children }) => {
         return { success: true, data: result.data };
       } else {
         console.error('Failed to resume time tracking:', result.message);
+        // Revert optimistic update
+        setTimeEntries(prev => prev.map(te => 
+          te.id === timeEntryId ? { ...te, isPaused: true } : te
+        ));
         setError(result.message || 'Failed to resume time tracking');
         return result;
       }
     } catch (err) {
       console.error('Error resuming time tracking:', err);
+      // Revert optimistic update
+      setTimeEntries(prev => prev.map(te => 
+        te.id === timeEntryId ? { ...te, isPaused: true } : te
+      ));
       setError(err.message || 'Failed to resume time tracking');
       return { success: false, message: err.message };
-    } finally {
-      setLoading(false);
     }
   };
 

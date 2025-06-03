@@ -264,9 +264,14 @@ const TaskItem = ({ task }) => {
         >
           <div className="flex items-center">
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              onClick={toggleTaskStatus}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleTaskStatus();
+              }}
               className={`flex-shrink-0 h-5 w-5 rounded-full border transition-all duration-200 ${
                 task.status === 'completed' || task.status === 'Completed'
                   ? 'bg-primary-500 border-primary-500 flex items-center justify-center'
@@ -371,9 +376,14 @@ const TaskItem = ({ task }) => {
               <FiList className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              onClick={handleOpenEditModal}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleOpenEditModal();
+              }}
               className="p-2 rounded-lg text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
               title="Edit task"
               aria-label="Edit task"
@@ -381,9 +391,14 @@ const TaskItem = ({ task }) => {
               <FiEdit2 className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
+              type="button"
               variant="ghost"
               size="icon"
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowDeleteConfirm(true);
+              }}
               className="p-2 rounded-lg text-secondary-500 hover:bg-red-50 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
               title="Delete task"
               aria-label="Delete task"
@@ -393,9 +408,14 @@ const TaskItem = ({ task }) => {
             <div className="flex space-x-1">
               {activeTimeEntry && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="icon"
-                  onClick={handleStopTracking}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleStopTracking();
+                  }}
                   className="p-2 rounded-lg text-red-600 hover:bg-red-50"
                   title="Stop tracking"
                   aria-label="Stop time tracking"
@@ -414,9 +434,14 @@ const TaskItem = ({ task }) => {
                 </Button>
               )}
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
-                onClick={toggleTimeTracking}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleTimeTracking();
+                }}
                 className={`p-2 rounded-lg ${
                   activeTimeEntry
                     ? activeTimeEntry.isPaused
