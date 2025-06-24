@@ -165,10 +165,16 @@ router.get('/', async (req, res, next) => {
         
         // Calculate current elapsed time based on pause state
         if (!entry.isPaused && entry.lastResumedAt) {
-          const lastResume = new Date(entry.lastResumedAt);
+          // Timer is currently running
           currentElapsed = totalElapsedSeconds - currentTotalPaused;
+        } else if (entry.isPaused && entry.pausedAt) {
+          // Timer is currently paused - add current paused time to total paused time
+          const pausedAt = new Date(entry.pausedAt);
+          const currentPausedDuration = (now.getTime() - pausedAt.getTime()) / 1000;
+          const totalPausedWithCurrent = currentTotalPaused + Math.max(0, currentPausedDuration);
+          currentElapsed = totalElapsedSeconds - totalPausedWithCurrent;
         } else {
-          // If paused, elapsed time is total time minus paused time
+          // Fallback: just use total elapsed minus paused
           currentElapsed = totalElapsedSeconds - currentTotalPaused;
         }
         
