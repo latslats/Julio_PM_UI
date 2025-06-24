@@ -295,13 +295,9 @@ router.put('/stop/:id', async (req, res, next) => {
       const lastResume = new Date(entry.lastResumedAt);
       console.log(`Stopping time entry ${id}: Last active segment from ${lastResume.toISOString()} to ${endTime.toISOString()}`);
     } else if (entry.isPaused && entry.pausedAt) {
-      // If currently paused, add the current paused duration to total
-      const pausedAt = new Date(entry.pausedAt);
-      const currentPausedDuration = (endTime.getTime() - pausedAt.getTime()) / 1000;
-      const currentPausedDurationToAdd = Math.max(0, currentPausedDuration);
-      totalPausedDuration += currentPausedDurationToAdd;
-      
-      console.log(`Stopping time entry ${id} while paused. Adding current paused time: ${currentPausedDurationToAdd}s. Total paused duration: ${totalPausedDuration}s`);
+      // Timer is currently paused - no additional time calculation needed
+      // The paused duration was already calculated and stored during the pause/resume cycle
+      console.log(`Stopping time entry ${id} while paused. Using existing total paused duration: ${totalPausedDuration}s`);
     }
     
     // Final duration is the total elapsed time minus the total paused time
