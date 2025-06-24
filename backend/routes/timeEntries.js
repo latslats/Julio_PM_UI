@@ -165,17 +165,14 @@ router.get('/', async (req, res, next) => {
         
         // Calculate current elapsed time based on pause state
         if (!entry.isPaused && entry.lastResumedAt) {
-          // Timer is currently running
-          currentElapsed = totalElapsedSeconds - currentTotalPaused;
-        } else if (entry.isPaused && entry.pausedAt) {
-          // Timer is currently paused - add current paused time to total paused time
-          const pausedAt = new Date(entry.pausedAt);
-          const currentPausedDuration = (now.getTime() - pausedAt.getTime()) / 1000;
-          const totalPausedWithCurrent = currentTotalPaused + Math.max(0, currentPausedDuration);
-          currentElapsed = totalElapsedSeconds - totalPausedWithCurrent;
+          // Timer is currently running - add time since last resume to existing duration
+          const lastResume = new Date(entry.lastResumedAt);
+          const timeSinceResume = (now.getTime() - lastResume.getTime()) / 1000;
+          const baseDuration = parseFloat(entry.duration) || 0;
+          currentElapsed = baseDuration + Math.max(0, timeSinceResume);
         } else {
-          // Fallback: just use total elapsed minus paused
-          currentElapsed = totalElapsedSeconds - currentTotalPaused;
+          // Timer is paused - just use the stored duration (frozen at pause time)
+          currentElapsed = parseFloat(entry.duration) || 0;
         }
         
         return {
@@ -343,7 +340,7 @@ router.put('/pause/:id', async (req, res, next) => {
     await client.query('BEGIN');
 
     // Lock the row
-    const checkRes = await client.query('SELECT id, "endTime", "isPaused", "lastResumedAt", "totalPausedDuration" FROM time_entries WHERE id = $1 FOR UPDATE', [id]);
+    const checkRes = await client.query('SELECT id, "endTime", "isPaused", "lastResumedAt", "totalPausedDuration", duration FROM time_entries WHERE id = $1 FOR UPDATE', [id]);
     if (checkRes.rows.length === 0) {
       await client.query('ROLLBACK');
       return res.status(404).json({ message: 'Time entry not found' });
@@ -363,7 +360,7 @@ router.put('/pause/:id', async (req, res, next) => {
       return res.json(fullEntry.rows[0]);
     }
 
-    // When pausing, we just mark as paused and store when paused
+    // When pausing, calculate and store the accumulated duration up to this point
     const now = new Date();
     
     // Make sure lastResumedAt exists before trying to use it
@@ -373,12 +370,18 @@ router.put('/pause/:id', async (req, res, next) => {
       return res.status(400).json({ message: 'Cannot pause entry with invalid state' });
     }
 
+    // Calculate time since last resume and add to existing duration
+    const lastResume = new Date(entry.lastResumedAt);
+    const timeSinceResume = (now.getTime() - lastResume.getTime()) / 1000;
+    const currentDuration = parseFloat(entry.duration) || 0;
+    const newDuration = currentDuration + Math.max(0, timeSinceResume);
+
     // Log the pause action for debugging
-    console.log(`Pausing time entry ${id} at ${now.toISOString()}`);
+    console.log(`Pausing time entry ${id} at ${now.toISOString()}. Adding ${timeSinceResume}s to duration. New duration: ${newDuration}s`);
     
     const result = await client.query(
-      'UPDATE time_entries SET "isPaused" = true, "lastResumedAt" = NULL, "pausedAt" = $2 WHERE id = $1 RETURNING *',
-      [id, now]
+      'UPDATE time_entries SET "isPaused" = true, "lastResumedAt" = NULL, "pausedAt" = $2, duration = $3 WHERE id = $1 RETURNING *',
+      [id, now, newDuration]
     );
 
     await client.query('COMMIT');

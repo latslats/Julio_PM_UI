@@ -55,11 +55,18 @@ const TimeTrackingWidget = ({
     // Initialize elapsed times for all active entries
     activeTimeEntries.forEach(entry => {
       const calculateElapsed = () => {
-        let currentElapsedTime = parseFloat(entry.totalPausedDuration) || 0;
+        let currentElapsedTime = 0;
+        
         if (!entry.isPaused && entry.lastResumedAt) {
+          // Timer is running - use stored duration + time since resume
+          const storedDuration = parseFloat(entry.duration) || 0;
           const now = new Date().getTime();
           const lastResume = new Date(entry.lastResumedAt).getTime();
-          currentElapsedTime += (now - lastResume) / 1000;
+          const timeSinceResume = (now - lastResume) / 1000;
+          currentElapsedTime = storedDuration + Math.max(0, timeSinceResume);
+        } else {
+          // Timer is paused - just use the stored duration
+          currentElapsedTime = parseFloat(entry.duration) || 0;
         }
 
         setElapsedTimes(prev => ({
