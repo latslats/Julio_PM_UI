@@ -3,10 +3,23 @@ import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
 import { useUI } from '../context/UIContext'
-import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare } from 'react-icons/fi'
+import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare, FiSearch, FiX } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog"
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group"
 import { Badge } from "../components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -31,6 +44,7 @@ const Dashboard = () => {
     timeEntries,
     loading,
     projectStats,
+    createProject,
     stopTimeTracking,
     startTimeTracking,
     pauseTimeTracking,
@@ -61,9 +75,23 @@ const Dashboard = () => {
   } = waitingItemsContext;
 
 
-  const [recentProjects, setRecentProjects] = useState([])
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
   const [activeTab, setActiveTab] = useState("overview")
+  
+  // Projects tab state variables
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedClient, setSelectedClient] = useState('all')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [formLoading, setFormLoading] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    client: '',
+    color: '#0ea5e9',
+    startDate: '',
+    dueDate: ''
+  })
   const [stats, setStats] = useState({
     totalProjects: 0,
     completedTasks: 0,
@@ -103,33 +131,6 @@ const Dashboard = () => {
   // Effect for main dashboard data
   useEffect(() => {
     if (!loading) {
-      // Calculate stats for each project
-      const projectsWithStats = projects.map(project => {
-        const projectTasks = tasks.filter(task => task.projectId === project.id);
-        const completed = projectTasks.filter(task => task.status === 'completed').length;
-        const total = projectTasks.length;
-
-        const projectTimeEntries = timeEntries.filter(entry =>
-          projectTasks.some(task => task.id === entry.taskId) && entry.duration
-        );
-        const totalTrackedSeconds = projectTimeEntries.reduce((sum, entry) => sum + parseFloat(entry.duration || 0), 0);
-        const totalHours = parseFloat((totalTrackedSeconds / 3600).toFixed(1)); // Round to 1 decimal place
-
-        return {
-          ...project,
-          totalTasks: total,
-          completedTasks: completed,
-          totalHours: totalHours
-        };
-      });
-
-      // Get recent projects (last 4) with stats
-      const sortedProjects = [...projectsWithStats].sort((a, b) =>
-        // Sort by createdAt or updatedAt - choose one, e.g., createdAt for newest projects
-        new Date(b.createdAt) - new Date(a.createdAt) // Or use b.updatedAt if preferred
-      ).slice(0, 4)
-      setRecentProjects(sortedProjects)
-
       // Find active time entry if any
       const active = timeEntries.find(entry => entry.endTime === null)
       setActiveTimeEntry(active)
@@ -259,6 +260,34 @@ const Dashboard = () => {
         return dateA - dateB;
       });
   }, [tasks, loading]);
+
+  // Get unique client names for the filter dropdown
+  const uniqueClients = useMemo(() => {
+    const clients = new Set(projects.map(p => p.client).filter(Boolean))
+    return ['all', ...Array.from(clients).sort()]
+  }, [projects]);
+
+  // Filter projects based on search term and selected client
+  const filteredProjects = useMemo(() => {
+    if (loading) return [];
+
+    return projects
+      .filter(project => 
+        project.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (selectedClient === 'all' || project.client === selectedClient)
+      )
+      .map(project => {
+        // Enhance project with stats from projectStats
+        const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
+        return {
+          ...project,
+          totalTasks: stats.totalTasks,
+          completedTasks: stats.completedTasks,
+          totalHours: stats.totalHours,
+          progress: stats.progress
+        };
+      });
+  }, [projects, projectStats, searchTerm, selectedClient, loading]);
 
   // Get upcoming tasks
   const upcomingTasks = useMemo(() => {
@@ -652,122 +681,155 @@ const Dashboard = () => {
                 <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
                   <TabsTrigger value="overview" className="rounded-lg text-sm font-normal">Overview</TabsTrigger>
                   <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
+                  <TabsTrigger value="projects" className="rounded-lg text-sm font-normal">Projects</TabsTrigger>
                   <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab - Refined with iOS-inspired minimalism */}
                 <TabsContent value="overview" className="space-y-8">
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                {/* Left Column */}
-                <div className="xl:col-span-2 space-y-8">
-                  {/* Recent Projects - Cleaner card design */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {/* Time Tracking - Cleaner card design */}
+                    <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                      <CardHeader className="pb-3 pt-5 px-6">
+                        <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-6 pb-5">
+                        <TimeTrackingWidget
+                          timeEntries={timeEntries}
+                          tasks={tasks}
+                          projects={projects}
+                          stopTimeTracking={stopTimeTracking}
+                          startTimeTracking={startTimeTracking}
+                          pauseTimeTracking={pauseTimeTracking}
+                          resumeTimeTracking={resumeTimeTracking}
+                          loading={loading}
+                          fetchActiveTimers={fetchActiveTimers}
+                        />
+                      </CardContent>
+                    </Card>
+
+                    {/* Waiting On (Preview) - Cleaner card design */}
+                    {waitingFeaturesAvailable && (
+                      <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                        <CardHeader className="pb-3 pt-5 px-6">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
+                            <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
+                              <span className="cursor-pointer flex items-center text-xs" onClick={() => setActiveTab("waitingOn")}>
+                                <span>See All</span>
+                                <FiArrowRight className="ml-1 h-3.5 w-3.5" />
+                              </span>
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="px-6 pb-5">
+                          {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
+                            <div className="space-y-2">
+                              {filteredWaitingItems.slice(0, 3).map(item => (
+                                <WaitingItemCard
+                                  key={item.id}
+                                  item={item}
+                                  getStatusClass={getStatusClass}
+                                  getPriorityClass={getPriorityClass}
+                                  compact
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <EmptyState
+                              icon={<FiAlertCircle className="h-7 w-7" />}
+                              title="No waiting items"
+                              description="Track things you're waiting on others for"
+                              action={
+                                <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
+                                  Add Item
+                                </Button>
+                              }
+                              compact
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Projects Tab - Refined with iOS-inspired minimalism */}
+                <TabsContent value="projects" className="space-y-8">
                   <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
                     <CardHeader className="pb-3 pt-5 px-6">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-medium text-secondary-900">Recent Projects</CardTitle>
-                        <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
-                          <Link to="/projects" className="flex items-center text-xs">
-                            <span>View All</span>
-                            <FiArrowRight className="ml-1 h-3.5 w-3.5" />
-                          </Link>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <CardTitle className="text-base font-medium text-secondary-900">Projects</CardTitle>
+                        <Button size="sm" variant="outline" onClick={() => setShowCreateModal(true)} className="text-xs">
+                          <FiPlus className="mr-1.5 h-3.5 w-3.5" />
+                          New Project
                         </Button>
+                      </div>
+                      
+                      {/* Search and Filter */}
+                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                        <div className="relative flex-1">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FiSearch className="h-4 w-4 text-secondary-400" />
+                          </div>
+                          <Input 
+                            type="text"
+                            placeholder="Search projects..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-9 text-sm"
+                          />
+                        </div>
+                        <div className="relative sm:w-48">
+                          <Select 
+                            value={selectedClient}
+                            onValueChange={(value) => setSelectedClient(value)}
+                          >
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="All Clients" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uniqueClients.map(client => (
+                                <SelectItem key={client} value={client}>
+                                  {client === 'all' ? 'All Clients' : client}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="px-6 pb-5">
-                      {recentProjects.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          {recentProjects.map(project => (
-                            <ProjectCard key={project.id} project={project} compact />
+                      {filteredProjects.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                          {filteredProjects.map(project => (
+                            <ProjectCard key={project.id} project={project} />
                           ))}
                         </div>
                       ) : (
-                        <EmptyState
-                          icon={<FiFolder className="h-7 w-7" />}
-                          title="No projects yet"
-                          description="Create your first project to get started"
-                          action={
-                            <Link to="/projects">
-                              <Button size="sm" variant="outline" className="mt-2">Create Project</Button>
-                            </Link>
-                          }
-                        />
+                        <div className="text-center py-12 bg-secondary-50 rounded-xl border border-secondary-200">
+                          <div className="w-16 h-16 mx-auto rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
+                            <FiFolder className="h-8 w-8" />
+                          </div>
+                          <h3 className="text-secondary-900 font-medium mb-1">No projects found</h3>
+                          <p className="text-secondary-600 text-sm mb-4">
+                            {searchTerm || selectedClient !== 'all' ? 'Try adjusting your search or filter' : 'Create your first project to get started'}
+                          </p>
+                          {!searchTerm && selectedClient === 'all' && (
+                            <Button 
+                              onClick={() => setShowCreateModal(true)}
+                              className="inline-flex items-center"
+                              size="sm"
+                            >
+                              <FiPlus className="mr-1.5 h-4 w-4" />
+                              Create Project
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
-
-
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-8">
-                  {/* Time Tracking - Cleaner card design */}
-                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                    <CardHeader className="pb-3 pt-5 px-6">
-                      <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-5">
-                      <TimeTrackingWidget
-                        timeEntries={timeEntries}
-                        tasks={tasks}
-                        projects={projects}
-                        stopTimeTracking={stopTimeTracking}
-                        startTimeTracking={startTimeTracking}
-                        pauseTimeTracking={pauseTimeTracking}
-                        resumeTimeTracking={resumeTimeTracking}
-                        loading={loading}
-                        fetchActiveTimers={fetchActiveTimers}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Waiting On (Preview) - Cleaner card design */}
-
-                  {waitingFeaturesAvailable && (
-                    <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                      <CardHeader className="pb-3 pt-5 px-6">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
-                          <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
-                            <span className="cursor-pointer flex items-center text-xs" onClick={() => setActiveTab("waitingOn")}>
-                              <span>See All</span>
-                              <FiArrowRight className="ml-1 h-3.5 w-3.5" />
-                            </span>
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="px-6 pb-5">
-                        {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
-                          <div className="space-y-2">
-                            {filteredWaitingItems.slice(0, 3).map(item => (
-                              <WaitingItemCard
-                                key={item.id}
-                                item={item}
-                                getStatusClass={getStatusClass}
-                                getPriorityClass={getPriorityClass}
-                                compact
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <EmptyState
-                            icon={<FiAlertCircle className="h-7 w-7" />}
-                            title="No waiting items"
-                            description="Track things you're waiting on others for"
-                            action={
-                              <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
-                                Add Item
-                              </Button>
-                            }
-                            compact
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                </div>
-              </div>
-            </TabsContent>
+                </TabsContent>
 
             {/* Tasks Tab - Refined with iOS-inspired minimalism */}
             <TabsContent value="tasks" className="space-y-8">
@@ -963,6 +1025,227 @@ const Dashboard = () => {
           fetchActiveTimers?.()
         }}
       />
+
+      {/* Create Project Modal */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={async (e) => {
+              e.preventDefault()
+              
+              // Reset previous errors
+              setFormErrors({});
+              
+              // Validate form
+              const errors = {};
+              if (!newProject.name.trim()) {
+                errors.name = 'Project name is required';
+              } else if (newProject.name.length > 100) {
+                errors.name = 'Project name must be less than 100 characters';
+              }
+              
+              // Validate dates if provided
+              if (newProject.startDate && newProject.dueDate) {
+                const start = new Date(newProject.startDate);
+                const due = new Date(newProject.dueDate);
+                if (due < start) {
+                  errors.dueDate = 'Due date cannot be before start date';
+                }
+              }
+              
+              // If there are validation errors, show them and stop submission
+              if (Object.keys(errors).length > 0) {
+                setFormErrors(errors);
+                return;
+              }
+              
+              // Submit form if validation passes
+              setFormLoading(true);
+              try {
+                const result = await createProject(newProject);
+                if (result.success) {
+                  setShowCreateModal(false);
+                  setNewProject({
+                    name: '',
+                    description: '',
+                    client: '',
+                    color: '#0ea5e9',
+                    startDate: '',
+                    dueDate: ''
+                  });
+                } else {
+                  // Handle API error
+                  setFormErrors({ api: result.message || 'Failed to create project' });
+                }
+              } catch (err) {
+                setFormErrors({ api: err.message || 'An unexpected error occurred' });
+              } finally {
+                setFormLoading(false);
+              }
+            }}>
+              <div className="space-y-4 py-4"> 
+                <div>
+                  <Label htmlFor="name" className="block text-sm font-medium text-secondary-700 mb-1">
+                    Project Name *
+                  </Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={newProject.name}
+                    onChange={(e) => {
+                      setNewProject({...newProject, name: e.target.value});
+                      // Clear error when user starts typing
+                      if (formErrors.name) {
+                        setFormErrors({...formErrors, name: null});
+                      }
+                    }}
+                    className={`w-full ${formErrors.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                    required
+                    disabled={formLoading}
+                    placeholder="Enter project name"
+                    maxLength={100}
+                  />
+                  {formErrors.name && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="description" className="block text-sm font-medium text-secondary-700 mb-1">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={newProject.description}
+                    onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+                    className="w-full h-24"
+                    disabled={formLoading}
+                    placeholder="Describe the project (optional)"
+                    maxLength={500}
+                  />
+                  <p className="mt-1 text-xs text-secondary-500 text-right">
+                    {newProject.description.length}/500
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="client" className="block text-sm font-medium text-secondary-700 mb-1">
+                    Client
+                  </Label>
+                  <Input
+                    id="client"
+                    type="text"
+                    value={newProject.client}
+                    onChange={(e) => setNewProject({...newProject, client: e.target.value})}
+                    className="w-full"
+                    placeholder="Client name (optional)"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="color" className="block text-sm font-medium text-secondary-700 mb-1">
+                    Color
+                  </Label>
+                  <Input
+                    id="color"
+                    type="color"
+                    value={newProject.color}
+                    onChange={(e) => setNewProject({...newProject, color: e.target.value})}
+                    className="h-10 w-full rounded-md border border-secondary-200 p-1"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Start Date
+                    </Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={newProject.startDate}
+                      onChange={(e) => {
+                        setNewProject({...newProject, startDate: e.target.value});
+                        // Clear date errors when user changes dates
+                        if (formErrors.dueDate) {
+                          setFormErrors({...formErrors, dueDate: null});
+                        }
+                      }}
+                      className="w-full"
+                      disabled={formLoading}
+                      min={new Date().toISOString().split('T')[0]} // Today as min date
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="dueDate" className="block text-sm font-medium text-secondary-700 mb-1">
+                      Due Date
+                    </Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={newProject.dueDate}
+                      onChange={(e) => {
+                        setNewProject({...newProject, dueDate: e.target.value});
+                        // Clear date errors when user changes dates
+                        if (formErrors.dueDate) {
+                          setFormErrors({...formErrors, dueDate: null});
+                        }
+                      }}
+                      className={`w-full ${formErrors.dueDate ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''}`}
+                      disabled={formLoading}
+                      min={newProject.startDate || new Date().toISOString().split('T')[0]} // Start date or today as min date
+                    />
+                    {formErrors.dueDate && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.dueDate}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Display API error if any */}
+              {formErrors.api && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <p>{formErrors.api}</p>
+                </div>
+              )}
+              
+              <DialogFooter className="mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setFormErrors({});
+                  }}
+                  disabled={formLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex items-center justify-center min-w-[120px]"
+                  disabled={formLoading}
+                >
+                  {formLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Project'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
     </div>
   )
