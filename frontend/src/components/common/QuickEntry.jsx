@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useProjects } from '../../context/ProjectContext'
 import { useNotification } from '../../context/NotificationContext'
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,12 +19,13 @@ const QuickEntry = ({
   defaultProjectId = null, 
   mode = 'task' // 'task' | 'time' | 'batch'
 }) => {
-  const { projects, createTask, createTimeEntry } = useProjects()
+  const { projects, tasks, createTask, createManualTimeEntry } = useProjects()
   const { showNotification } = useNotification()
   
   const [formData, setFormData] = useState({
     title: '',
     projectId: defaultProjectId || '',
+    taskId: '', // for time entry mode
     priority: 'medium',
     estimatedHours: '',
     description: '',
@@ -38,9 +39,12 @@ const QuickEntry = ({
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [batchTasks, setBatchTasks] = useState([''])
+  const [filteredTasks, setFilteredTasks] = useState([])
+  const [showCreateTask, setShowCreateTask] = useState(false)
   
   const titleInputRef = useRef(null)
   const formRef = useRef(null)
+  const suggestionRef = useRef(null)
 
   // Focus input when opened
   useEffect(() => {
@@ -49,6 +53,31 @@ const QuickEntry = ({
     }
   }, [isOpen])
 
+  // Filter tasks for time entry mode based on selected project
+  useEffect(() => {
+    if (currentMode === 'time' && formData.projectId) {
+      const projectTasks = tasks.filter(task => task.projectId === formData.projectId)
+      setFilteredTasks(projectTasks)
+    } else {
+      setFilteredTasks([])
+    }
+  }, [currentMode, formData.projectId, tasks])
+
+  // Handle click outside to hide suggestions
+  const handleClickOutside = useCallback((event) => {
+    if (suggestionRef.current && !suggestionRef.current.contains(event.target) &&
+        titleInputRef.current && !titleInputRef.current.contains(event.target)) {
+      setShowSuggestions(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSuggestions, handleClickOutside])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -56,7 +85,11 @@ const QuickEntry = ({
 
       switch (event.key) {
         case 'Escape':
-          onClose()
+          if (showSuggestions) {
+            setShowSuggestions(false)
+          } else {
+            onClose()
+          }
           break
         case 'Enter':
           if (event.metaKey || event.ctrlKey) {
@@ -80,7 +113,7 @@ const QuickEntry = ({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, currentMode, onClose])
+  }, [isOpen, currentMode, onClose, showSuggestions])
 
   // Auto-complete suggestions (mock implementation)
   useEffect(() => {
@@ -117,6 +150,11 @@ const QuickEntry = ({
       return
     }
 
+    if (currentMode === 'time' && !formData.taskId && !showCreateTask) {
+      showNotification('error', 'Please select a task or create a new one')
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -145,17 +183,41 @@ const QuickEntry = ({
           return
         }
 
-        const timeData = {
-          taskTitle: formData.title.trim(),
-          projectId: formData.projectId,
-          duration: parseFloat(formData.duration) * 3600, // convert hours to seconds
-          date: formData.date,
-          description: formData.description.trim()
+        let taskId = formData.taskId
+        
+        // If creating a new task for time entry
+        if (showCreateTask && formData.title.trim()) {
+          const taskResult = await createTask({
+            title: formData.title.trim(),
+            projectId: formData.projectId,
+            priority: 'medium',
+            status: 'in-progress',
+            description: formData.description.trim()
+          })
+          
+          if (!taskResult.success) {
+            showNotification('error', `Failed to create task: ${taskResult.message}`)
+            return
+          }
+          
+          taskId = taskResult.data.id
         }
 
-        const result = await createTimeEntry(timeData)
+        const startTime = new Date(formData.date)
+        const endTime = new Date(startTime.getTime() + (parseFloat(formData.duration) * 3600000))
+
+        const timeData = {
+          taskId: taskId,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          duration: parseFloat(formData.duration) * 3600, // convert hours to seconds
+          notes: formData.description.trim()
+        }
+
+        const result = await createManualTimeEntry(timeData)
         if (result.success) {
-          showNotification('success', `Time entry for "${formData.title}" created successfully`)
+          const taskName = showCreateTask ? formData.title : filteredTasks.find(t => t.id === taskId)?.title || 'Task'
+          showNotification('success', `Time entry for "${taskName}" created successfully`)
           resetForm()
           onClose()
         } else {
@@ -203,6 +265,7 @@ const QuickEntry = ({
     setFormData({
       title: '',
       projectId: defaultProjectId || '',
+      taskId: '',
       priority: 'medium',
       estimatedHours: '',
       description: '',
@@ -212,6 +275,7 @@ const QuickEntry = ({
     })
     setBatchTasks([''])
     setShowSuggestions(false)
+    setShowCreateTask(false)
   }
 
   // Handle suggestion selection
@@ -349,10 +413,11 @@ const QuickEntry = ({
                     <AnimatePresence>
                       {showSuggestions && suggestions.length > 0 && (
                         <motion.div
+                          ref={suggestionRef}
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-md shadow-lg z-10 mt-1"
+                          className="absolute top-full left-0 right-0 bg-white border border-secondary-200 rounded-md shadow-lg z-[60] mt-1"
                         >
                           {suggestions.map((suggestion, index) => (
                             <button
@@ -410,6 +475,52 @@ const QuickEntry = ({
                           )}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Task Selection for Time Entry */}
+                {currentMode === 'time' && (
+                  <div>
+                    <label className="text-sm font-medium text-secondary-700 mb-2 block">
+                      Task
+                    </label>
+                    <div className="space-y-2">
+                      <Select 
+                        value={showCreateTask ? 'create-new' : formData.taskId} 
+                        onValueChange={(value) => {
+                          if (value === 'create-new') {
+                            setShowCreateTask(true)
+                            setFormData(prev => ({ ...prev, taskId: '' }))
+                          } else {
+                            setShowCreateTask(false)
+                            setFormData(prev => ({ ...prev, taskId: value }))
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a task or create new" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="create-new">
+                            + Create new task
+                          </SelectItem>
+                          {filteredTasks.map(task => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {showCreateTask && (
+                        <Input
+                          value={formData.title}
+                          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Enter new task title"
+                          className="text-sm"
+                        />
+                      )}
                     </div>
                   </div>
                 )}
