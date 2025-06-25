@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader, FiPlus, FiTarget } from 'react-icons/fi'
+import { FiPlay, FiPause, FiClock, FiStopCircle, FiLoader, FiTarget } from 'react-icons/fi'
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "../../lib/utils";
@@ -7,9 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { motion, AnimatePresence } from 'framer-motion'
-import ManualTimeEntryForm from './ManualTimeEntryForm'
 
 // Accept props instead of using context directly
 const TimeTrackingWidget = ({
@@ -34,8 +32,6 @@ const TimeTrackingWidget = ({
   const [elapsedTimes, setElapsedTimes] = useState({})
   // Track loading state for each entry separately
   const [actionLoadingMap, setActionLoadingMap] = useState({})
-  // State for manual time entry dialog
-  const [showManualEntryDialog, setShowManualEntryDialog] = useState(false)
 
   // Helper function to get task and project for a time entry
   const getEntryDetails = (entry) => {
@@ -391,28 +387,9 @@ const TimeTrackingWidget = ({
     );
   }
 
-  // Handle manual time entry form submission
-  const handleManualEntrySave = () => {
-    setShowManualEntryDialog(false);
-    // Refresh the time entries list
-    fetchActiveTimers();
-  };
 
   return (
     <div className="h-full flex flex-col">
-      {/* Add Manual Time Entry Button */}
-      <div className="mb-4">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full flex items-center justify-center"
-          onClick={() => setShowManualEntryDialog(true)}
-        >
-          <FiPlus className="mr-1.5 h-4 w-4" />
-          Add Manual Time Entry
-        </Button>
-      </div>
-
       <AnimatePresence mode="wait">
         {activeTimeEntries.length > 0 ? (
           <motion.div 
@@ -452,22 +429,6 @@ const TimeTrackingWidget = ({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Manual Time Entry Dialog */}
-      <Dialog open={showManualEntryDialog} onOpenChange={setShowManualEntryDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Manual Time Entry</DialogTitle>
-            <p className="text-sm text-secondary-500 mt-1.5">
-              Add time spent on a task retroactively.
-            </p>
-          </DialogHeader>
-          <ManualTimeEntryForm
-            onClose={() => setShowManualEntryDialog(false)}
-            onSave={handleManualEntrySave}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

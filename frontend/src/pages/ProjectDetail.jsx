@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import ManualTimeEntryForm from '../components/timeTracking/ManualTimeEntryForm'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import TaskItem from '../components/tasks/TaskItem' // Using the existing TaskItem component
 import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
 import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
+import QuickEntry from '../components/common/QuickEntry'
 import { useToast } from "@/hooks/use-toast"; // Import useToast
 
 const ProjectDetail = () => {
@@ -35,60 +35,21 @@ const ProjectDetail = () => {
   const [activeView, setActiveView] = useState('tasks')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
   const [showAddWaitingItemModal, setShowAddWaitingItemModal] = useState(false)
   const [showEditProjectModal, setShowEditProjectModal] = useState(false)
-  const [showManualTimeEntryModal, setShowManualTimeEntryModal] = useState(false)
   const [editableProject, setEditableProject] = useState(null)
   const [editFormErrors, setEditFormErrors] = useState({})
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    status: 'not-started',
-    priority: 'medium',
-    dueDate: '',
-    estimatedHours: 0
-  })
-  const [taskFormErrors, setTaskFormErrors] = useState({})
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
     inProgressTasks: 0,
     totalHours: 0
   })
+  const [showQuickEntry, setShowQuickEntry] = useState(false)
 
   // Toast hook
   const { toast } = useToast();
 
-  // Function to validate task form
-  const validateTaskForm = () => {
-    const errors = {};
-
-    // Validate title
-    if (!newTask.title.trim()) {
-      errors.title = 'Task title is required';
-    } else if (newTask.title.length > 100) {
-      errors.title = 'Task title must be less than 100 characters';
-    }
-
-    // Validate estimated hours if provided
-    if (newTask.estimatedHours && (isNaN(newTask.estimatedHours) || Number(newTask.estimatedHours) < 0)) {
-      errors.estimatedHours = 'Estimated hours must be a positive number';
-    }
-
-    // Validate due date if provided
-    if (newTask.dueDate) {
-      const dueDate = new Date(newTask.dueDate);
-      if (isNaN(dueDate.getTime())) {
-        errors.dueDate = 'Invalid due date';
-      }
-    }
-
-    return {
-      isValid: Object.keys(errors).length === 0,
-      errors
-    };
-  };
 
   useEffect(() => {
     if (!loading) {
@@ -359,19 +320,16 @@ const ProjectDetail = () => {
             </Button>
           </Link>
 
-          {/* --- Add Manual Time Entry Dialog Trigger --- */}
-          <Dialog open={showManualTimeEntryModal} onOpenChange={setShowManualTimeEntryModal}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowManualTimeEntryModal(true)}
-              >
-                <FiClock className="mr-1.5 h-4 w-4" />
-                Add Time Entry
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          {/* Quick Add Button */}
+          <Button
+            variant="default"
+            size="sm"
+            className="flex items-center"
+            onClick={() => setShowQuickEntry(true)}
+          >
+            <FiPlus className="mr-1.5 h-4 w-4" />
+            <span className="font-normal">Quick Add</span>
+          </Button>
 
           {/* --- Edit Project Dialog Trigger --- */}
           <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
@@ -562,20 +520,6 @@ const ProjectDetail = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Tasks</CardTitle>
-              {/* --- Add Task Dialog Trigger --- */}
-              <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setShowAddTaskModal(true)}
-                  >
-                    <FiPlus className="mr-1.5 h-4 w-4" />
-                    Add Task
-                  </Button>
-                </DialogTrigger>
-                {/* Add Task Modal Content moved below */}
-              </Dialog>
             </CardHeader>
 
             <CardContent>
@@ -588,18 +532,9 @@ const ProjectDetail = () => {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-secondary-600 mb-3">No tasks have been added to this project yet.</p>
-                  {/* Trigger Add Task Dialog */}
-                  <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="primary"
-                        onClick={() => setShowAddTaskModal(true)}
-                      >
-                        <FiPlus className="mr-1.5 h-4 w-4" />
-                        Add Task
-                      </Button>
-                    </DialogTrigger>
-                  </Dialog>
+                  <p className="text-sm text-secondary-500 mt-2">
+                    Use the Quick Add button to create tasks and time entries.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -780,228 +715,7 @@ const ProjectDetail = () => {
         />
       )}
 
-      {/* Manual Time Entry Dialog */}
-      <Dialog open={showManualTimeEntryModal} onOpenChange={setShowManualTimeEntryModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Manual Time Entry</DialogTitle>
-            <p className="text-sm text-secondary-500 mt-1.5">
-              Add time spent on a task in project: {project?.name}
-            </p>
-          </DialogHeader>
-          <ManualTimeEntryForm
-            projectId={id}
-            onClose={() => setShowManualTimeEntryModal(false)}
-            onSave={() => {
-              setShowManualTimeEntryModal(false);
-              // Refresh project data to update stats
-              const updatedProject = projects.find(p => p.id === id);
-              if (updatedProject) {
-                setProject(updatedProject);
-              }
-            }}
-          />
-        </DialogContent>
-      </Dialog>
 
-      {/* --- Add Task Dialog Content --- */}
-      <Dialog open={showAddTaskModal} onOpenChange={setShowAddTaskModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Task</DialogTitle>
-            <DialogDescription>
-              Fill in the details for the new task for project: {project?.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const { isValid, errors } = validateTaskForm(); // Assuming validation function
-            if (!isValid) {
-              setTaskFormErrors(errors);
-              return;
-            }
-            setTaskFormErrors({}); // Clear previous errors
-            try {
-              const result = await createTask({
-                ...newTask,
-                projectId: id,
-                estimatedHours: Number(newTask.estimatedHours) || 0
-              });
-
-              if (result.success) {
-                setShowAddTaskModal(false); // Close modal
-                setNewTask({ // Reset form state
-                  title: '',
-                  description: '',
-                  status: 'not-started',
-                  priority: 'medium',
-                  dueDate: '',
-                  estimatedHours: ''
-                });
-                // Update UI by using existing project tasks
-                const updatedTasks = [...projectTasks, result.data];
-                setProjectTasks(updatedTasks);
-                toast({
-                  title: "Task Created",
-                  description: `Task "${result.data.title}" added successfully.`,
-                });
-              } else {
-                setTaskFormErrors({ api: result.message || 'Failed to create task.' });
-                toast({
-                  variant: "destructive",
-                  title: "Error Creating Task",
-                  description: result.message || 'An unexpected error occurred.'
-                });
-              }
-            } catch (err) {
-              console.error("Error creating task:", err);
-              setTaskFormErrors({ api: err.message || 'An unexpected error occurred.' });
-              toast({
-                variant: "destructive",
-                title: "Error Creating Task",
-                description: err.message || 'An unexpected error occurred.'
-              });
-            }
-          }}>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="title">Task Title *</Label>
-                <Input
-                  id="title"
-                  type="text"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  disabled={loading}
-                  placeholder="Enter task title"
-                  className={`block w-full ${taskFormErrors.title ? 'border-red-500' : ''}`}
-                />
-                {taskFormErrors.title && (
-                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.title}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="description">Task Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  disabled={loading}
-                  placeholder="Enter task description"
-                  className="block w-full"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  {/* Using shadcn/ui Select */}
-                  <Select
-                    value={newTask.status}
-                    onValueChange={(value) => setNewTask({...newTask, status: value})}
-                    disabled={loading}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not-started">Not Started</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  {/* Using shadcn/ui Select */}
-                  <Select
-                    value={newTask.priority}
-                    onValueChange={(value) => setNewTask({...newTask, priority: value})}
-                    disabled={loading}
-                  >
-                    <SelectTrigger id="priority">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                  disabled={loading}
-                  placeholder="Select due date"
-                  className={`block w-full ${taskFormErrors.dueDate ? 'border-red-500' : ''}`}
-                />
-                {taskFormErrors.dueDate && (
-                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.dueDate}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="estimatedHours">Estimated Hours</Label>
-                <Input
-                  id="estimatedHours"
-                  type="number"
-                  value={newTask.estimatedHours}
-                  onChange={(e) => setNewTask({ ...newTask, estimatedHours: e.target.value })}
-                  disabled={loading}
-                  placeholder="Enter estimated hours"
-                  className={`block w-full ${taskFormErrors.estimatedHours ? 'border-red-500' : ''}`}
-                />
-                {taskFormErrors.estimatedHours && (
-                  <p className="mt-1 text-sm text-red-600">{taskFormErrors.estimatedHours}</p>
-                )}
-              </div>
-            </div>
-            {/* Display API error if any */}
-            {taskFormErrors.api && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                <p>{taskFormErrors.api}</p>
-              </div>
-            )}
-
-            <DialogFooter className="mt-6">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => {
-                  setShowAddTaskModal(false);
-                  setTaskFormErrors({});
-                }}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={loading}
-                className="min-w-[100px]"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Adding...
-                  </>
-                ) : (
-                  'Add Task'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* --- Edit Project Dialog Content --- */}
       <Dialog open={showEditProjectModal} onOpenChange={setShowEditProjectModal}>
@@ -1190,6 +904,13 @@ const ProjectDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick Entry Modal */}
+      <QuickEntry 
+        isOpen={showQuickEntry}
+        onClose={() => setShowQuickEntry(false)}
+        defaultProjectId={project?.id}
+      />
     </div>
   );
 };
