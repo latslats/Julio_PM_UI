@@ -1,13 +1,8 @@
-## RUN
-eza . --tree --level 5 --git-ignore
+# Context Window Prime
 
-## READ
-@README.md
-@server/server.py
-@server/pyproject.toml
-@client/package.json
-@client/src/App.vue
-@start.sh
+RUN:
+    git ls-files
 
-## Remember
-To run python we use `uv run --env-file .env python server.py`
+READ:
+    README.md
+    ai_docs/claude_code_fresh_tutorials.md

@@ -6,16 +6,18 @@ A clean, effective, and modern project management application that allows users 
 
 - **Project Management**: Create and manage projects with detailed progress tracking
 - **Task Management**: Organize tasks within projects with priority levels and status tracking
-- **Time Tracking**: Track time spent on individual tasks with start/stop/pause/resume functionality
-- **Multiple Concurrent Timers**: Track time on multiple tasks simultaneously
-- **Waiting-On Management**: Track external dependencies and requests with timeline events and statistics
-- **Reporting**: View analytics and reports on project progress and time spent
+- **Time Tracking**: Multiple concurrent timers with pause/resume functionality and auto-pause scheduling
+- **Focus Mode**: Distraction-free environment for working on current tasks
+- **Waiting Items**: Track external dependencies and blockers with timeline events and statistics
+- **Reporting**: View analytics and reports on project progress and time spent with Redis caching
+- **Auto-Pause**: Configurable automatic stopping of timers based on schedule (cron-based)
 
 ## Tech Stack
 
-- **Frontend**: React.js with Tailwind CSS
+- **Frontend**: React.js with Vite, Tailwind CSS, Radix UI primitives
 - **Backend**: Node.js with Express
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (production), SQLite (development)
+- **Caching**: Redis with automatic invalidation
 - **Containerization**: Docker
 
 ## Running Locally with Docker
@@ -34,6 +36,7 @@ Create a `.env` file in the project root with the following variables:
 DATABASE_URL=postgresql://postgres:postgres@db:5432/taskflow
 PORT=5001
 NODE_ENV=development
+REDIS_URL=redis://redis:6379
 ```
 
 ### Steps to Run
@@ -49,6 +52,8 @@ docker-compose up -d --build
 
 5. Access the application frontend at http://localhost (served by Nginx)
 6. The backend API will be running on http://localhost:5001
+7. PostgreSQL database will be running on port 5432
+8. Redis cache will be running on port 6379
 
 ### Stopping the Application
 
@@ -66,14 +71,19 @@ If you prefer to run the application without Docker for development:
 
 1. Navigate to the `/backend` directory
 2. Install dependencies: `npm install`
-3. Create a `.env` file with the DATABASE_URL pointing to your local PostgreSQL instance
-4. Run the development server: `npm run dev`
+3. Create a `.env` file with environment variables (uses SQLite for development)
+4. Run the development server: `npm run dev` or `npm start`
+5. Run tests: `npm test`
 
 ### Frontend Setup
 
 1. Navigate to the `/frontend` directory
 2. Install dependencies: `npm install`
-3. Run the development server: `npm run dev`
+3. Run the development server: `npm run dev` (localhost:5173)
+4. Build for production: `npm run build`
+5. Preview production build: `npm run preview`
+
+**Note**: The application automatically uses SQLite for local development and PostgreSQL for Docker/production environments. Database schema is initialized automatically on first run.
 
 ## API Documentation
 
@@ -329,21 +339,44 @@ Delete a waiting item.
 - **Clear Information Hierarchy**: Using subtle shadows and modular card layouts
 - **Natural Focus**: Core functionalities are highlighted with refined visual elements
 
+## Architecture Overview
+
+### Frontend (React + Vite)
+- **State Management**: React Context API with three main contexts:
+  - `ProjectContext` - Projects, tasks, and time entries
+  - `NotificationContext` - Global toast notifications  
+  - `WaitingItemContext` - External dependency tracking
+- **UI Components**: Radix UI primitives in `src/components/ui/` with Tailwind CSS
+- **Routing**: React Router with `MainLayout` wrapper for consistent navigation
+
+### Backend (Node.js + Express)
+- **Database**: Uses better-sqlite3 for development, PostgreSQL for production
+- **Caching**: Redis for high-performance caching with automatic invalidation
+- **Routes**: Modular structure in `/routes` directory (projects, tasks, timeEntries, waitingItems, reports, settings)
+- **Auto-initialization**: Database schema created automatically on startup
+- **Cron Jobs**: Auto-pause functionality runs via node-cron based on settings
+
+### Caching Strategy
+- **Redis-based caching** for all API endpoints with smart TTL configuration
+- **Active timer states** cached for real-time performance (30s TTL)
+- **Project/task metadata** cached with moderate TTL (2-5 minutes)
+- **Reports and statistics** cached with longer TTL (30 minutes)
+- **Automatic cache invalidation** on CRUD operations
+- **Graceful degradation** when Redis is unavailable
+
 ## Project Structure
 
-- `/frontend`: React application (served via Nginx)
-  - `/src`: Frontend source code
-    - `/components`: Reusable UI components
-    - `/context`: React Context API state management
-    - `/pages`: Application pages/routes
-    - `/utils`: Utility functions
-- `/backend`: Node.js/Express API
-  - `/routes`: API route definitions
-  - `/controllers`: Business logic for routes
-  - `/models`: Database models
-  - `/utils`: Utility functions
-  - `/database.js`: PostgreSQL database setup
-  - `/server.js`: Express server configuration
+```
+src/components/
+├── ui/           # Radix UI primitives (Button, Card, Dialog, etc.)
+├── common/       # Shared components (LoadingSpinner, BackButton, etc.) 
+├── layouts/      # Layout wrappers (MainLayout)
+├── navigation/   # Header and Sidebar components
+└── [feature]/    # Feature-specific components (projects, tasks, timeTracking, etc.)
+```
+
+- `/frontend`: React application (Vite + React)
+- `/backend`: Node.js/Express API with Redis caching
 - `/database`: Database migrations and seed data
-- `docker-compose.yml`: Docker service definitions
-- `Dockerfile`: Docker build instructions
+- `docker-compose.yml`: Docker service definitions including Redis
+- `CLAUDE.md`: Development guidance and commands
