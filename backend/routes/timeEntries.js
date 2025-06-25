@@ -258,38 +258,59 @@ router.post('/start', async (req, res, next) => {
     return res.status(400).json({ message: "Task ID is required" });
   }
 
-  // Explicitly validate if taskId exists in the tasks table
+  let client;
   try {
-    const taskCheckResult = await pool.query('SELECT id FROM tasks WHERE id = $1', [taskId]);
+    client = await pool.connect();
+    await client.query('BEGIN');
+
+    // Validate if taskId exists and get current status
+    const taskCheckResult = await client.query('SELECT id, status FROM tasks WHERE id = $1', [taskId]);
     if (taskCheckResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ message: `Task with ID ${taskId} does not exist.` });
     }
-  } catch (err) {
-    return handleDatabaseError(err, res, next);
-  }
 
-  const id = crypto.randomUUID();
-  const startTime = new Date(); // Use Date object for TIMESTAMPTZ
-  // Use quotes for camelCase identifiers
-  const sql = 'INSERT INTO time_entries (id, "taskId", "startTime", "isPaused", "lastResumedAt", "totalPausedDuration") VALUES ($1, $2, $3, false, $3, 0) RETURNING *';
-  const params = [id, taskId, startTime];
+    const task = taskCheckResult.rows[0];
+    const currentStatus = task.status;
 
-  try {
-    const result = await pool.query(sql, params);
+    const id = crypto.randomUUID();
+    const startTime = new Date(); // Use Date object for TIMESTAMPTZ
+    
+    // Create the time entry
+    const timeEntrySql = 'INSERT INTO time_entries (id, "taskId", "startTime", "isPaused", "lastResumedAt", "totalPausedDuration") VALUES ($1, $2, $3, false, $3, 0) RETURNING *';
+    const timeEntryParams = [id, taskId, startTime];
+    const timeEntryResult = await client.query(timeEntrySql, timeEntryParams);
+    
+    // Auto-update task status to 'in-progress' if it's currently 'not-started'
+    if (currentStatus === 'not-started') {
+      const taskUpdateSql = 'UPDATE tasks SET status = $1 WHERE id = $2';
+      await client.query(taskUpdateSql, ['in-progress', taskId]);
+      console.log(`Auto-updated task ${taskId} status from '${currentStatus}' to 'in-progress' when timer started`);
+    }
+
+    await client.query('COMMIT');
     
     // Add to active timers cache
-    await timerCache.addActiveTimer(result.rows[0]);
+    await timerCache.addActiveTimer(timeEntryResult.rows[0]);
     
-    // Invalidate time entries cache
+    // Invalidate both time entries and tasks cache
     await invalidateCache.timeEntries();
+    await invalidateCache.tasks();
     
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(timeEntryResult.rows[0]);
   } catch (err) {
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     // Handle potential foreign key violation if taskId doesn't exist
     if (err.code === '23503') { // Foreign key violation error code in PostgreSQL
       return res.status(400).json({ message: `Task with ID ${taskId} does not exist.` });
     }
     handleDatabaseError(err, res, next);
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 

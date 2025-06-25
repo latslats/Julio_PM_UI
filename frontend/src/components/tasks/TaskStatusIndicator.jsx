@@ -19,35 +19,41 @@ const TaskStatusIndicator = ({
   estimatedHours,
   compact = false
 }) => {
-  // Status color scheme configuration
+  // Status color scheme configuration with enhanced visual distinction
   const statusConfig = {
     completed: {
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
       textColor: 'text-green-700',
       icon: FiCheckCircle,
-      iconColor: 'text-green-500'
+      iconColor: 'text-green-500',
+      label: 'Completed'
     },
     'in-progress': {
       bgColor: 'bg-blue-50',
       borderColor: 'border-blue-200', 
       textColor: 'text-blue-700',
       icon: FiPlay,
-      iconColor: 'text-blue-500'
+      iconColor: 'text-blue-500',
+      label: 'In Progress',
+      animated: true // Add animation for active tasks
     },
     'not-started': {
-      bgColor: 'bg-gray-50',
-      borderColor: 'border-gray-200',
-      textColor: 'text-gray-700',
+      bgColor: 'bg-slate-50',
+      borderColor: 'border-slate-200',
+      textColor: 'text-slate-600',
       icon: FiCircle,
-      iconColor: 'text-gray-400'
+      iconColor: 'text-slate-400',
+      label: 'Fresh Task',
+      subtle: true // More subtle styling for fresh tasks
     },
     pending: {
       bgColor: 'bg-yellow-50',
       borderColor: 'border-yellow-200',
       textColor: 'text-yellow-700',
       icon: FiClock,
-      iconColor: 'text-yellow-500'
+      iconColor: 'text-yellow-500',
+      label: 'Pending'
     }
   }
 
@@ -89,19 +95,53 @@ const TaskStatusIndicator = ({
 
   return (
     <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
-      {/* Status Indicator with Animation */}
+      {/* Status Indicator with Enhanced Visual Distinction */}
       <motion.div
         className={`
           flex items-center gap-1.5 px-2 py-1 rounded-md border
           ${currentStatus.bgColor} ${currentStatus.borderColor}
+          ${currentStatus.subtle ? 'opacity-80' : 'opacity-100'}
+          ${currentStatus.animated && activeTimeEntry ? 'ring-2 ring-blue-200/50' : ''}
         `}
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
       >
-        <StatusIcon className={`${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${currentStatus.iconColor}`} />
-        <span className={`${currentStatus.textColor} font-medium capitalize ${compact ? 'text-xs' : 'text-sm'}`}>
-          {status?.replace('-', ' ') || 'Not Started'}
+        {/* Icon with conditional animation for in-progress tasks */}
+        <motion.div
+          animate={currentStatus.animated && activeTimeEntry ? { 
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          } : {}}
+          transition={{ 
+            duration: 2, 
+            repeat: currentStatus.animated && activeTimeEntry ? Infinity : 0,
+            ease: "easeInOut"
+          }}
+        >
+          <StatusIcon className={`${compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${currentStatus.iconColor}`} />
+        </motion.div>
+        
+        <span className={`${currentStatus.textColor} font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
+          {currentStatus.label}
         </span>
+        
+        {/* Active timer pulse for in-progress tasks */}
+        {currentStatus.animated && activeTimeEntry && (
+          <motion.div
+            className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+            animate={{ 
+              scale: [1, 1.5, 1],
+              opacity: [0.6, 1, 0.6]
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        )}
       </motion.div>
 
       {/* Priority Badge */}

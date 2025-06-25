@@ -356,6 +356,11 @@ export const ProjectProvider = ({ children }) => {
         console.log('Time tracking started successfully:', result.data);
         // Add the new time entry to the list without removing other active ones
         setTimeEntries(prev => [result.data, ...prev]);
+        
+        // Refresh tasks to pick up any status changes made by the backend
+        // (Backend automatically updates task status to 'in-progress' when timer starts)
+        await fetchTasks();
+        
         return { success: true, data: result.data };
       } else {
         console.error('Failed to start time tracking:', result.message);

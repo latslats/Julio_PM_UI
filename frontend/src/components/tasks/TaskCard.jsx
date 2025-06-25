@@ -125,11 +125,41 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
   const toggleTaskStatus = async (e) => {
     e.stopPropagation()
     
-    // Normalize current status to handle both 'completed' and 'Completed' formats
-    const isCurrentlyCompleted = task.status === 'completed' || task.status === 'Completed'
-    // Toggle between completed and in-progress
-    const newStatus = isCurrentlyCompleted ? 'in-progress' : 'completed'
-    await updateTask(task.id, { status: newStatus })
+    try {
+      setIsActionLoading(true)
+      
+      // Normalize current status to handle both 'completed' and 'Completed' formats
+      const isCurrentlyCompleted = task.status === 'completed' || task.status === 'Completed'
+      // Toggle between completed and in-progress
+      const newStatus = isCurrentlyCompleted ? 'in-progress' : 'completed'
+      
+      // If completing the task, stop any active timers for this task
+      if (newStatus === 'completed' && activeTimeEntry) {
+        console.log(`Stopping timer for task ${task.id} because task is being marked as completed`)
+        const stopResult = await stopTimeTracking(activeTimeEntry.id)
+        if (stopResult.success) {
+          showNotification('success', `Stopped timer and completed "${task.title}"`)
+          setIsTracking(false)
+          await fetchActiveTimers()
+        } else {
+          showNotification('warning', `Task completed but failed to stop timer: ${stopResult.message || 'Unknown error'}`)
+        }
+      }
+      
+      // Update the task status
+      await updateTask(task.id, { status: newStatus })
+      
+      if (newStatus === 'completed' && !activeTimeEntry) {
+        showNotification('success', `Completed "${task.title}"`)
+      } else if (newStatus === 'in-progress') {
+        showNotification('success', `Reopened "${task.title}"`)
+      }
+    } catch (err) {
+      console.error('Error toggling task status:', err)
+      showNotification('error', `Error updating task: ${err.message || 'Unknown error'}`)
+    } finally {
+      setIsActionLoading(false)
+    }
   }
 
   // Handle time tracking

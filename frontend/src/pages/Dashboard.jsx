@@ -137,7 +137,7 @@ const Dashboard = () => {
 
       // Calculate stats
       const completed = tasks.filter(task => task.status === 'completed').length
-      const pending = tasks.filter(task => task.status !== 'completed').length
+      const activeTasks = tasks.filter(task => task.status !== 'completed').length
 
       // Calculate hours tracked today
       const today = new Date().setHours(0, 0, 0, 0)
@@ -155,7 +155,7 @@ const Dashboard = () => {
       setStats({
         totalProjects: projects.length,
         completedTasks: completed,
-        pendingTasks: pending,
+        pendingTasks: activeTasks,
         trackedHoursToday: Math.round(trackedMinutes / 6) / 10 // round to 1 decimal
       })
     }
@@ -242,24 +242,40 @@ const Dashboard = () => {
   }, [activeTab, fetchWaitingItems, fetchStats]); // Added dependencies
 
 
-  // Derived state for "My Tasks" view - sorted non-completed tasks
+  // Derived state for "My Tasks" view - grouped by status
   const myTasks = useMemo(() => {
-    if (loading) return [];
+    if (loading) return { inProgress: [], notStarted: [] };
 
-    return tasks
-      .filter(task => task.status !== 'completed')
+    const nonCompletedTasks = tasks.filter(task => task.status !== 'completed');
+    
+    const inProgressTasks = nonCompletedTasks
+      .filter(task => task.status === 'in-progress')
       .sort((a, b) => {
-        // Sort by status first ('in progress' comes first)
-        const statusOrder = { 'in progress': 0, 'pending': 1, 'not started': 2 }; // Adjust as needed
-        const statusComparison = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
-        if (statusComparison !== 0) return statusComparison;
-
-        // Then sort by due date (earliest first)
-        const dateA = a.dueDate ? parseISO(a.dueDate) : Infinity; // Use parseISO for safety
-        const dateB = b.dueDate ? parseISO(b.dueDate) : Infinity; // Use parseISO for safety
+        // Sort by due date (earliest first)
+        const dateA = a.dueDate ? parseISO(a.dueDate) : Infinity;
+        const dateB = b.dueDate ? parseISO(b.dueDate) : Infinity;
         return dateA - dateB;
       });
+
+    const notStartedTasks = nonCompletedTasks
+      .filter(task => task.status === 'not-started')
+      .sort((a, b) => {
+        // Sort by due date (earliest first)
+        const dateA = a.dueDate ? parseISO(a.dueDate) : Infinity;
+        const dateB = b.dueDate ? parseISO(b.dueDate) : Infinity;
+        return dateA - dateB;
+      });
+
+    return {
+      inProgress: inProgressTasks,
+      notStarted: notStartedTasks
+    };
   }, [tasks, loading]);
+
+  // Legacy myTasks array for other parts that still expect a flat array
+  const myTasksFlat = useMemo(() => {
+    return [...myTasks.inProgress, ...myTasks.notStarted];
+  }, [myTasks]);
 
   // Get unique client names for the filter dropdown
   const uniqueClients = useMemo(() => {
@@ -291,10 +307,10 @@ const Dashboard = () => {
 
   // Get upcoming tasks
   const upcomingTasks = useMemo(() => {
-    return myTasks
+    return myTasksFlat
       .filter(t => t.dueDate && isAfter(parseISO(t.dueDate), new Date())) // Use isAfter and parseISO
       .slice(0, 5);
-  }, [myTasks]);
+  }, [myTasksFlat]);
 
   // Filter waiting items for display
 
@@ -533,16 +549,14 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base font-medium text-secondary-900">Current Tasks</CardTitle>
                     <div className="text-xs text-secondary-500">
-                      {myTasks.filter(t => t.status !== 'completed').length} active tasks
+                      {myTasksFlat.length} active tasks
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
-                  {myTasks.filter(t => t.status !== 'completed').length > 0 ? (
+                  {myTasksFlat.length > 0 ? (
                     <div className="space-y-4">
-                      {myTasks
-                        .filter(t => t.status !== 'completed')
-                        .map(task => (
+                      {myTasksFlat.map(task => (
                           <div key={task.id} className="p-4 bg-white rounded-lg border border-secondary-100 shadow-sm">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -831,39 +845,72 @@ const Dashboard = () => {
                   </Card>
                 </TabsContent>
 
-            {/* Tasks Tab - Refined with iOS-inspired minimalism */}
-            <TabsContent value="tasks" className="space-y-8">
-              {/* Active Tasks */}
-              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                <CardHeader className="pb-3 pt-5 px-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Active Tasks</CardTitle>
-                    <div className="flex items-center mt-2 sm:mt-0">
-                      <Button variant="ghost" size="sm" className="text-xs text-primary/80 hover:text-primary" asChild>
-                        <Link to="/projects" className="flex items-center">
-                          <FiFilter className="mr-1.5 h-3.5 w-3.5 opacity-70" />
-                          <span>Filter</span>
-                        </Link>
-                      </Button>
+            {/* Tasks Tab - Enhanced with status grouping */}
+            <TabsContent value="tasks" className="space-y-6">
+              {/* In Progress Tasks Section */}
+              {myTasks.inProgress.length > 0 && (
+                <Card className="overflow-hidden border-blue-100/80 shadow-sm">
+                  <CardHeader className="pb-3 pt-5 px-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <CardTitle className="text-base font-medium text-blue-900">
+                          In Progress ({myTasks.inProgress.length})
+                        </CardTitle>
+                      </div>
+                      <div className="flex items-center mt-2 sm:mt-0">
+                        <div className="text-xs text-blue-600/70">Active work in progress</div>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-6 pb-5">
-                  {myTasks.length > 0 ? (
+                  </CardHeader>
+                  <CardContent className="px-6 pb-5">
                     <div className="grid gap-3">
-                      {myTasks.map(task => (
+                      {myTasks.inProgress.map(task => (
                         <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
                       ))}
                     </div>
-                  ) : (
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Fresh Tasks Section */}
+              {myTasks.notStarted.length > 0 && (
+                <Card className="overflow-hidden border-gray-100/80 shadow-sm">
+                  <CardHeader className="pb-3 pt-5 px-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                        <CardTitle className="text-base font-medium text-gray-900">
+                          Fresh Tasks ({myTasks.notStarted.length})
+                        </CardTitle>
+                      </div>
+                      <div className="flex items-center mt-2 sm:mt-0">
+                        <div className="text-xs text-gray-600/70">Ready to start</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-6 pb-5">
+                    <div className="grid gap-3">
+                      {myTasks.notStarted.map(task => (
+                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty State - When no tasks */}
+              {myTasksFlat.length === 0 && (
+                <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
+                  <CardContent className="px-6 py-8">
                     <EmptyState
                       icon={<FiCoffee className="h-7 w-7" />}
                       title="No active tasks"
                       description="You're all caught up!"
                     />
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Upcoming Tasks */}
               <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
