@@ -6,6 +6,7 @@ import './index.css'
 import { ProjectProvider } from './context/ProjectContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { WaitingItemProvider } from './context/WaitingItemContext'
+import { UIProvider } from './context/UIContext'
 import { TooltipProvider } from './components/ui/tooltip'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,11 +14,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <TooltipProvider>
         <NotificationProvider>
-          <ProjectProvider>
-            <WaitingItemProvider>
-              <App />
-            </WaitingItemProvider>
-          </ProjectProvider>
+          <UIProvider>
+            <ProjectProvider>
+              <WaitingItemProvider>
+                <App />
+              </WaitingItemProvider>
+            </ProjectProvider>
+          </UIProvider>
         </NotificationProvider>
       </TooltipProvider>
     </BrowserRouter>

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
+import { useUI } from '../context/UIContext'
 import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
@@ -14,11 +15,14 @@ import logo from "../assets/taskflow_logo.png"
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
+import TaskCard from '../components/tasks/TaskCard'
 import TaskItem from '../components/tasks/TaskItem'
+import BulkActions from '../components/tasks/BulkActions'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
 import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
 import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
 import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
+import QuickEntry from '../components/common/QuickEntry'
 
 const Dashboard = () => {
   const {
@@ -77,6 +81,19 @@ const Dashboard = () => {
 
   // Focus Mode states
   const [focusModeActive, setFocusModeActive] = useState(false)
+
+  // UI state
+  const { 
+    densityMode, 
+    viewMode, 
+    showCompleted, 
+    focusMode, 
+    setFocusMode,
+    bulkSelectMode,
+    selectedTasks,
+    toggleBulkSelectMode
+  } = useUI()
+  const [showQuickEntry, setShowQuickEntry] = useState(false)
 
   // Refs to prevent multiple simultaneous API calls
   const waitingItemsLoaded = useRef(false);
@@ -323,8 +340,54 @@ const Dashboard = () => {
   // Focus Mode handlers
   const toggleFocusMode = () => {
     setFocusModeActive(prev => !prev);
+    setFocusMode(prev => !prev);
   };
 
+  // QuickEntry handlers
+  const openQuickEntry = () => {
+    setShowQuickEntry(true);
+  };
+
+  const closeQuickEntry = () => {
+    setShowQuickEntry(false);
+  };
+
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only handle shortcuts when not typing in inputs
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Handle shortcuts
+      switch (event.key) {
+        case 'n':
+          if (event.metaKey || event.ctrlKey) {
+            event.preventDefault();
+            openQuickEntry();
+          }
+          break;
+        case 'f':
+          if (event.metaKey || event.ctrlKey) {
+            event.preventDefault();
+            toggleFocusMode();
+          }
+          break;
+        case 'Escape':
+          if (showQuickEntry) {
+            closeQuickEntry();
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showQuickEntry]);
 
   // Format time as HH:MM:SS for time tracking
   const formatTime = (seconds) => {
@@ -365,14 +428,35 @@ const Dashboard = () => {
       {/* Main Dashboard Content */}
       <div className="relative z-10">
         <div className="flex flex-col space-y-8">
-          {/* Dashboard Header - Refined spacing and typography */}
+          {/* Enhanced Dashboard Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-medium tracking-tight text-secondary-900">Dashboard</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-secondary-900">Dashboard</h1>
               <p className="text-secondary-500/80 mt-1.5 text-sm">Your project overview and quick actions</p>
             </div>
 
-            <div className="flex mt-5 md:mt-0 space-x-3">
+            <div className="flex mt-5 md:mt-0 space-x-2">
+              {/* Bulk Selection Toggle */}
+              <Button
+                variant={bulkSelectMode ? "default" : "outline"}
+                size="sm"
+                className="flex items-center"
+                onClick={toggleBulkSelectMode}
+              >
+                <FiCheckCircle className="mr-1.5 h-4 w-4" />
+                <span className="font-normal">{bulkSelectMode ? "Exit Select" : "Multi-Select"}</span>
+              </Button>
+              
+              <Button
+                variant="default"
+                size="sm"
+                className="flex items-center"
+                onClick={openQuickEntry}
+              >
+                <FiPlus className="mr-1.5 h-4 w-4" />
+                <span className="font-normal">Quick Add</span>
+              </Button>
+              
               <Button
                 variant={focusModeActive ? "default" : "outline"}
                 size="sm"
@@ -380,15 +464,17 @@ const Dashboard = () => {
                 onClick={toggleFocusMode}
               >
                 <FiTarget className="mr-1.5 h-4 w-4" />
-                <span className="font-normal">{focusModeActive ? "Exit Focus Mode" : "Focus Mode"}</span>
+                <span className="font-normal">{focusModeActive ? "Exit Focus" : "Focus Mode"}</span>
               </Button>
-              <Button asChild variant="ghost" size="sm" className="hidden md:flex">
+              
+              <Button asChild variant="ghost" size="sm" className="hidden lg:flex">
                 <Link to="/settings" className="flex items-center">
                   <FiSettings className="mr-1.5 h-4 w-4 opacity-70" />
                   <span className="font-normal">Settings</span>
                 </Link>
               </Button>
-              <Button asChild variant="ghost" size="sm" className="hidden md:flex">
+              
+              <Button asChild variant="ghost" size="sm" className="hidden lg:flex">
                 <Link to="/reports" className="flex items-center">
                   <FiBarChart2 className="mr-1.5 h-4 w-4 opacity-70" />
                   <span className="font-normal">Reports</span>
@@ -702,9 +788,9 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
                   {myTasks.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="grid gap-3">
                       {myTasks.map(task => (
-                        <TaskItem key={task.id} task={task} />
+                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
                       ))}
                     </div>
                   ) : (
@@ -730,9 +816,9 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="px-6 pb-5">
                   {upcomingTasks.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="grid gap-3">
                       {upcomingTasks.map(task => (
-                        <TaskItem key={task.id} task={task} />
+                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
                       ))}
                     </div>
                   ) : (
@@ -860,6 +946,23 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Quick Entry Modal */}
+      <QuickEntry 
+        isOpen={showQuickEntry}
+        onClose={closeQuickEntry}
+        defaultProjectId={projects.length > 0 ? projects[0].id : null}
+      />
+
+      {/* Bulk Actions Bar */}
+      <BulkActions
+        selectedTasks={selectedTasks}
+        tasks={tasks}
+        onActionComplete={() => {
+          // Refresh data after bulk actions
+          fetchActiveTimers?.()
+        }}
+      />
 
     </div>
   )
