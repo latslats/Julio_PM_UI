@@ -37,6 +37,23 @@ services:
     networks:
       - taskflow-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: taskflow-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - taskflow-network
+
   taskflow-backend:
     build:
       context: ./backend
@@ -52,6 +69,7 @@ services:
     container_name: taskflow-backend
     environment:
       DATABASE_URL: postgresql://taskflow_user:taskflow_password@postgres:5432/taskflow_db
+      REDIS_URL: redis://redis:6379
       NODE_ENV: development
       PORT: 5001
       # Settings for auto-pause functionality
@@ -66,6 +84,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - taskflow-network
 
@@ -77,6 +97,13 @@ volumes:
       type: none
       o: bind
       device: ~/Desktop/Dockers/taskflow_data/
+  redis_data:
+    name: taskflow-redis-data
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ~/Desktop/Dockers/taskflow_redis_data/
 
 networks:
   taskflow-network:

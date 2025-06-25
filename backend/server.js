@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
 const pool = require('./database.js'); // Import the database connection pool directly
+const redisClient = require('./config/redis');
 
 const projectRoutes = require('./routes/projects'); // Import project routes
 const taskRoutes = require('./routes/tasks'); // Import task routes
@@ -43,10 +44,23 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
+// Initialize Redis connection
+const initializeRedis = async () => {
+  try {
+    await redisClient.connect();
+  } catch (error) {
+    console.warn('⚠️ Redis connection failed, running without cache:', error.message);
+  }
+};
+
 // Start Server
 const PORT = process.env.PORT || 5001; // Use a different port than the frontend (usually 5173 or 3000)
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+// Initialize Redis and start server
+initializeRedis().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
 
 // --- Auto-Pause Cron Job ---

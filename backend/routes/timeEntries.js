@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto');
+const { cacheMiddleware, invalidateCache, timerCache } = require('../middleware/cache');
 
 // Enhanced helper function for consistent error handling with specific error messages
 const handleDatabaseError = (err, res, next) => {
@@ -100,7 +101,13 @@ const calculateCurrentActiveDuration = async (client, entryId) => {
 };
 
 // GET /api/time-entries - Get all time entries with flexible filtering options
-router.get('/', async (req, res, next) => {
+router.get('/', cacheMiddleware({
+  ttl: 30, // Short TTL for active timers
+  keyGenerator: (req) => {
+    const { taskId, projectId, active, limit } = req.query;
+    return `cache:timeEntries:task=${taskId || 'all'}:project=${projectId || 'all'}:active=${active || 'all'}:limit=${limit || 'all'}`;
+  }
+}), async (req, res, next) => {
   const { taskId, projectId, active, limit } = req.query;
   
   // Enhanced query to include task and project information
@@ -151,6 +158,15 @@ router.get('/', async (req, res, next) => {
   }
 
   try {
+    // Check cache for active timers first
+    let activeTimers = [];
+    if (active === 'true') {
+      activeTimers = await timerCache.getActiveTimers();
+      if (activeTimers.length > 0) {
+        console.log(`🎯 Active timers from cache: ${activeTimers.length} found`);
+      }
+    }
+
     const result = await pool.query(sql, params);
     
     // For active timers, calculate and add real-time information
@@ -190,6 +206,12 @@ router.get('/', async (req, res, next) => {
         formattedDuration: entry.duration ? formatTimeFromSeconds(entry.duration) : '00:00:00'
       };
     });
+    
+    // Update cache with active timers
+    if (active === 'true') {
+      const activeEntries = enhancedRows.filter(entry => entry.isActive);
+      await timerCache.setActiveTimers(activeEntries);
+    }
     
     res.json(enhancedRows);
   } catch (err) {
@@ -254,6 +276,13 @@ router.post('/start', async (req, res, next) => {
 
   try {
     const result = await pool.query(sql, params);
+    
+    // Add to active timers cache
+    await timerCache.addActiveTimer(result.rows[0]);
+    
+    // Invalidate time entries cache
+    await invalidateCache.timeEntries();
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     // Handle potential foreign key violation if taskId doesn't exist
@@ -316,6 +345,10 @@ router.put('/stop/:id', async (req, res, next) => {
     const updateResult = await client.query(updateSql, updateParams);
     
     await client.query('COMMIT'); // Commit transaction
+
+    // Remove from active timers cache and invalidate
+    await timerCache.removeActiveTimer(id);
+    await invalidateCache.timeEntries();
 
     res.json(updateResult.rows[0]); // Return the completed entry
 
@@ -386,6 +419,10 @@ router.put('/pause/:id', async (req, res, next) => {
 
     await client.query('COMMIT');
 
+    // Update timer cache with paused state
+    await timerCache.setTimerState(id, { isPaused: true, pausedAt: now });
+    await invalidateCache.timeEntries();
+
     // Fetch details including project/task names for response
      const fullEntryRes = await pool.query(
          'SELECT te.*, t.title as "taskTitle", p.name as "projectName", p.id as "projectId" FROM time_entries te JOIN tasks t ON te."taskId" = t.id JOIN projects p ON t."projectId" = p.id WHERE te.id = $1',
@@ -453,6 +490,10 @@ router.put('/resume/:id', async (req, res, next) => {
     );
 
     await client.query('COMMIT');
+
+    // Update timer cache with running state
+    await timerCache.setTimerState(id, { isPaused: false, lastResumedAt: resumeTime });
+    await invalidateCache.timeEntries();
 
     // Fetch details including project/task names for response
      const fullEntryRes = await pool.query(
@@ -564,6 +605,9 @@ router.put('/:id', async (req, res, next) => {
       [id]
     );
     
+    // Invalidate time entries cache
+    await invalidateCache.timeEntries();
+    
     res.json(entryWithDetails.rows[0]);
   } catch (err) {
     handleDatabaseError(err, res, next);
@@ -578,6 +622,12 @@ router.delete('/:id', async (req, res, next) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Time entry not found' });
     }
+    
+    // Remove from cache and invalidate
+    await timerCache.removeActiveTimer(req.params.id);
+    await timerCache.clearTimerState(req.params.id);
+    await invalidateCache.timeEntries();
+    
     res.status(200).json({ message: 'Time entry deleted successfully' });
   } catch (err) {
     handleDatabaseError(err, res, next);

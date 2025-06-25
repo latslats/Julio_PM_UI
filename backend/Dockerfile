@@ -5,9 +5,9 @@ WORKDIR /app
 # Copy package.json and package-lock.json first for cache optimization
 COPY package*.json ./
 
-# Install production dependencies inside the container
+# Install all dependencies inside the container for development
 # Use npm ci for faster, more reliable builds based on package-lock.json
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .

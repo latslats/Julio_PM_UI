@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto');
+const { cacheMiddleware, invalidateCache } = require('../middleware/cache');
 
 // Enhanced helper function for consistent error handling with specific error messages
 const handleDatabaseError = (err, res, next) => {
@@ -63,7 +64,15 @@ const checkProjectExists = async (projectId) => {
 };
 
 // GET /api/tasks - Get all tasks (optionally filter by projectId)
-router.get('/', async (req, res, next) => {
+router.get('/', cacheMiddleware({ 
+  ttl: 120, // 2 minutes TTL for tasks
+  keyGenerator: (req) => {
+    const projectId = req.query.projectId;
+    return projectId ? 
+      `cache:tasks:project:${projectId}` : 
+      'cache:tasks:all';
+  }
+}), async (req, res, next) => {
   const projectId = req.query.projectId;
   let sql = 'SELECT * FROM tasks';
   const params = [];
@@ -85,7 +94,10 @@ router.get('/', async (req, res, next) => {
 });
 
 // GET /api/tasks/:id - Get a single task by ID
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', cacheMiddleware({ 
+  ttl: 120, // 2 minutes TTL for tasks
+  keyGenerator: (req) => `cache:task:${req.params.id}`
+}), async (req, res, next) => {
   const sql = 'SELECT * FROM tasks WHERE id = $1';
   const params = [req.params.id];
   try {
@@ -140,6 +152,11 @@ router.post('/', async (req, res, next) => {
 
   try {
     const result = await pool.query(sql, params);
+    
+    // Invalidate tasks cache after successful creation
+    await invalidateCache.tasks();
+    await invalidateCache.tasks(projectId); // Also invalidate project-specific tasks cache
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     // Still handle foreign key violation as a fallback
@@ -212,6 +229,16 @@ router.put('/:id', async (req, res, next) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Task not found or no changes made' });
     }
+    
+    // Invalidate tasks cache after successful update
+    await invalidateCache.tasks();
+    await invalidateCache.key(`cache:task:${id}`);
+    
+    // If projectId was updated, also invalidate caches for both old and new projects
+    if (req.body.hasOwnProperty('projectId')) {
+      await invalidateCache.tasks(projectId);
+    }
+    
     res.json(result.rows[0]);
   } catch (err) {
     // Handle potential foreign key violation as a fallback
@@ -224,14 +251,28 @@ router.put('/:id', async (req, res, next) => {
 
 // DELETE /api/tasks/:id - Delete a task
 router.delete('/:id', async (req, res, next) => {
-  const sql = 'DELETE FROM tasks WHERE id = $1';
+  // First get the task to know which project it belongs to for cache invalidation
+  const getTaskSql = 'SELECT "projectId" FROM tasks WHERE id = $1';
+  const deleteSql = 'DELETE FROM tasks WHERE id = $1';
   const params = [req.params.id];
 
   try {
-    const result = await pool.query(sql, params);
+    // Get task info first
+    const taskResult = await pool.query(getTaskSql, params);
+    const projectId = taskResult.rows[0]?.projectId;
+    
+    const result = await pool.query(deleteSql, params);
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Task not found' });
     }
+    
+    // Invalidate tasks cache after successful deletion
+    await invalidateCache.tasks();
+    await invalidateCache.key(`cache:task:${req.params.id}`);
+    if (projectId) {
+      await invalidateCache.tasks(projectId);
+    }
+    
     res.status(200).json({ message: 'Task deleted successfully' });
   } catch (err) {
     handleDatabaseError(err, res, next);

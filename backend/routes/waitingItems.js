@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../database');
+const { cacheMiddleware, invalidateCache } = require('../middleware/cache');
 
 /**
  * Get all waiting items, optionally filtered by project
@@ -17,7 +18,15 @@ const pool = require('../database');
  * @query {string} projectId - Optional project ID to filter by
  * @returns {Array} List of waiting items
  */
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware({
+  ttl: 300, // 5 minutes cache for main list
+  keyGenerator: (req) => {
+    const { projectId } = req.query;
+    return projectId 
+      ? `cache:waiting-items:project:${projectId}`
+      : 'cache:waiting-items:all';
+  }
+}), async (req, res) => {
   const { projectId } = req.query;
   
   try {
@@ -55,7 +64,10 @@ router.get('/', async (req, res) => {
  * @param {string} id - Waiting item ID
  * @returns {Object} Waiting item details
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', cacheMiddleware({
+  ttl: 600, // 10 minutes cache for individual items with timeline
+  keyGenerator: (req) => `cache:waiting-item:${req.params.id}`
+}), async (req, res) => {
   const { id } = req.params;
   
   try {
@@ -197,6 +209,11 @@ router.post('/', async (req, res) => {
     // Add project name to response
     const waitingItem = result.rows[0];
     waitingItem.projectName = projectResult.rows[0].name;
+    
+    // Invalidate relevant caches after successful creation
+    await invalidateCache.waitingItems();
+    await invalidateCache.pattern(`cache:waiting-items:project:${projectId}`);
+    await invalidateCache.pattern('cache:waiting-items:stats:*');
     
     res.status(201).json(waitingItem);
   } catch (err) {
@@ -349,6 +366,16 @@ router.put('/:id', async (req, res) => {
     const waitingItem = result.rows[0];
     waitingItem.projectName = projectResult.rows[0].name;
     
+    // Invalidate relevant caches after successful update
+    await invalidateCache.waitingItems();
+    await invalidateCache.key(`cache:waiting-item:${id}`);
+    await invalidateCache.pattern(`cache:waiting-items:project:${result.rows[0].projectId}`);
+    await invalidateCache.pattern('cache:waiting-items:stats:*');
+    if (projectId && projectId !== oldItem.projectId) {
+      // If project changed, also invalidate old project cache
+      await invalidateCache.pattern(`cache:waiting-items:project:${oldItem.projectId}`);
+    }
+    
     res.json(waitingItem);
   } catch (err) {
     console.error('Error updating waiting item:', err);
@@ -369,17 +396,28 @@ router.delete('/:id', async (req, res) => {
   try {
     const client = await pool.connect();
     
-    // Check if waiting item exists
-    const checkResult = await client.query('SELECT id FROM waiting_items WHERE id = $1', [id]);
+    // Check if waiting item exists and get project ID for cache invalidation
+    const checkResult = await client.query('SELECT id, "projectId" FROM waiting_items WHERE id = $1', [id]);
     if (checkResult.rows.length === 0) {
       client.release();
       return res.status(404).json({ message: 'Waiting item not found' });
     }
     
+    // Get project ID before deletion for cache invalidation
+    const projectId = checkResult.rows[0].projectId;
+    
     // Delete the waiting item (timeline events will be deleted via CASCADE)
     await client.query('DELETE FROM waiting_items WHERE id = $1', [id]);
     
     client.release();
+    
+    // Invalidate relevant caches after successful deletion
+    await invalidateCache.waitingItems();
+    await invalidateCache.key(`cache:waiting-item:${id}`);
+    await invalidateCache.pattern('cache:waiting-items:stats:*');
+    if (projectId) {
+      await invalidateCache.pattern(`cache:waiting-items:project:${projectId}`);
+    }
     
     res.json({ message: 'Waiting item deleted successfully' });
   } catch (err) {
@@ -450,6 +488,9 @@ router.post('/:id/timeline', async (req, res) => {
     
     client.release();
     
+    // Invalidate waiting item cache after timeline event creation
+    await invalidateCache.key(`cache:waiting-item:${id}`);
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error creating timeline event:', err);
@@ -464,7 +505,15 @@ router.post('/:id/timeline', async (req, res) => {
  * @query {string} projectId - Optional project ID to filter by
  * @returns {Object} Statistics about waiting items
  */
-router.get('/stats/overview', async (req, res) => {
+router.get('/stats/overview', cacheMiddleware({
+  ttl: 900, // 15 minutes cache for statistics (longer since they change less frequently)
+  keyGenerator: (req) => {
+    const { projectId } = req.query;
+    return projectId 
+      ? `cache:waiting-items:stats:project:${projectId}`
+      : 'cache:waiting-items:stats:all';
+  }
+}), async (req, res) => {
   const { projectId } = req.query;
   
   try {

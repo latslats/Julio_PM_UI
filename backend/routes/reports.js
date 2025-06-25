@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database.js');
 const { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, subMonths, subWeeks } = require('date-fns');
+const { cacheMiddleware } = require('../middleware/cache');
 
 // Re-use the enhanced error handling function
 const handleDatabaseError = (err, res, next) => {
@@ -91,7 +92,13 @@ const getDateRange = (range) => {
  * GET /api/reports/time-by-project
  * Get aggregated time data by project for a specific time range
  */
-router.get('/time-by-project', async (req, res, next) => {
+router.get('/time-by-project', cacheMiddleware({
+  ttl: 1800, // 30 minutes cache for reports
+  keyGenerator: (req) => {
+    const { range = 'week' } = req.query;
+    return `cache:reports:time-by-project:${range}`;
+  }
+}), async (req, res, next) => {
   const { range = 'week' } = req.query;
   const { startDate, endDate } = getDateRange(range);
   
@@ -141,7 +148,13 @@ router.get('/time-by-project', async (req, res, next) => {
  * GET /api/reports/time-by-task
  * Get aggregated time data by task for a specific time range
  */
-router.get('/time-by-task', async (req, res, next) => {
+router.get('/time-by-task', cacheMiddleware({
+  ttl: 1800, // 30 minutes cache for reports
+  keyGenerator: (req) => {
+    const { range = 'week', projectId } = req.query;
+    return `cache:reports:time-by-task:${range}:project=${projectId || 'all'}`;
+  }
+}), async (req, res, next) => {
   const { range = 'week', projectId } = req.query;
   const { startDate, endDate } = getDateRange(range);
   
@@ -207,7 +220,13 @@ router.get('/time-by-task', async (req, res, next) => {
  * GET /api/reports/daily-summary
  * Get daily time summary for a specific time range
  */
-router.get('/daily-summary', async (req, res, next) => {
+router.get('/daily-summary', cacheMiddleware({
+  ttl: 1800, // 30 minutes cache for reports
+  keyGenerator: (req) => {
+    const { range = 'week' } = req.query;
+    return `cache:reports:daily-summary:${range}`;
+  }
+}), async (req, res, next) => {
   const { range = 'week' } = req.query;
   const { startDate, endDate } = getDateRange(range);
   

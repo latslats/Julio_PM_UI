@@ -22,7 +22,7 @@ npm test         # Run Jest test suite
 
 ### Docker Development
 ```bash
-docker-compose up -d --build    # Start all services (frontend, backend, postgres)
+docker-compose up -d --build    # Start all services (frontend, backend, postgres, redis)
 docker-compose down             # Stop all services
 docker-compose logs -f          # Follow logs for all services
 ```
@@ -42,6 +42,7 @@ docker-compose logs -f          # Follow logs for all services
 
 ### Backend Structure
 - **Database:** Uses better-sqlite3 for development, PostgreSQL for production
+- **Caching:** Redis for high-performance caching with automatic invalidation
 - **Routes:** Modular structure in `/routes` directory (projects, tasks, timeEntries, waitingItems, reports, settings)
 - **Auto-initialization:** Database schema created automatically on startup
 - **Cron Jobs:** Auto-pause functionality runs via node-cron based on settings
@@ -58,6 +59,14 @@ docker-compose logs -f          # Follow logs for all services
 - Context providers wrap the entire app
 - API calls trigger context updates for real-time UI updates
 - Optimistic updates for better UX
+
+**Caching Strategy:**
+- Redis-based caching for all API endpoints with smart TTL configuration
+- Active timer states cached for real-time performance (30s TTL)
+- Project/task metadata cached with moderate TTL (2-5 minutes)
+- Reports and statistics cached with longer TTL (30 minutes)
+- Automatic cache invalidation on CRUD operations
+- Graceful degradation when Redis is unavailable
 
 **Component Organization:**
 ```
@@ -111,5 +120,27 @@ src/components/
 - Frontend serves on port 3000 (dev) or 80 (Docker)
 - Backend API serves on port 5001
 - PostgreSQL serves on port 5432 (Docker)
+- Redis serves on port 6379 (Docker)
 - Hot reloading enabled for both frontend and backend in development
 - Database persists to `~/Desktop/Dockers/taskflow_data/` in Docker setup
+- Redis data persists to `~/Desktop/Dockers/taskflow_redis_data/` in Docker setup
+
+## Redis Caching Implementation
+
+**Cache Configuration:**
+- **Redis Client:** ioredis with connection pooling and automatic reconnection
+- **Cache Middleware:** Generic middleware with TTL and key generation strategies
+- **Performance Monitoring:** Cache hits/misses logged for optimization
+
+**Endpoint Caching TTLs:**
+- Time Entries (active): 30 seconds (real-time updates)
+- Projects: 5 minutes (moderate change frequency)
+- Tasks: 2 minutes (frequent updates)
+- Settings: 1 hour (rare changes)
+- Reports: 30 minutes (computationally expensive)
+- Waiting Items: 5-15 minutes (varies by endpoint)
+
+**Cache Invalidation:**
+- Automatic invalidation on all CRUD operations
+- Pattern-based cache clearing for related data
+- Project/task relationship awareness for cascade invalidation

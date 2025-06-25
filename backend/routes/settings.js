@@ -1,10 +1,14 @@
 const express = require('express');
 const pool = require('../database'); // Database connection pool
+const { cacheMiddleware, invalidateCache } = require('../middleware/cache');
 
 const router = express.Router();
 
 // GET /api/settings - Fetch the current settings
-router.get('/', async (req, res, next) => {
+router.get('/', cacheMiddleware({
+  ttl: 3600, // 1 hour cache for settings
+  keyGenerator: () => 'cache:settings:main'
+}), async (req, res, next) => {
   try {
     // Assuming settings always exist (created/defaulted in database.js)
     const result = await pool.query('SELECT "auto_pause_enabled", "auto_pause_time" FROM settings WHERE id = 1');
@@ -61,6 +65,9 @@ router.put('/', async (req, res, next) => {
      if (updatedSettings.auto_pause_time) {
        updatedSettings.auto_pause_time = updatedSettings.auto_pause_time.substring(0, 5);
      }
+
+    // Invalidate settings cache
+    await invalidateCache.settings();
 
     res.json({ message: 'Settings updated successfully.', settings: updatedSettings });
   } catch (err) {

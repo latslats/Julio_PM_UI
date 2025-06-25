@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database.js'); // Use the exported pool
 const crypto = require('crypto'); // For generating unique IDs
+const { cacheMiddleware, invalidateCache } = require('../middleware/cache');
 
 // Helper function for consistent error handling
 const handleDatabaseError = (err, res, next) => {
@@ -14,7 +15,7 @@ const handleDatabaseError = (err, res, next) => {
 };
 
 // GET /api/projects - Get all projects
-router.get('/', async (req, res, next) => {
+router.get('/', cacheMiddleware({ ttl: 300 }), async (req, res, next) => {
   const sql = 'SELECT * FROM projects ORDER BY "createdAt" DESC'; // Use quotes for camelCase
   try {
     const result = await pool.query(sql);
@@ -25,7 +26,10 @@ router.get('/', async (req, res, next) => {
 });
 
 // GET /api/projects/:id - Get a single project by ID
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', cacheMiddleware({ 
+  ttl: 300,
+  keyGenerator: (req) => `cache:project:${req.params.id}`
+}), async (req, res, next) => {
   const sql = 'SELECT * FROM projects WHERE id = $1'; // Use $1 placeholder
   const params = [req.params.id];
   try {
@@ -67,6 +71,10 @@ router.post('/', async (req, res, next) => {
 
   try {
     const result = await pool.query(sql, params);
+    
+    // Invalidate projects cache after successful creation
+    await invalidateCache.projects();
+    
     res.status(201).json(result.rows[0]); // Return the created project from RETURNING
   } catch (err) {
     handleDatabaseError(err, res, next);
@@ -109,6 +117,11 @@ router.put('/:id', async (req, res, next) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Project not found or no changes made' });
     }
+    
+    // Invalidate projects cache and specific project cache after successful update
+    await invalidateCache.projects();
+    await invalidateCache.key(`cache:project:${id}`);
+    
     res.json(result.rows[0]); // Return the updated project
   } catch (err) {
     handleDatabaseError(err, res, next);
@@ -125,6 +138,12 @@ router.delete('/:id', async (req, res, next) => {
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Project not found' });
     }
+    
+    // Invalidate projects cache, specific project cache, and related tasks cache after successful deletion
+    await invalidateCache.projects();
+    await invalidateCache.key(`cache:project:${req.params.id}`);
+    await invalidateCache.tasks(req.params.id); // Also invalidate tasks for this project
+    
     res.status(200).json({ message: 'Project deleted successfully' });
   } catch (err) {
     handleDatabaseError(err, res, next);
