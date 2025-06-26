@@ -359,7 +359,13 @@ export const ProjectProvider = ({ children }) => {
         
         // Refresh tasks to pick up any status changes made by the backend
         // (Backend automatically updates task status to 'in-progress' when timer starts)
-        await fetchTasks();
+        try {
+          const tasksResponse = await api.get('/tasks');
+          setTasks(tasksResponse.data);
+        } catch (tasksFetchError) {
+          console.warn('Failed to refresh tasks after starting timer:', tasksFetchError);
+          // Don't fail the entire operation if task refresh fails
+        }
         
         return { success: true, data: result.data };
       } else {

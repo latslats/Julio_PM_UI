@@ -4,7 +4,7 @@ import { useProjects } from '../context/ProjectContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
 import { useUI } from '../context/UIContext'
 import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare, FiSearch, FiX } from 'react-icons/fi'
-import { format, formatDistanceToNow, isAfter, parseISO } from 'date-fns'
+import { format, formatDistanceToNow, isAfter, parseISO, startOfDay, endOfDay } from 'date-fns'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,6 +25,7 @@ import { Badge } from "../components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion"
 import logo from "../assets/taskflow_logo.png"
+import { formatTime, calculateElapsedTime } from '@/lib/timeUtils'
 
 // Components
 import ProjectCard from '../components/projects/ProjectCard'
@@ -49,6 +50,7 @@ const Dashboard = () => {
     startTimeTracking,
     pauseTimeTracking,
     resumeTimeTracking,
+    deleteTimeEntry,
     fetchActiveTimers
   } = useProjects()
 
@@ -139,30 +141,89 @@ const Dashboard = () => {
       const completed = tasks.filter(task => task.status === 'completed').length
       const activeTasks = tasks.filter(task => task.status !== 'completed').length
 
-      // Calculate hours tracked today
-      const today = new Date().setHours(0, 0, 0, 0)
+      // Calculate hours tracked today using EXACT same logic as TimeEntriesPage
+      const now = new Date()
+      const todayStart = startOfDay(now)
+      const todayEnd = endOfDay(now)
+      
+      console.log('🕐 Today range (using date-fns):', { todayStart, todayEnd })
+      
       const todayEntries = timeEntries.filter(entry => {
-        const entryDate = new Date(entry.startTime).setHours(0, 0, 0, 0)
-        return entryDate === today
+        if (!entry.startTime || !entry.endTime) return false // Must have both start AND end
+        
+        const entryStart = new Date(entry.startTime)
+        const entryEnd = new Date(entry.endTime)
+        
+        // Use EXACT same filtering logic as TimeEntriesPage
+        const startedToday = entryStart >= todayStart && entryStart <= todayEnd
+        const isValidDuration = entryEnd >= entryStart
+        
+        return startedToday && isValidDuration
       })
+
+      console.log('📊 Today\'s completed entries:', todayEntries.map(e => ({
+        id: e.id,
+        taskId: e.taskId,
+        start: new Date(e.startTime).toLocaleString(),
+        end: new Date(e.endTime).toLocaleString(),
+        durationMs: new Date(e.endTime) - new Date(e.startTime),
+        durationMins: (new Date(e.endTime) - new Date(e.startTime)) / 60000,
+        rawStartTime: e.startTime,
+        rawEndTime: e.endTime
+      })))
+      
+      console.log('🔍 ALL time entries (for debugging):', timeEntries.map(e => ({
+        id: e.id,
+        start: e.startTime ? new Date(e.startTime).toLocaleString() : 'null',
+        end: e.endTime ? new Date(e.endTime).toLocaleString() : 'null',
+        hasEnd: !!e.endTime,
+        isToday: e.startTime ? (new Date(e.startTime) >= todayStart && new Date(e.startTime) <= todayEnd) : false
+      })))
 
       const trackedMinutes = todayEntries.reduce((total, entry) => {
         const start = new Date(entry.startTime)
-        const end = entry.endTime ? new Date(entry.endTime) : new Date()
-        return total + (end - start) / 60000 // convert ms to minutes
+        const end = new Date(entry.endTime)
+        const durationMs = end - start
+        const durationMins = durationMs / 60000
+        const durationHours = durationMins / 60
+        
+        // More aggressive sanity checks for clearly incorrect data
+        if (durationMins <= 0) {
+          console.warn('⚠️ Ignoring zero/negative duration entry:', entry.id, durationMins, 'minutes')
+          return total
+        }
+        
+        if (durationHours > 8) {
+          const task = tasks.find(t => t.id === entry.taskId)
+          const project = task ? projects.find(p => p.id === task.projectId) : null
+          console.warn('⚠️ Ignoring suspiciously long entry (>8h):', {
+            entryId: entry.id,
+            duration: durationHours.toFixed(2) + ' hours',
+            taskTitle: task?.title || 'Unknown Task',
+            projectName: project?.name || 'Unknown Project',
+            startTime: new Date(entry.startTime).toLocaleString(),
+            endTime: new Date(entry.endTime).toLocaleString()
+          })
+          return total
+        }
+        
+        console.log('✅ Including entry:', entry.id, durationMins.toFixed(2), 'minutes')
+        return total + durationMins
       }, 0)
+
+      console.log('⏱️ Total tracked minutes today:', trackedMinutes, '→', (trackedMinutes / 60).toFixed(2), 'hours')
 
       setStats({
         totalProjects: projects.length,
         completedTasks: completed,
         pendingTasks: activeTasks,
-        trackedHoursToday: Math.round(trackedMinutes / 6) / 10 // round to 1 decimal
+        trackedHoursToday: Math.round(trackedMinutes / 60 * 10) / 10 // Fixed: convert minutes to hours properly
       })
     }
   }, [projects, tasks, timeEntries, loading])
 
 
-  // Calculate elapsed time for active time entries (for Focus Mode)
+  // Calculate elapsed time for active time entries (for Focus Mode) using standardized utilities
   useEffect(() => {
     let intervals = [];
 
@@ -174,26 +235,20 @@ const Dashboard = () => {
 
     // Initialize elapsed times for all active entries
     activeTimeEntries.forEach(entry => {
-      const calculateElapsed = () => {
-        let currentElapsedTime = parseFloat(entry.totalPausedDuration) || 0;
-        if (!entry.isPaused && entry.lastResumedAt) {
-          const now = new Date().getTime();
-          const lastResume = new Date(entry.lastResumedAt).getTime();
-          currentElapsedTime += (now - lastResume) / 1000;
-        }
-
+      const updateElapsedTime = () => {
+        const elapsed = calculateElapsedTime(entry);
         setElapsedTimes(prev => ({
           ...prev,
-          [entry.id]: Math.floor(currentElapsedTime)
+          [entry.id]: elapsed
         }));
       };
 
       // Calculate once immediately
-      calculateElapsed();
+      updateElapsedTime();
 
       // If entry is running (not paused), update every second
       if (!entry.isPaused) {
-        const interval = setInterval(calculateElapsed, 1000);
+        const interval = setInterval(updateElapsedTime, 1000);
         intervals.push(interval);
       }
     });
@@ -434,18 +489,6 @@ const Dashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showQuickEntry]);
 
-  // Format time as HH:MM:SS for time tracking
-  const formatTime = (seconds) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-
-    return [
-      h.toString().padStart(2, '0'),
-      m.toString().padStart(2, '0'),
-      s.toString().padStart(2, '0')
-    ].join(':');
-  };
 
   if (loading) {
     return (
@@ -699,72 +742,176 @@ const Dashboard = () => {
                   <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
                 </TabsList>
 
-                {/* Overview Tab - Refined with iOS-inspired minimalism */}
-                <TabsContent value="overview" className="space-y-8">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    {/* Time Tracking - Cleaner card design */}
-                    <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                      <CardHeader className="pb-3 pt-5 px-6">
-                        <CardTitle className="text-base font-medium text-secondary-900">Time Tracking</CardTitle>
-                      </CardHeader>
-                      <CardContent className="px-6 pb-5">
-                        <TimeTrackingWidget
-                          timeEntries={timeEntries}
-                          tasks={tasks}
-                          projects={projects}
-                          stopTimeTracking={stopTimeTracking}
-                          startTimeTracking={startTimeTracking}
-                          pauseTimeTracking={pauseTimeTracking}
-                          resumeTimeTracking={resumeTimeTracking}
-                          loading={loading}
-                          fetchActiveTimers={fetchActiveTimers}
-                        />
-                      </CardContent>
-                    </Card>
-
-                    {/* Waiting On (Preview) - Cleaner card design */}
-                    {waitingFeaturesAvailable && (
-                      <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                        <CardHeader className="pb-3 pt-5 px-6">
+                {/* Overview Tab - Modern shadcn design with refined spacing */}
+                <TabsContent value="overview" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Time Tracking - Enhanced with modern shadcn patterns */}
+                    <div className="lg:col-span-2">
+                      <Card className="border-border/50 shadow-sm">
+                        <CardHeader className="pb-4 pt-6 px-6 border-b border-border/50">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
-                            <Button variant="ghost" size="sm" asChild className="text-primary/80 hover:text-primary">
-                              <span className="cursor-pointer flex items-center text-xs" onClick={() => setActiveTab("waitingOn")}>
-                                <span>See All</span>
-                                <FiArrowRight className="ml-1 h-3.5 w-3.5" />
-                              </span>
-                            </Button>
+                            <div className="space-y-1">
+                              <CardTitle className="text-base font-semibold tracking-tight text-foreground">Time Tracking</CardTitle>
+                              <p className="text-sm text-muted-foreground">Active work sessions</p>
+                            </div>
+                            <div className="flex items-center gap-6 text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-muted-foreground">
+                                  <span className="font-medium text-foreground">{stats.trackedHoursToday}h</span> today
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                                <span className="text-muted-foreground">
+                                  <span className="font-medium text-foreground">{activeTimeEntries.filter(entry => entry.endTime === null).length}</span> active
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="px-6 pb-5">
-                          {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
-                            <div className="space-y-2">
-                              {filteredWaitingItems.slice(0, 3).map(item => (
-                                <WaitingItemCard
-                                  key={item.id}
-                                  item={item}
-                                  getStatusClass={getStatusClass}
-                                  getPriorityClass={getPriorityClass}
-                                  compact
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <EmptyState
-                              icon={<FiAlertCircle className="h-7 w-7" />}
-                              title="No waiting items"
-                              description="Track things you're waiting on others for"
-                              action={
-                                <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
-                                  Add Item
-                                </Button>
-                              }
-                              compact
-                            />
-                          )}
+                        <CardContent className="p-6">
+                          <TimeTrackingWidget
+                            timeEntries={timeEntries}
+                            tasks={tasks}
+                            projects={projects}
+                            stopTimeTracking={stopTimeTracking}
+                            startTimeTracking={startTimeTracking}
+                            pauseTimeTracking={pauseTimeTracking}
+                            resumeTimeTracking={resumeTimeTracking}
+                            cleanupTimeEntry={deleteTimeEntry}
+                            loading={loading}
+                            fetchActiveTimers={fetchActiveTimers}
+                          />
                         </CardContent>
                       </Card>
-                    )}
+                    </div>
+
+                    {/* Recent Activity - Modern card with subtle styling */}
+                    <div className="lg:col-span-1">
+                      <Card className="border-border/50 shadow-sm h-full">
+                        <CardHeader className="pb-4 pt-6 px-6 border-b border-border/50">
+                          <div className="space-y-1">
+                            <CardTitle className="text-base font-semibold tracking-tight text-foreground">Recent Activity</CardTitle>
+                            <p className="text-sm text-muted-foreground">Recently worked tasks</p>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                          <div className="space-y-3">
+                            {(() => {
+                              // Get unique tasks from recent time entries (last 7 days)
+                              const recentTimeEntries = timeEntries
+                                .filter(entry => {
+                                  const entryDate = new Date(entry.startTime);
+                                  const weekAgo = new Date();
+                                  weekAgo.setDate(weekAgo.getDate() - 7);
+                                  return entryDate >= weekAgo;
+                                })
+                                .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                              
+                              const uniqueTaskIds = [...new Set(recentTimeEntries.map(entry => entry.taskId))];
+                              const recentTasks = uniqueTaskIds
+                                .map(taskId => tasks.find(task => task.id === taskId))
+                                .filter(Boolean)
+                                .slice(0, 5);
+
+                              return recentTasks.length > 0 ? (
+                                recentTasks.map(task => {
+                                  const project = projects.find(p => p.id === task.projectId);
+                                  const isActive = activeTimeEntries.some(entry => entry.taskId === task.id);
+                                  
+                                  // Generate a color for the project based on its name/color property
+                                  const getProjectColor = (project) => {
+                                    if (project?.color) {
+                                      return project.color
+                                    }
+                                    // Generate a consistent color based on project name
+                                    const colors = [
+                                      '#3B82F6', '#8B5CF6', '#06B6D4', '#10B981', 
+                                      '#F59E0B', '#EF4444', '#EC4899', '#6366F1'
+                                    ]
+                                    const hash = project?.name?.split('').reduce((a, b) => {
+                                      a = ((a << 5) - a) + b.charCodeAt(0)
+                                      return a & a
+                                    }, 0)
+                                    return colors[Math.abs(hash) % colors.length]
+                                  }
+
+                                  const projectColor = getProjectColor(project)
+                                  
+                                  return (
+                                    <div key={task.id} className="group">
+                                      <div className="flex items-start justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                          <div>
+                                            <p className="text-sm font-medium text-foreground truncate leading-tight">
+                                              {task.title}
+                                            </p>
+                                          </div>
+                                          
+                                          <div className="flex items-center gap-2">
+                                            {/* Enhanced project badge with color */}
+                                            <div 
+                                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border"
+                                              style={{
+                                                backgroundColor: `${projectColor}15`,
+                                                borderColor: `${projectColor}40`,
+                                                color: projectColor
+                                              }}
+                                            >
+                                              <div 
+                                                className="w-1.5 h-1.5 rounded-full mr-1.5"
+                                                style={{ backgroundColor: projectColor }}
+                                              ></div>
+                                              {project?.name || 'Unknown Project'}
+                                            </div>
+                                            
+                                            {task.priority === 'high' && (
+                                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                                                High Priority
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="ml-3 flex-shrink-0">
+                                          {isActive ? (
+                                            <div className="flex items-center text-green-600">
+                                              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                                              <span className="text-xs font-medium">Active</span>
+                                            </div>
+                                          ) : (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={() => startTimeTracking(task.id)}
+                                              title="Start Timer"
+                                            >
+                                              <FiPlay className="h-3.5 w-3.5" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="text-center py-8 px-2">
+                                  <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                    <FiActivity className="h-6 w-6 text-muted-foreground" />
+                                  </div>
+                                  <h3 className="text-sm font-medium text-foreground mb-1">No recent activity</h3>
+                                  <p className="text-xs text-muted-foreground">
+                                    Start working on tasks to see them here
+                                  </p>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
                 </TabsContent>
 

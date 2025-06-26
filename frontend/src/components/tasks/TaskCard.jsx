@@ -20,6 +20,7 @@ import {
 import { CalendarIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TaskStatusIndicator from './TaskStatusIndicator'
+import { calculateElapsedTime, calculateTotalTimeSpent } from '@/lib/timeUtils'
 
 /**
  * Enhanced TaskCard component with card-based layout and improved visual hierarchy
@@ -66,49 +67,26 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
   // Calculate total time spent on this task (from completed time entries)
   const [totalTimeSpent, setTotalTimeSpent] = useState(0)
 
-  // Calculate total time spent on this task
-  useEffect(() => {
-    const taskTimeEntries = timeEntries.filter(entry => entry.taskId === task.id)
-
-    // Sum up durations from completed time entries
-    const completedTime = taskTimeEntries
-      .filter(entry => entry.endTime !== null)
-      .reduce((sum, entry) => sum + parseFloat(entry.duration || 0), 0)
-
-    // If there's an active time entry, add the current elapsed time
-    let totalTime = completedTime
-    if (activeTimeEntry && elapsedTime > 0) {
-      totalTime += elapsedTime
-    }
-
-    setTotalTimeSpent(totalTime)
-  }, [task.id, timeEntries, activeTimeEntry, elapsedTime])
-
-  // Calculate and update elapsed time for active timer
+  // Calculate elapsed time for active timer using standardized utilities
   useEffect(() => {
     if (!activeTimeEntry) {
       setElapsedTime(0)
       return
     }
 
-    // Calculate initial elapsed time
-    const calculateElapsed = () => {
-      let currentElapsedTime = parseFloat(activeTimeEntry.totalPausedDuration) || 0
-      if (!activeTimeEntry.isPaused && activeTimeEntry.lastResumedAt) {
-        const now = new Date().getTime()
-        const lastResume = new Date(activeTimeEntry.lastResumedAt).getTime()
-        currentElapsedTime += (now - lastResume) / 1000
-      }
-      setElapsedTime(Math.floor(currentElapsedTime))
+    // Use standardized calculation function
+    const updateElapsedTime = () => {
+      const elapsed = calculateElapsedTime(activeTimeEntry)
+      setElapsedTime(elapsed)
     }
 
     // Calculate once immediately
-    calculateElapsed()
+    updateElapsedTime()
 
     // If entry is running (not paused), update every second
     let interval
     if (!activeTimeEntry.isPaused) {
-      interval = setInterval(calculateElapsed, 1000)
+      interval = setInterval(updateElapsedTime, 1000)
     }
 
     // Cleanup function to clear interval
@@ -116,6 +94,12 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
       if (interval) clearInterval(interval)
     }
   }, [activeTimeEntry])
+
+  // Calculate total time spent on this task using standardized utilities
+  useEffect(() => {
+    const totalTime = calculateTotalTimeSpent(task.id, timeEntries, activeTimeEntry, elapsedTime)
+    setTotalTimeSpent(totalTime)
+  }, [task.id, timeEntries, activeTimeEntry, elapsedTime])
 
   // Check for due date status
   const isOverdue = task.dueDate && isPast(parseISO(task.dueDate)) && !isToday(parseISO(task.dueDate))
@@ -393,7 +377,7 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
                     title="View time entries"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <FiList className={densityConfig.iconSize} />
+                    <FiList className={densityConfig?.iconSize || 'h-4 w-4'} />
                   </Link>
 
                   <Button
@@ -406,7 +390,7 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
                     `}
                     title="Edit task"
                   >
-                    <FiEdit2 className={densityConfig.iconSize} />
+                    <FiEdit2 className={densityConfig?.iconSize || 'h-4 w-4'} />
                   </Button>
 
                   <Button
@@ -422,7 +406,7 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
                     `}
                     title="Delete task"
                   >
-                    <FiTrash2 className={densityConfig.iconSize} />
+                    <FiTrash2 className={densityConfig?.iconSize || 'h-4 w-4'} />
                   </Button>
                 </div>
               </div>
@@ -457,25 +441,25 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
                     disabled={isActionLoading}
                   >
                     {isActionLoading ? (
-                      <FiLoader className={`${densityConfig.iconSize} animate-spin`} />
+                      <FiLoader className={`${densityConfig?.iconSize || 'h-4 w-4'} animate-spin`} />
                     ) : (
-                      <FiSquare className={densityConfig.iconSize} />
+                      <FiSquare className={densityConfig?.iconSize || 'h-4 w-4'} />
                     )}
                   </Button>
                 )}
                 
-                <Button
-                  variant={activeTimeEntry ? "outline" : "default"}
-                  size="icon"
+                <button
                   onClick={toggleTimeTracking}
                   className={`
-                    ${densityConfig.buttonSize} transition-all duration-200 shadow-sm hover:shadow-md
+                    w-9 h-9 rounded-lg border flex items-center justify-center 
+                    transition-all duration-200 shadow-sm hover:shadow-md
                     ${activeTimeEntry
                       ? activeTimeEntry.isPaused
-                        ? 'text-primary-600 hover:bg-primary-50 border-primary-200 hover:border-primary-300'
-                        : 'text-secondary-600 hover:bg-secondary-50 border-secondary-200'
-                      : 'bg-primary-500 hover:bg-primary-600 text-white shadow-primary-200'
+                        ? 'bg-green-500 hover:bg-green-600 border-green-500 text-white shadow-green-200'
+                        : 'bg-orange-100 hover:bg-orange-200 border-orange-300 text-orange-700'
+                      : 'bg-primary-500 hover:bg-primary-600 border-primary-500 text-white shadow-primary-200'
                     }
+                    ${isActionLoading ? 'opacity-75 cursor-wait' : 'hover:scale-105'}
                   `}
                   title={activeTimeEntry
                     ? activeTimeEntry.isPaused
@@ -485,17 +469,17 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
                   disabled={isActionLoading}
                 >
                   {isActionLoading ? (
-                    <FiLoader className={`${densityConfig.iconSize} animate-spin`} />
+                    <FiLoader className="h-4 w-4 animate-spin" />
                   ) : activeTimeEntry ? (
                     activeTimeEntry.isPaused ? (
-                      <FiPlay className={densityConfig.iconSize} />
+                      <FiPlay className="h-4 w-4" />
                     ) : (
-                      <FiPause className={densityConfig.iconSize} />
+                      <FiPause className="h-4 w-4" />
                     )
                   ) : (
-                    <FiPlay className={densityConfig.iconSize} />
+                    <FiPlay className="h-4 w-4" />
                   )}
-                </Button>
+                </button>
               </div>
             </div>
 

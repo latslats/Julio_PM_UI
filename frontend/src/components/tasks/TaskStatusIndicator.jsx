@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { FiPlay, FiPause, FiClock, FiCircle, FiCheckCircle, FiAlertTriangle } from 'react-icons/fi'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { formatTimeCompact } from '@/lib/timeUtils'
 
 /**
  * TaskStatusIndicator provides comprehensive visual status communication
@@ -85,13 +86,6 @@ const TaskStatusIndicator = ({
     ? Math.min((totalTimeSpent / (estimatedHours * 3600)) * 100, 100) 
     : 0
 
-  // Format time display
-  const formatTime = (seconds) => {
-    if (seconds < 3600) {
-      return `${Math.round(seconds / 60)}m`
-    }
-    return `${(seconds / 3600).toFixed(1)}h`
-  }
 
   return (
     <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
@@ -216,7 +210,7 @@ const TaskStatusIndicator = ({
             </motion.div>
           )}
           <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
-            {activeTimeEntry.isPaused ? 'Paused' : formatTime(elapsedTime)}
+            {activeTimeEntry.isPaused ? 'Paused' : formatTimeCompact(elapsedTime)}
           </span>
         </motion.div>
       )}
@@ -228,7 +222,7 @@ const TaskStatusIndicator = ({
             <div className="flex items-center gap-1 text-xs text-gray-600">
               <FiClock className="h-3 w-3" />
               <span>
-                {formatTime(totalTimeSpent)}
+                {formatTimeCompact(totalTimeSpent)}
                 {estimatedHours && (
                   <span className="text-gray-400">/{estimatedHours}h</span>
                 )}
