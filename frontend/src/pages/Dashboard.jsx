@@ -360,12 +360,6 @@ const Dashboard = () => {
       });
   }, [projects, projectStats, searchTerm, selectedClient, loading]);
 
-  // Get upcoming tasks
-  const upcomingTasks = useMemo(() => {
-    return myTasksFlat
-      .filter(t => t.dueDate && isAfter(parseISO(t.dueDate), new Date())) // Use isAfter and parseISO
-      .slice(0, 5);
-  }, [myTasksFlat]);
 
   // Filter waiting items for display
 
@@ -1058,35 +1052,6 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Upcoming Tasks */}
-              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                <CardHeader className="pb-3 pt-5 px-6">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Upcoming Tasks</CardTitle>
-                    <Button variant="ghost" size="sm" className="text-primary/80 hover:text-primary text-xs">
-                      <span>View Calendar</span>
-                      <FiArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-6 pb-5">
-                  {upcomingTasks.length > 0 ? (
-                    <div className="grid gap-3">
-                      {upcomingTasks.map(task => (
-                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<FiCoffee className="h-7 w-7" />}
-                      title="No upcoming tasks"
-                      description="You're all caught up!"
-                      compact
-                    />
-                  )}
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {/* Waiting On Tab - Refined with iOS-inspired minimalism */}
