@@ -38,6 +38,12 @@ import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
 import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
 import QuickEntry from '../components/common/QuickEntry'
 
+// Enhanced Dashboard Components
+import EnhancedStatsCards from '../components/dashboard/EnhancedStatsCards'
+import MiniProgressCharts from '../components/dashboard/MiniProgressCharts'
+import ProductivityInsights from '../components/dashboard/ProductivityInsights'
+import EnhancedRecentActivity from '../components/dashboard/EnhancedRecentActivity'
+
 const Dashboard = () => {
   const {
     projects,
@@ -509,15 +515,15 @@ const Dashboard = () => {
 
       {/* Main Dashboard Content */}
       <div className="relative z-10">
-        <div className="flex flex-col space-y-8">
-          {/* Enhanced Dashboard Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-secondary-900">Dashboard</h1>
-              <p className="text-secondary-500/80 mt-1.5 text-sm">Your project overview and quick actions</p>
+        <div className="flex flex-col space-y-10">
+          {/* Enhanced Dashboard Header with better spacing */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground text-base">Your project overview and productivity insights</p>
             </div>
 
-            <div className="flex mt-5 md:mt-0 space-x-2">
+            <div className="flex flex-wrap gap-3">
               {/* Bulk Selection Toggle */}
               <Button
                 variant={bulkSelectMode ? "default" : "outline"}
@@ -695,51 +701,42 @@ const Dashboard = () => {
             </div>
           ) : (
             <>
-              {/* Stats Overview - Cleaner, more minimal cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <StatCard
-                  icon={<FiFolder />}
-                  value={stats.totalProjects}
-                  label="Projects"
-                  bgColor="bg-blue-50/50"
-                  textColor="text-blue-600/80"
-                />
-                <StatCard
-                  icon={<FiActivity />}
-                  value={stats.pendingTasks}
-                  label="Active Tasks"
-                  bgColor="bg-purple-50/50"
-                  textColor="text-purple-600/80"
-                />
-                <StatCard
-                  icon={<FiCheckCircle />}
-                  value={stats.completedTasks}
-                  label="Completed"
-                  bgColor="bg-green-50/50"
-                  textColor="text-green-600/80"
-                />
-                <StatCard
-                  icon={<FiClock />}
-                  value={stats.trackedHoursToday}
-                  label="Hours Today"
-                  bgColor="bg-amber-50/50"
-                  textColor="text-amber-600/80"
-                />
-              </div>
+              {/* Enhanced Stats Overview with trend indicators */}
+              <EnhancedStatsCards
+                projects={projects}
+                tasks={tasks}
+                timeEntries={timeEntries}
+                trackedHoursToday={stats.trackedHoursToday}
+              />
 
-              {/* Main Content with Tabs - More subtle and refined */}
+              {/* Main Content with Enhanced Tabs */}
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="mb-8 bg-secondary-50/70 p-1 rounded-xl">
-                  <TabsTrigger value="overview" className="rounded-lg text-sm font-normal">Overview</TabsTrigger>
-                  <TabsTrigger value="tasks" className="rounded-lg text-sm font-normal">My Tasks</TabsTrigger>
-                  <TabsTrigger value="projects" className="rounded-lg text-sm font-normal">Projects</TabsTrigger>
-                  <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-normal">Waiting On</TabsTrigger>
+                <TabsList className="mb-10 bg-muted/50 p-1.5 rounded-xl border border-border/50">
+                  <TabsTrigger value="overview" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="tasks" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    My Tasks
+                  </TabsTrigger>
+                  <TabsTrigger value="projects" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    Projects
+                  </TabsTrigger>
+                  <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    Waiting On
+                  </TabsTrigger>
                 </TabsList>
 
-                {/* Overview Tab - Modern shadcn design with refined spacing */}
-                <TabsContent value="overview" className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Time Tracking - Enhanced with modern shadcn patterns */}
+                {/* Overview Tab - Enhanced with progress visualization and insights */}
+                <TabsContent value="overview" className="space-y-8">
+                  {/* Mini Progress Charts */}
+                  <MiniProgressCharts
+                    projects={projects}
+                    tasks={tasks}
+                    timeEntries={timeEntries}
+                  />
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Time Tracking - Enhanced with modern design */}
                     <div className="lg:col-span-2">
                       <Card className="border-border/50 shadow-sm">
                         <CardHeader className="pb-4 pt-6 px-6 border-b border-border/50">
@@ -781,130 +778,32 @@ const Dashboard = () => {
                       </Card>
                     </div>
 
-                    {/* Recent Activity - Modern card with subtle styling */}
+                    {/* Enhanced Recent Activity with timeline */}
                     <div className="lg:col-span-1">
-                      <Card className="border-border/50 shadow-sm h-full">
-                        <CardHeader className="pb-4 pt-6 px-6 border-b border-border/50">
-                          <div className="space-y-1">
-                            <CardTitle className="text-base font-semibold tracking-tight text-foreground">Recent Activity</CardTitle>
-                            <p className="text-sm text-muted-foreground">Recently worked tasks</p>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                          <div className="space-y-3">
-                            {(() => {
-                              // Get unique tasks from recent time entries (last 7 days)
-                              const recentTimeEntries = timeEntries
-                                .filter(entry => {
-                                  const entryDate = new Date(entry.startTime);
-                                  const weekAgo = new Date();
-                                  weekAgo.setDate(weekAgo.getDate() - 7);
-                                  return entryDate >= weekAgo;
-                                })
-                                .sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-                              
-                              const uniqueTaskIds = [...new Set(recentTimeEntries.map(entry => entry.taskId))];
-                              const recentTasks = uniqueTaskIds
-                                .map(taskId => tasks.find(task => task.id === taskId))
-                                .filter(Boolean)
-                                .slice(0, 5);
-
-                              return recentTasks.length > 0 ? (
-                                recentTasks.map(task => {
-                                  const project = projects.find(p => p.id === task.projectId);
-                                  const isActive = activeTimeEntries.some(entry => entry.taskId === task.id);
-                                  
-                                  // Generate a color for the project based on its name/color property
-                                  const getProjectColor = (project) => {
-                                    if (project?.color) {
-                                      return project.color
-                                    }
-                                    // Generate a consistent color based on project name
-                                    const colors = [
-                                      '#3B82F6', '#8B5CF6', '#06B6D4', '#10B981', 
-                                      '#F59E0B', '#EF4444', '#EC4899', '#6366F1'
-                                    ]
-                                    const hash = project?.name?.split('').reduce((a, b) => {
-                                      a = ((a << 5) - a) + b.charCodeAt(0)
-                                      return a & a
-                                    }, 0)
-                                    return colors[Math.abs(hash) % colors.length]
-                                  }
-
-                                  const projectColor = getProjectColor(project)
-                                  
-                                  return (
-                                    <div key={task.id} className="group">
-                                      <div className="flex items-start justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-colors">
-                                        <div className="flex-1 min-w-0 space-y-2">
-                                          <div>
-                                            <p className="text-sm font-medium text-foreground truncate leading-tight">
-                                              {task.title}
-                                            </p>
-                                          </div>
-                                          
-                                          <div className="flex items-center gap-2">
-                                            {/* Enhanced project badge with color */}
-                                            <div 
-                                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border"
-                                              style={{
-                                                backgroundColor: `${projectColor}15`,
-                                                borderColor: `${projectColor}40`,
-                                                color: projectColor
-                                              }}
-                                            >
-                                              <div 
-                                                className="w-1.5 h-1.5 rounded-full mr-1.5"
-                                                style={{ backgroundColor: projectColor }}
-                                              ></div>
-                                              {project?.name || 'Unknown Project'}
-                                            </div>
-                                            
-                                            {task.priority === 'high' && (
-                                              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-destructive/10 text-destructive border border-destructive/20">
-                                                High Priority
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="ml-3 flex-shrink-0">
-                                          {isActive ? (
-                                            <div className="flex items-center text-green-600">
-                                              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                                              <span className="text-xs font-medium">Active</span>
-                                            </div>
-                                          ) : (
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              onClick={() => startTimeTracking(task.id)}
-                                              title="Start Timer"
-                                            >
-                                              <FiPlay className="h-3.5 w-3.5" />
-                                            </Button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              ) : (
-                                <div className="text-center py-8 px-2">
-                                  <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                                    <FiActivity className="h-6 w-6 text-muted-foreground" />
-                                  </div>
-                                  <h3 className="text-sm font-medium text-foreground mb-1">No recent activity</h3>
-                                  <p className="text-xs text-muted-foreground">
-                                    Start working on tasks to see them here
-                                  </p>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <EnhancedRecentActivity
+                        projects={projects}
+                        tasks={tasks}
+                        timeEntries={timeEntries}
+                        startTimeTracking={startTimeTracking}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Productivity Insights */}
+                  <div className="space-y-6">
+                    <div className="border-t border-border/50 pt-8">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2">
+                          Productivity Insights
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          AI-powered analysis of your work patterns and personalized recommendations
+                        </p>
+                      </div>
+                      <ProductivityInsights
+                        tasks={tasks}
+                        timeEntries={timeEntries}
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -1410,20 +1309,7 @@ const Dashboard = () => {
   )
 }
 
-// Keep these helper components - Refined with iOS-inspired minimalism
-const StatCard = ({ icon, value, label, bgColor, textColor }) => (
-  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-    <div className="flex h-full">
-      <div className={`${bgColor} ${textColor} flex items-center justify-center p-3.5 rounded-r-xl`}>
-        <div className="text-lg">{icon}</div>
-      </div>
-      <div className="flex-1 p-4">
-        <div className="text-xl font-medium tracking-tight">{value}</div>
-        <div className="text-xs text-secondary-500/80 mt-0.5">{label}</div>
-      </div>
-    </div>
-  </Card>
-)
+// Helper components for empty states
 
 const EmptyState = ({ icon, title, description, action, compact = false }) => (
   <div className={`text-center ${compact ? 'py-4' : 'py-6'}`}>
