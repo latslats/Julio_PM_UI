@@ -1,0 +1,3 @@
+I want you to enhance my tasks so whenever the timer starts tracking something, the task status changes to in progress, Whenever I click on the checkmark to complete the task, it changes to complete. And whenever I just create the task and don't do anything, the task stays as not started. 
+
+The to the mytasks tab on the dashboard improve the color coding and grouping to identify if it is a Freshly Created Task or a task that is In Progress (Completed tasks won't show up here)
