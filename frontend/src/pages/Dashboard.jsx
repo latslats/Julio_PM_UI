@@ -1,16 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
+import { useTasks } from '../context/TaskContext'
+import { useTimeTracking } from '../context/TimeTrackingContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
 import { useUI } from '../context/UIContext'
-import { FiClock, FiCheckCircle, FiAlertCircle, FiActivity, FiPlus, FiArrowRight, FiFilter, FiChevronDown, FiChevronUp, FiCoffee, FiSettings, FiBarChart2, FiFolder, FiTarget, FiPlay, FiPause, FiSquare, FiSearch, FiX } from 'react-icons/fi'
+import { FiClock, FiAlertCircle } from 'react-icons/fi'
 import { format, formatDistanceToNow, isAfter, parseISO, startOfDay, endOfDay } from 'date-fns'
+import { motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,22 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog"
-import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group"
-import { Badge } from "../components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { motion, AnimatePresence } from "framer-motion"
 import logo from "../assets/taskflow_logo.png"
 import { formatTime, calculateElapsedTime } from '@/lib/timeUtils'
+import { useTaskManagement } from '../hooks/useTaskManagement'
+import { useTimeCalculations } from '../hooks/useTimeCalculations'
 
 // Components
-import ProjectCard from '../components/projects/ProjectCard'
-import TaskCard from '../components/tasks/TaskCard'
-import TaskItem from '../components/tasks/TaskItem'
 import BulkActions from '../components/tasks/BulkActions'
 import TimeTrackingWidget from '../components/timeTracking/TimeTrackingWidget'
-import WaitingItemCard from '../components/waitingItems/WaitingItemCard'
 import WaitingItemForm from '../components/waitingItems/WaitingItemForm'
-import WaitingItemStats from '../components/waitingItems/WaitingItemStats'
 import QuickEntry from '../components/common/QuickEntry'
 
 // Enhanced Dashboard Components
@@ -43,22 +39,39 @@ import EnhancedStatsCards from '../components/dashboard/EnhancedStatsCards'
 import MiniProgressCharts from '../components/dashboard/MiniProgressCharts'
 import ProductivityInsights from '../components/dashboard/ProductivityInsights'
 import EnhancedRecentActivity from '../components/dashboard/EnhancedRecentActivity'
+import DashboardHeader from '../components/dashboard/DashboardHeader'
+import FocusModeView from '../components/dashboard/FocusModeView'
+import ProjectsTabContent from '../components/dashboard/ProjectsTabContent'
+import TasksTabContent from '../components/dashboard/TasksTabContent'
+import WaitingItemsTabContent from '../components/dashboard/WaitingItemsTabContent'
 
 const Dashboard = () => {
   const {
     projects,
-    tasks,
-    timeEntries,
-    loading,
+    loading: projectsLoading,
     projectStats,
     createProject,
+    totalTrackedHours,
+    recentActivity
+  } = useProjects()
+
+  const {
+    tasks,
+    loading: tasksLoading
+  } = useTasks()
+
+  const {
+    timeEntries,
+    loading: timeEntriesLoading,
     stopTimeTracking,
     startTimeTracking,
     pauseTimeTracking,
     resumeTimeTracking,
     deleteTimeEntry,
     fetchActiveTimers
-  } = useProjects()
+  } = useTimeTracking()
+
+  const loading = projectsLoading || tasksLoading || timeEntriesLoading
 
   // Safely get waiting items context with error handling
 
@@ -86,9 +99,7 @@ const Dashboard = () => {
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
   const [activeTab, setActiveTab] = useState("overview")
   
-  // Projects tab state variables
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedClient, setSelectedClient] = useState('all')
+  // Modal state variables
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
   const [formErrors, setFormErrors] = useState({})
@@ -110,7 +121,6 @@ const Dashboard = () => {
   const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
   // Track elapsed time for active entries in Focus Mode
   const [elapsedTimes, setElapsedTimes] = useState({})
-  const [showWaitingStats, setShowWaitingStats] = useState(true)
   const [showAddWaitingModal, setShowAddWaitingModal] = useState(false)
   const [hideCompletedItems, setHideCompletedItems] = useState(true)
   const [waitingFeaturesAvailable, setWaitingFeaturesAvailable] = useState(false)
@@ -303,40 +313,21 @@ const Dashboard = () => {
   }, [activeTab, fetchWaitingItems, fetchStats]); // Added dependencies
 
 
-  // Derived state for "My Tasks" view - grouped by status
-  const myTasks = useMemo(() => {
-    if (loading) return { inProgress: [], notStarted: [] };
+  // Use custom hooks for better organization
+  const {
+    dashboardTasks: myTasks,
+    activeTasks,
+    taskStats
+  } = useTaskManagement(tasks, projects)
 
-    const nonCompletedTasks = tasks.filter(task => task.status !== 'completed');
-    
-    const inProgressTasks = nonCompletedTasks
-      .filter(task => task.status === 'in-progress')
-      .sort((a, b) => {
-        // Sort by due date (earliest first)
-        const dateA = a.dueDate ? parseISO(a.dueDate) : Infinity;
-        const dateB = b.dueDate ? parseISO(b.dueDate) : Infinity;
-        return dateA - dateB;
-      });
-
-    const notStartedTasks = nonCompletedTasks
-      .filter(task => task.status === 'not-started')
-      .sort((a, b) => {
-        // Sort by due date (earliest first)
-        const dateA = a.dueDate ? parseISO(a.dueDate) : Infinity;
-        const dateB = b.dueDate ? parseISO(b.dueDate) : Infinity;
-        return dateA - dateB;
-      });
-
-    return {
-      inProgress: inProgressTasks,
-      notStarted: notStartedTasks
-    };
-  }, [tasks, loading]);
+  const {
+    trackedHoursToday: calculatedTrackedHours
+  } = useTimeCalculations(timeEntries, tasks, projects)
 
   // Legacy myTasks array for other parts that still expect a flat array
   const myTasksFlat = useMemo(() => {
-    return [...myTasks.inProgress, ...myTasks.notStarted];
-  }, [myTasks]);
+    return [...myTasks.inProgress, ...myTasks.notStarted]
+  }, [myTasks])
 
   // Get unique client names for the filter dropdown
   const uniqueClients = useMemo(() => {
@@ -344,27 +335,6 @@ const Dashboard = () => {
     return ['all', ...Array.from(clients).sort()]
   }, [projects]);
 
-  // Filter projects based on search term and selected client
-  const filteredProjects = useMemo(() => {
-    if (loading) return [];
-
-    return projects
-      .filter(project => 
-        project.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedClient === 'all' || project.client === selectedClient)
-      )
-      .map(project => {
-        // Enhance project with stats from projectStats
-        const stats = projectStats[project.id] || { totalTasks: 0, completedTasks: 0, totalHours: 0, progress: 0 };
-        return {
-          ...project,
-          totalTasks: stats.totalTasks,
-          completedTasks: stats.completedTasks,
-          totalHours: stats.totalHours,
-          progress: stats.progress
-        };
-      });
-  }, [projects, projectStats, searchTerm, selectedClient, loading]);
 
 
   // Filter waiting items for display
@@ -516,189 +486,25 @@ const Dashboard = () => {
       {/* Main Dashboard Content */}
       <div className="relative z-10">
         <div className="flex flex-col space-y-10">
-          {/* Enhanced Dashboard Header with better spacing */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground text-base">Your project overview and productivity insights</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {/* Bulk Selection Toggle */}
-              <Button
-                variant={bulkSelectMode ? "default" : "outline"}
-                size="sm"
-                className="flex items-center"
-                onClick={toggleBulkSelectMode}
-              >
-                <FiCheckCircle className="mr-1.5 h-4 w-4" />
-                <span className="font-normal">{bulkSelectMode ? "Exit Select" : "Multi-Select"}</span>
-              </Button>
-              
-              <Button
-                variant="default"
-                size="sm"
-                className="flex items-center"
-                onClick={openQuickEntry}
-              >
-                <FiPlus className="mr-1.5 h-4 w-4" />
-                <span className="font-normal">Quick Add</span>
-              </Button>
-              
-              <Button
-                variant={focusModeActive ? "default" : "outline"}
-                size="sm"
-                className="flex items-center"
-                onClick={toggleFocusMode}
-              >
-                <FiTarget className="mr-1.5 h-4 w-4" />
-                <span className="font-normal">{focusModeActive ? "Exit Focus" : "Focus Mode"}</span>
-              </Button>
-              
-              <Button asChild variant="ghost" size="sm" className="hidden lg:flex">
-                <Link to="/settings" className="flex items-center">
-                  <FiSettings className="mr-1.5 h-4 w-4 opacity-70" />
-                  <span className="font-normal">Settings</span>
-                </Link>
-              </Button>
-              
-              <Button asChild variant="ghost" size="sm" className="hidden lg:flex">
-                <Link to="/reports" className="flex items-center">
-                  <FiBarChart2 className="mr-1.5 h-4 w-4 opacity-70" />
-                  <span className="font-normal">Reports</span>
-                </Link>
-              </Button>
-            </div>
-          </div>
+          {/* Enhanced Dashboard Header */}
+          <DashboardHeader
+            bulkSelectMode={bulkSelectMode}
+            toggleBulkSelectMode={toggleBulkSelectMode}
+            focusModeActive={focusModeActive}
+            toggleFocusMode={toggleFocusMode}
+            openQuickEntry={openQuickEntry}
+          />
 
           {/* Conditional rendering based on Focus Mode */}
           {focusModeActive ? (
-            /* Focus Mode UI */
-            <div className="space-y-8">
-              {/* Focus Mode Header */}
-              <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 rounded-xl p-8 border border-secondary-100/80 shadow-sm">
-                <div className="flex items-center space-x-4 mb-4">
-                  <h2 className="text-xl font-medium text-secondary-900">Focus Mode</h2>
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-                <p className="text-sm text-secondary-600 text-center">
-                  Distraction-free environment to focus on your current tasks
-                </p>
-              </div>
-
-              {/* Active Tasks with Time Tracking */}
-              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                <CardHeader className="pb-3 pt-5 px-6">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Current Tasks</CardTitle>
-                    <div className="text-xs text-secondary-500">
-                      {myTasksFlat.length} active tasks
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-6 pb-5">
-                  {myTasksFlat.length > 0 ? (
-                    <div className="space-y-4">
-                      {myTasksFlat.map(task => (
-                          <div key={task.id} className="p-4 bg-white rounded-lg border border-secondary-100 shadow-sm">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h3 className="text-base font-medium text-secondary-900">{task.title}</h3>
-                                <div className="flex items-center mt-1 space-x-2 text-xs text-secondary-500">
-                                  {task.dueDate && (
-                                    <span className="flex items-center">
-                                      <FiClock className="mr-1 h-3 w-3" />
-                                      {format(parseISO(task.dueDate), 'MMM d')}
-                                    </span>
-                                  )}
-                                  {task.priority === 'high' && (
-                                    <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-800">
-                                      High Priority
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center space-x-2">
-                                {activeTimeEntries.find(entry => entry.taskId === task.id) ? (
-                                  <>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        const entry = activeTimeEntries.find(e => e.taskId === task.id);
-                                        if (entry) {
-                                          if (entry.isPaused) {
-                                            resumeTimeTracking(entry.id);
-                                          } else {
-                                            pauseTimeTracking(entry.id);
-                                          }
-                                        }
-                                      }}
-                                      className="h-8 w-8 p-0 rounded-full"
-                                    >
-                                      {activeTimeEntries.find(entry => entry.taskId === task.id)?.isPaused
-                                        ? <FiPlay className="h-4 w-4" />
-                                        : <FiPause className="h-4 w-4" />}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        const entry = activeTimeEntries.find(e => e.taskId === task.id);
-                                        if (entry) {
-                                          stopTimeTracking(entry.id);
-                                        }
-                                      }}
-                                      className="h-8 w-8 p-0 rounded-full text-red-500 hover:text-red-600"
-                                    >
-                                      <FiSquare className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      startTimeTracking(task.id);
-                                    }}
-                                    className="h-8 px-3 rounded-full"
-                                  >
-                                    <FiPlay className="h-4 w-4 mr-1" />
-                                    <span className="text-xs">Start</span>
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Show active timer if any */}
-                            {activeTimeEntries.find(entry => entry.taskId === task.id) && (
-                              <div className="mt-3 text-sm font-mono text-primary-600">
-                                {formatTime(elapsedTimes[activeTimeEntries.find(entry => entry.taskId === task.id)?.id] || 0)}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<FiCoffee className="h-7 w-7" />}
-                      title="No active tasks"
-                      description="You're all caught up!"
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <FocusModeView
+              myTasksFlat={myTasksFlat}
+              timeEntries={timeEntries}
+              startTimeTracking={startTimeTracking}
+              pauseTimeTracking={pauseTimeTracking}
+              resumeTimeTracking={resumeTimeTracking}
+              stopTimeTracking={stopTimeTracking}
+            />
           ) : (
             <>
               {/* Enhanced Stats Overview with trend indicators */}
@@ -808,245 +614,31 @@ const Dashboard = () => {
                   </div>
                 </TabsContent>
 
-                {/* Projects Tab - Refined with iOS-inspired minimalism */}
+                {/* Projects Tab */}
                 <TabsContent value="projects" className="space-y-8">
-                  <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                    <CardHeader className="pb-3 pt-5 px-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <CardTitle className="text-base font-medium text-secondary-900">Projects</CardTitle>
-                        <Button size="sm" variant="outline" onClick={() => setShowCreateModal(true)} className="text-xs">
-                          <FiPlus className="mr-1.5 h-3.5 w-3.5" />
-                          New Project
-                        </Button>
-                      </div>
-                      
-                      {/* Search and Filter */}
-                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                        <div className="relative flex-1">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <FiSearch className="h-4 w-4 text-secondary-400" />
-                          </div>
-                          <Input 
-                            type="text"
-                            placeholder="Search projects..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 text-sm"
-                          />
-                        </div>
-                        <div className="relative sm:w-48">
-                          <Select 
-                            value={selectedClient}
-                            onValueChange={(value) => setSelectedClient(value)}
-                          >
-                            <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="All Clients" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {uniqueClients.map(client => (
-                                <SelectItem key={client} value={client}>
-                                  {client === 'all' ? 'All Clients' : client}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-5">
-                      {filteredProjects.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                          {filteredProjects.map(project => (
-                            <ProjectCard key={project.id} project={project} />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 bg-secondary-50 rounded-xl border border-secondary-200">
-                          <div className="w-16 h-16 mx-auto rounded-full bg-secondary-100 flex items-center justify-center text-secondary-400 mb-3">
-                            <FiFolder className="h-8 w-8" />
-                          </div>
-                          <h3 className="text-secondary-900 font-medium mb-1">No projects found</h3>
-                          <p className="text-secondary-600 text-sm mb-4">
-                            {searchTerm || selectedClient !== 'all' ? 'Try adjusting your search or filter' : 'Create your first project to get started'}
-                          </p>
-                          {!searchTerm && selectedClient === 'all' && (
-                            <Button 
-                              onClick={() => setShowCreateModal(true)}
-                              className="inline-flex items-center"
-                              size="sm"
-                            >
-                              <FiPlus className="mr-1.5 h-4 w-4" />
-                              Create Project
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <ProjectsTabContent 
+                    projects={projects}
+                    projectStats={projectStats}
+                    setShowCreateModal={setShowCreateModal}
+                  />
                 </TabsContent>
 
-            {/* Tasks Tab - Enhanced with status grouping */}
+            {/* Tasks Tab */}
             <TabsContent value="tasks" className="space-y-6">
-              {/* In Progress Tasks Section */}
-              {myTasks.inProgress.length > 0 && (
-                <Card className="overflow-hidden border-blue-100/80 shadow-sm">
-                  <CardHeader className="pb-3 pt-5 px-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                        <CardTitle className="text-base font-medium text-blue-900">
-                          In Progress ({myTasks.inProgress.length})
-                        </CardTitle>
-                      </div>
-                      <div className="flex items-center mt-2 sm:mt-0">
-                        <div className="text-xs text-blue-600/70">Active work in progress</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-6 pb-5">
-                    <div className="grid gap-3">
-                      {myTasks.inProgress.map(task => (
-                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Fresh Tasks Section */}
-              {myTasks.notStarted.length > 0 && (
-                <Card className="overflow-hidden border-gray-100/80 shadow-sm">
-                  <CardHeader className="pb-3 pt-5 px-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        <CardTitle className="text-base font-medium text-gray-900">
-                          Fresh Tasks ({myTasks.notStarted.length})
-                        </CardTitle>
-                      </div>
-                      <div className="flex items-center mt-2 sm:mt-0">
-                        <div className="text-xs text-gray-600/70">Ready to start</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-6 pb-5">
-                    <div className="grid gap-3">
-                      {myTasks.notStarted.map(task => (
-                        <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Empty State - When no tasks */}
-              {myTasksFlat.length === 0 && (
-                <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                  <CardContent className="px-6 py-8">
-                    <EmptyState
-                      icon={<FiCoffee className="h-7 w-7" />}
-                      title="No active tasks"
-                      description="You're all caught up!"
-                    />
-                  </CardContent>
-                </Card>
-              )}
+              <TasksTabContent myTasks={myTasks} />
             </TabsContent>
 
-            {/* Waiting On Tab - Refined with iOS-inspired minimalism */}
-
+            {/* Waiting On Tab */}
             <TabsContent value="waitingOn" className="space-y-8">
-              <Card className="overflow-hidden border-secondary-100/80 shadow-sm">
-                <CardHeader className="pb-3 pt-5 px-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-base font-medium text-secondary-900">Waiting On</CardTitle>
-                    <div className="flex items-center mt-2 sm:mt-0 space-x-3">
-                      {/* Toggle Stats Button - Icon Only */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowWaitingStats(!showWaitingStats)}
-                        title={showWaitingStats ? "Hide Stats" : "Show Stats"}
-                        className="h-8 w-8 text-primary/70 hover:text-primary"
-                      >
-                        <FiBarChart2 className="h-3.5 w-3.5" />
-                      </Button>
-                      {/* Add Item Button */}
-                      <Button size="sm" variant="outline" onClick={handleAddWaitingClick} className="text-xs">
-                        <FiPlus className="mr-1.5 h-3.5 w-3.5" />
-                        <span>Add Item</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-6 pb-5 space-y-5">
-                  {/* Stats Section with Animation */}
-                  <AnimatePresence>
-                    {showWaitingStats && waitingFeaturesAvailable && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        style={{ overflow: 'hidden' }} // Prevents content spill during animation
-                      >
-                        <WaitingItemStats stats={waitingStats} />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-
-                  {/* Filter Toggle - More subtle and refined */}
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-secondary-500/80">
-                      {filteredWaitingItems.length} items
-                    </span>
-                    <ToggleGroup
-                      type="single"
-                      defaultValue={hideCompletedItems ? "active" : "all"}
-                      onValueChange={(value) => setHideCompletedItems(value === "active")}
-                      className="bg-secondary-50/70 p-0.5 rounded-lg"
-                    >
-                      <ToggleGroupItem value="active" size="sm" className="text-xs px-3 py-1 rounded">
-                        Active Only
-                      </ToggleGroupItem>
-                      <ToggleGroupItem value="all" size="sm" className="text-xs px-3 py-1 rounded">
-                        Show All
-                      </ToggleGroupItem>
-                    </ToggleGroup>
-                  </div>
-
-
-                  {/* Waiting Items List */}
-
-                  {filteredWaitingItems && filteredWaitingItems.length > 0 ? (
-                    <div className="space-y-2">
-                      {filteredWaitingItems.map(item => (
-                        <WaitingItemCard
-                          key={item.id}
-                          item={item}
-                          getStatusClass={getStatusClass}
-                          getPriorityClass={getPriorityClass}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      icon={<FiAlertCircle className="h-7 w-7" />}
-                      title={hideCompletedItems ? "No active waiting items" : "No waiting items"}
-                      description="Track things you're waiting on others for"
-                      action={
-                        <Button size="sm" variant="outline" className="mt-2" onClick={handleAddWaitingClick}>
-                          Add Item
-                        </Button>
-                      }
-                    />
-                  )}
-
-                 </CardContent>
-               </Card>
-             </TabsContent>
+              <WaitingItemsTabContent
+                filteredWaitingItems={filteredWaitingItems}
+                waitingStats={waitingStats}
+                waitingFeaturesAvailable={waitingFeaturesAvailable}
+                getStatusClass={getStatusClass}
+                getPriorityClass={getPriorityClass}
+                handleAddWaitingClick={handleAddWaitingClick}
+              />
+            </TabsContent>
               </Tabs>
             </>
           )}
@@ -1309,17 +901,5 @@ const Dashboard = () => {
   )
 }
 
-// Helper components for empty states
-
-const EmptyState = ({ icon, title, description, action, compact = false }) => (
-  <div className={`text-center ${compact ? 'py-4' : 'py-6'}`}>
-    <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-secondary-50 text-secondary-400 border border-secondary-100/50">
-      {icon}
-    </div>
-    <h3 className={`mt-3 font-medium text-secondary-800 ${compact ? 'text-xs' : 'text-sm'}`}>{title}</h3>
-    <p className={`mt-1 text-secondary-500/80 ${compact ? 'text-[10px]' : 'text-xs'}`}>{description}</p>
-    {action && <div className="mt-3">{action}</div>}
-  </div>
-)
 
 export default Dashboard

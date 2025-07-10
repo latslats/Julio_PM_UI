@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 /**
  * ProjectCard component displays a project summary in a card format
  * Enhanced with animations and improved accessibility
+ * Optimized with React.memo for performance
  * 
  * @param {Object} project - The project data to display
  * @returns {JSX.Element} - The rendered project card
  */
-const ProjectCard = ({ project }) => {
+const ProjectCard = React.memo(({ project }) => {
   const [isHovered, setIsHovered] = useState(false);
   // Calculate completion percentage
   const totalTasks = project.totalTasks || 0
@@ -85,6 +86,8 @@ const ProjectCard = ({ project }) => {
       </CardFooter>
     </Card>
   )
-}
+})
+
+ProjectCard.displayName = 'ProjectCard'
 
 export default ProjectCard

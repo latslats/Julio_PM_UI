@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 import { ProjectProvider } from './context/ProjectContext'
+import { TaskProvider } from './context/TaskContext'
+import { TimeTrackingProvider } from './context/TimeTrackingContext'
 import { NotificationProvider } from './context/NotificationContext'
 import { WaitingItemProvider } from './context/WaitingItemContext'
 import { UIProvider } from './context/UIContext'
@@ -15,11 +17,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <TooltipProvider>
         <NotificationProvider>
           <UIProvider>
-            <ProjectProvider>
-              <WaitingItemProvider>
-                <App />
-              </WaitingItemProvider>
-            </ProjectProvider>
+            <TaskProvider>
+              <TimeTrackingProvider>
+                <ProjectProvider>
+                  <WaitingItemProvider>
+                    <App />
+                  </WaitingItemProvider>
+                </ProjectProvider>
+              </TimeTrackingProvider>
+            </TaskProvider>
           </UIProvider>
         </NotificationProvider>
       </TooltipProvider>
