@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card"
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatTime, calculateElapsedTime, calculateTimeProgress, isOvertime, formatOvertime } from '@/lib/timeUtils'
+import useGlobalTimer from '@/hooks/useGlobalTimer'
 
 // Accept props instead of using context directly
 const TimeTrackingWidget = ({
@@ -42,8 +43,8 @@ const TimeTrackingWidget = ({
   // Use the first active entry for the main display if available
   const activeTimeEntry = activeTimeEntries.length > 0 ? activeTimeEntries[0] : null
 
-  // Track elapsed time for all active entries
-  const [elapsedTimes, setElapsedTimes] = useState({})
+  // Use global timer for all active entries
+  const { elapsedTimes, getElapsedTime } = useGlobalTimer(activeTimeEntries)
   // Track loading state for each entry separately
   const [actionLoadingMap, setActionLoadingMap] = useState({})
 
@@ -86,41 +87,8 @@ const TimeTrackingWidget = ({
     return grouped;
   }
 
-  // Timer effect - Calculate elapsed time for all active entries using standardized utilities
-  useEffect(() => {
-    let intervals = [];
-
-    // Clear previous state if no active entries
-    if (activeTimeEntries.length === 0) {
-      setElapsedTimes({});
-      return () => {};
-    }
-
-    // Initialize elapsed times for all active entries
-    activeTimeEntries.forEach(entry => {
-      const updateElapsedTime = () => {
-        const elapsed = calculateElapsedTime(entry);
-        setElapsedTimes(prev => ({
-          ...prev,
-          [entry.id]: elapsed
-        }));
-      };
-
-      // Calculate once immediately
-      updateElapsedTime();
-
-      // If entry is running (not paused), update every second
-      if (!entry.isPaused) {
-        const interval = setInterval(updateElapsedTime, 1000);
-        intervals.push(interval);
-      }
-    });
-
-    // Cleanup function to clear all intervals
-    return () => {
-      intervals.forEach(interval => clearInterval(interval));
-    };
-  }, [activeTimeEntries])
+  // Timer logic now handled by useGlobalTimer hook
+  // No need for individual intervals per component
 
 
   // Handle stop tracking for a specific entry

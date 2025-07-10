@@ -27,6 +27,18 @@ export const TimeTrackingProvider = ({ children }) => {
   const [error, setError] = useState(null)
   const { showNotification } = useNotification()
 
+  // Helper function for optimistic update error handling
+  const handleOptimisticUpdateError = (timeEntryId, originalState, errorMessage, userMessage) => {
+    console.error(errorMessage)
+    // Revert optimistic update
+    setTimeEntries(prev => prev.map(te => 
+      te.id === timeEntryId ? { ...te, ...originalState } : te
+    ))
+    setError(errorMessage)
+    // Show user notification
+    showNotification('error', userMessage)
+  }
+
   const fetchTimeEntries = async () => {
     setLoading(true)
     setError(null)
@@ -175,21 +187,21 @@ export const TimeTrackingProvider = ({ children }) => {
         setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
         return { success: true, data: result.data }
       } else {
-        console.error('Failed to pause time tracking:', result.message)
-        // Revert optimistic update
-        setTimeEntries(prev => prev.map(te => 
-          te.id === timeEntryId ? { ...te, isPaused: false } : te
-        ))
-        setError(result.message || 'Failed to pause time tracking')
+        handleOptimisticUpdateError(
+          timeEntryId, 
+          { isPaused: false }, 
+          `Failed to pause time tracking: ${result.message}`,
+          `Failed to pause timer: ${result.message || 'Unknown error'}`
+        )
         return result
       }
     } catch (err) {
-      console.error('Error pausing time tracking:', err)
-      // Revert optimistic update
-      setTimeEntries(prev => prev.map(te => 
-        te.id === timeEntryId ? { ...te, isPaused: false } : te
-      ))
-      setError(err.message || 'Failed to pause time tracking')
+      handleOptimisticUpdateError(
+        timeEntryId, 
+        { isPaused: false }, 
+        `Error pausing time tracking: ${err.message}`,
+        `Failed to pause timer: ${err.message || 'Network error'}`
+      )
       return { success: false, message: err.message }
     }
   }
@@ -212,21 +224,21 @@ export const TimeTrackingProvider = ({ children }) => {
         setTimeEntries(prev => prev.map(te => te.id === timeEntryId ? result.data : te))
         return { success: true, data: result.data }
       } else {
-        console.error('Failed to resume time tracking:', result.message)
-        // Revert optimistic update
-        setTimeEntries(prev => prev.map(te => 
-          te.id === timeEntryId ? { ...te, isPaused: true } : te
-        ))
-        setError(result.message || 'Failed to resume time tracking')
+        handleOptimisticUpdateError(
+          timeEntryId, 
+          { isPaused: true }, 
+          `Failed to resume time tracking: ${result.message}`,
+          `Failed to resume timer: ${result.message || 'Unknown error'}`
+        )
         return result
       }
     } catch (err) {
-      console.error('Error resuming time tracking:', err)
-      // Revert optimistic update
-      setTimeEntries(prev => prev.map(te => 
-        te.id === timeEntryId ? { ...te, isPaused: true } : te
-      ))
-      setError(err.message || 'Failed to resume time tracking')
+      handleOptimisticUpdateError(
+        timeEntryId, 
+        { isPaused: true }, 
+        `Error resuming time tracking: ${err.message}`,
+        `Failed to resume timer: ${err.message || 'Network error'}`
+      )
       return { success: false, message: err.message }
     }
   }

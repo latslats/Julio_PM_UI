@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Notification from '../components/common/Notification';
 
 /**
@@ -44,8 +44,13 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev => prev.filter(notification => notification.id !== id));
   }, []);
 
+  // Memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    showNotification
+  }), [showNotification]);
+
   return (
-    <NotificationContext.Provider value={{ showNotification }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
       <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
         {notifications.map(notification => (

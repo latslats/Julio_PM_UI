@@ -21,6 +21,7 @@ import { CalendarIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import TaskStatusIndicator from './TaskStatusIndicator'
 import { calculateElapsedTime, calculateTotalTimeSpent } from '@/lib/timeUtils'
+import useGlobalTimer from '@/hooks/useGlobalTimer'
 
 /**
  * Enhanced TaskCard component with card-based layout and improved visual hierarchy
@@ -61,39 +62,14 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
   // Check if task has an active time entry
   const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
 
-  // State to track elapsed time for active timer
-  const [elapsedTime, setElapsedTime] = useState(0)
+  // Use global timer for elapsed time tracking
+  const { getElapsedTime } = useGlobalTimer(activeTimeEntry ? [activeTimeEntry] : [])
+  const elapsedTime = activeTimeEntry ? getElapsedTime(activeTimeEntry.id) : 0
 
   // Calculate total time spent on this task (from completed time entries)
   const [totalTimeSpent, setTotalTimeSpent] = useState(0)
 
-  // Calculate elapsed time for active timer using standardized utilities
-  useEffect(() => {
-    if (!activeTimeEntry) {
-      setElapsedTime(0)
-      return
-    }
-
-    // Use standardized calculation function
-    const updateElapsedTime = () => {
-      const elapsed = calculateElapsedTime(activeTimeEntry)
-      setElapsedTime(elapsed)
-    }
-
-    // Calculate once immediately
-    updateElapsedTime()
-
-    // If entry is running (not paused), update every second
-    let interval
-    if (!activeTimeEntry.isPaused) {
-      interval = setInterval(updateElapsedTime, 1000)
-    }
-
-    // Cleanup function to clear interval
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [activeTimeEntry])
+  // Timer logic now handled by useGlobalTimer hook
 
   // Calculate total time spent on this task using standardized utilities
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react'
+import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 
 const UIContext = createContext()
 
@@ -218,7 +218,8 @@ export const UIProvider = ({ children }) => {
   // Get current density configuration
   const densityConfig = DENSITY_CONFIG[densityMode]
 
-  const value = {
+  // Memoized context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     // Preferences
     densityMode,
     viewMode,
@@ -248,7 +249,28 @@ export const UIProvider = ({ children }) => {
     densityConfig,
     DENSITY_MODES,
     VIEW_MODES
-  }
+  }), [
+    densityMode,
+    viewMode,
+    showCompleted,
+    autoHideActions,
+    updateDensityMode,
+    updateViewMode,
+    updateShowCompleted,
+    updateAutoHideActions,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    focusMode,
+    setFocusMode,
+    bulkSelectMode,
+    setBulkSelectMode,
+    toggleBulkSelectMode,
+    selectedTasks,
+    toggleTaskSelection,
+    selectAllTasks,
+    clearTaskSelection,
+    densityConfig
+  ])
 
   return (
     <UIContext.Provider value={value}>

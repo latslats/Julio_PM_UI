@@ -27,6 +27,9 @@ import logo from "../assets/taskflow_logo.png"
 import { formatTime, calculateElapsedTime } from '@/lib/timeUtils'
 import { useTaskManagement } from '../hooks/useTaskManagement'
 import { useTimeCalculations } from '../hooks/useTimeCalculations'
+import { useProjectStats } from '../hooks/useProjectStats'
+import useGlobalTimer from '../hooks/useGlobalTimer'
+import { useDebounceMultiple } from '../hooks/useDebounce'
 
 // Components
 import BulkActions from '../components/tasks/BulkActions'
@@ -49,10 +52,7 @@ const Dashboard = () => {
   const {
     projects,
     loading: projectsLoading,
-    projectStats,
-    createProject,
-    totalTrackedHours,
-    recentActivity
+    createProject
   } = useProjects()
 
   const {
@@ -85,8 +85,8 @@ const Dashboard = () => {
   const {
     waitingItems = [],
     loading: waitingLoading = false,
-    fetchWaitingItems = () => {},
-    fetchStats = () => {},
+    fetchWaitingItems: originalFetchWaitingItems = () => {},
+    fetchStats: originalFetchStats = () => {},
     stats: waitingStats = {
       byStatus: {},
       byPriority: {},
@@ -94,6 +94,15 @@ const Dashboard = () => {
       total: 0
     }
   } = waitingItemsContext;
+
+  // Debounced API calls to prevent multiple rapid requests
+  const { 
+    fetchWaitingItems: debouncedFetchWaitingItems, 
+    fetchStats: debouncedFetchStats 
+  } = useDebounceMultiple({
+    fetchWaitingItems: originalFetchWaitingItems,
+    fetchStats: originalFetchStats
+  }, 500) // 500ms debounce delay
 
 
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
@@ -119,8 +128,8 @@ const Dashboard = () => {
   })
   // Define activeTimeEntries for Focus Mode
   const activeTimeEntries = timeEntries.filter(entry => entry.endTime === null)
-  // Track elapsed time for active entries in Focus Mode
-  const [elapsedTimes, setElapsedTimes] = useState({})
+  // Use global timer for elapsed time tracking
+  const { elapsedTimes } = useGlobalTimer(activeTimeEntries)
   const [showAddWaitingModal, setShowAddWaitingModal] = useState(false)
   const [hideCompletedItems, setHideCompletedItems] = useState(true)
   const [waitingFeaturesAvailable, setWaitingFeaturesAvailable] = useState(false)
@@ -239,41 +248,7 @@ const Dashboard = () => {
   }, [projects, tasks, timeEntries, loading])
 
 
-  // Calculate elapsed time for active time entries (for Focus Mode) using standardized utilities
-  useEffect(() => {
-    let intervals = [];
-
-    // Clear previous state if no active entries
-    if (activeTimeEntries.length === 0) {
-      setElapsedTimes({});
-      return () => {};
-    }
-
-    // Initialize elapsed times for all active entries
-    activeTimeEntries.forEach(entry => {
-      const updateElapsedTime = () => {
-        const elapsed = calculateElapsedTime(entry);
-        setElapsedTimes(prev => ({
-          ...prev,
-          [entry.id]: elapsed
-        }));
-      };
-
-      // Calculate once immediately
-      updateElapsedTime();
-
-      // If entry is running (not paused), update every second
-      if (!entry.isPaused) {
-        const interval = setInterval(updateElapsedTime, 1000);
-        intervals.push(interval);
-      }
-    });
-
-    // Cleanup function to clear all intervals
-    return () => {
-      intervals.forEach(interval => clearInterval(interval));
-    };
-  }, [activeTimeEntries]);
+  // Timer logic now handled by useGlobalTimer hook
 
   // Fetch waiting items and stats when component mounts, with attempt limiting
   useEffect(() => {
@@ -286,9 +261,9 @@ const Dashboard = () => {
       try {
         waitingFetchAttempts.current++;
 
-        // Load data - avoid redundant calls
-        await fetchWaitingItems();
-        await fetchStats();
+        // Load data with debouncing to avoid redundant calls
+        await debouncedFetchWaitingItems();
+        await debouncedFetchStats();
 
         // Mark as loaded if successful
         waitingItemsLoaded.current = true;
@@ -310,7 +285,7 @@ const Dashboard = () => {
     if (activeTab === "waitingOn" || waitingFetchAttempts.current === 0) {
       loadWaitingItems();
     }
-  }, [activeTab, fetchWaitingItems, fetchStats]); // Added dependencies
+  }, [activeTab, debouncedFetchWaitingItems, debouncedFetchStats]); // Added debounced dependencies
 
 
   // Use custom hooks for better organization
@@ -323,6 +298,12 @@ const Dashboard = () => {
   const {
     trackedHoursToday: calculatedTrackedHours
   } = useTimeCalculations(timeEntries, tasks, projects)
+
+  const {
+    projectStats,
+    totalTrackedHours,
+    recentActivity
+  } = useProjectStats(projects, tasks, timeEntries)
 
   // Legacy myTasks array for other parts that still expect a flat array
   const myTasksFlat = useMemo(() => {

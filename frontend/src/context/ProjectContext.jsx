@@ -1,8 +1,6 @@
 import { createContext, useState, useContext, useEffect, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNotification } from './NotificationContext'
-import { useTasks } from './TaskContext'
-import { useTimeTracking } from './TimeTrackingContext'
 import axios from 'axios'
 
 // Define the base URL for the API - Use relative path for proxy
@@ -31,8 +29,6 @@ export const ProjectProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { showNotification } = useNotification()
-  const { tasks } = useTasks()
-  const { timeEntries } = useTimeTracking()
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -167,77 +163,26 @@ export const ProjectProvider = ({ children }) => {
 
 
 
-  // --- Calculated Values (Memoized) ---
-  const projectStats = useMemo(() => {
-    return projects.reduce((acc, project) => {
-      const projectTasks = tasks.filter(task => task.projectId === project.id)
-      const completedTasks = projectTasks.filter(task => task.status === 'completed').length
-      const projectTimeEntries = timeEntries.filter(entry =>
-        projectTasks.some(task => task.id === entry.taskId) && entry.duration
-      )
-      const totalHours = projectTimeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) / 3600
-
-      acc[project.id] = {
-        totalTasks: projectTasks.length,
-        completedTasks: completedTasks,
-        totalHours: parseFloat(totalHours.toFixed(1)),
-        progress: projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0
-      }
-      return acc
-    }, {})
-  }, [projects, tasks, timeEntries])
-
-  const totalTrackedHours = useMemo(() => {
-    return timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0) / 3600
-  }, [timeEntries])
-
-  const recentActivity = useMemo(() => {
-    const activities = [
-      ...projects.map(p => ({ ...p, type: 'project', date: p.createdAt || new Date(0) })),
-      ...tasks.map(t => ({ ...t, type: 'task', date: t.createdAt || new Date(0) })),
-    ].sort((a, b) => new Date(b.date) - new Date(a.date))
-
-    return activities.slice(0, 5).map(activity => {
-      let action = 'created'
-      const timeAgo = formatDistanceToNow(new Date(activity.date), { addSuffix: true })
-      switch (activity.type) {
-        case 'project':
-          return `Project "${activity.name}" ${action} ${timeAgo}`
-        case 'task':
-          const projectName = projects.find(p => p.id === activity.projectId)?.name || 'a project'
-          return `Task "${activity.title}" ${action} in ${projectName} ${timeAgo}`
-        default:
-          return `Activity ${timeAgo}`
-      }
-    })
-  }, [projects, tasks, timeEntries])
+  // Calculated values moved to custom hooks to avoid circular dependencies
+  // projectStats, totalTrackedHours, and recentActivity are now computed
+  // in custom hooks or at component level where tasks and timeEntries are available
 
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     projects,
-    tasks,
-    timeEntries,
     loading,
     error,
     createProject,
     updateProject,
-    deleteProject,
-    projectStats,
-    totalTrackedHours,
-    recentActivity
+    deleteProject
   }), [
     projects,
-    tasks,
-    timeEntries,
     loading,
     error,
     createProject,
     updateProject,
-    deleteProject,
-    projectStats,
-    totalTrackedHours,
-    recentActivity
+    deleteProject
   ])
 
   return (

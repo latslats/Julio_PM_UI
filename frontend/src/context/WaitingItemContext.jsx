@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useNotification } from './NotificationContext';
+import { useDebounceMultiple } from '../hooks/useDebounce';
 
 // Create the context
 const WaitingItemContext = createContext();
@@ -257,19 +258,44 @@ export function WaitingItemProvider({ children }) {
     }
   };
 
-  // Context value to be provided
-  const contextValue = {
+  // Debounced versions of fetch functions to prevent rapid API calls
+  const { 
+    fetchWaitingItems: debouncedFetchWaitingItems, 
+    fetchStats: debouncedFetchStats 
+  } = useDebounceMultiple({
+    fetchWaitingItems,
+    fetchStats
+  }, 300); // 300ms debounce delay for context-level operations
+
+  // Memoized context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     waitingItems,
     stats,
     loading,
     fetchWaitingItems,
     fetchStats,
+    // Provide debounced versions for components that need them
+    debouncedFetchWaitingItems,
+    debouncedFetchStats,
     createWaitingItem,
     updateWaitingItem,
     deleteWaitingItem,
     addTimelineEvent,
     getWaitingItemDetails
-  };
+  }), [
+    waitingItems,
+    stats,
+    loading,
+    fetchWaitingItems,
+    fetchStats,
+    debouncedFetchWaitingItems,
+    debouncedFetchStats,
+    createWaitingItem,
+    updateWaitingItem,
+    deleteWaitingItem,
+    addTimelineEvent,
+    getWaitingItemDetails
+  ]);
 
   return (
     <WaitingItemContext.Provider value={contextValue}>

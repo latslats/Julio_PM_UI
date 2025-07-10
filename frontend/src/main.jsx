@@ -17,15 +17,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <TooltipProvider>
         <NotificationProvider>
           <UIProvider>
-            <TaskProvider>
-              <TimeTrackingProvider>
-                <ProjectProvider>
+            <ProjectProvider>
+              <TaskProvider>
+                <TimeTrackingProvider>
                   <WaitingItemProvider>
                     <App />
                   </WaitingItemProvider>
-                </ProjectProvider>
-              </TimeTrackingProvider>
-            </TaskProvider>
+                </TimeTrackingProvider>
+              </TaskProvider>
+            </ProjectProvider>
           </UIProvider>
         </NotificationProvider>
       </TooltipProvider>

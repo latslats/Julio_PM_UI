@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { FiClock, FiPlay, FiSquare, FiCheck, FiEdit2, FiTrash2, FiX, FiPause, FiLoader, FiList } from 'react-icons/fi'
 import { CalendarIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import useGlobalTimer from '@/hooks/useGlobalTimer'
 
 /**
  * TaskItem component displays a task with time tracking functionality
@@ -47,8 +48,9 @@ const TaskItem = ({ task }) => {
   // Check if task has an active time entry
   const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
 
-  // State to track elapsed time for active timer
-  const [elapsedTime, setElapsedTime] = useState(0)
+  // Use global timer for elapsed time tracking
+  const { getElapsedTime } = useGlobalTimer(activeTimeEntry ? [activeTimeEntry] : [])
+  const elapsedTime = activeTimeEntry ? getElapsedTime(activeTimeEntry.id) : 0
 
   // Calculate total time spent on this task (from completed time entries)
   const [totalTimeSpent, setTotalTimeSpent] = useState(0)
@@ -71,38 +73,7 @@ const TaskItem = ({ task }) => {
     setTotalTimeSpent(totalTime)
   }, [task.id, timeEntries, activeTimeEntry, elapsedTime])
 
-  // Calculate and update elapsed time for active timer
-  useEffect(() => {
-    if (!activeTimeEntry) {
-      setElapsedTime(0)
-      return
-    }
-
-    // Calculate initial elapsed time
-    const calculateElapsed = () => {
-      let currentElapsedTime = parseFloat(activeTimeEntry.totalPausedDuration) || 0
-      if (!activeTimeEntry.isPaused && activeTimeEntry.lastResumedAt) {
-        const now = new Date().getTime()
-        const lastResume = new Date(activeTimeEntry.lastResumedAt).getTime()
-        currentElapsedTime += (now - lastResume) / 1000
-      }
-      setElapsedTime(Math.floor(currentElapsedTime))
-    }
-
-    // Calculate once immediately
-    calculateElapsed()
-
-    // If entry is running (not paused), update every second
-    let interval
-    if (!activeTimeEntry.isPaused) {
-      interval = setInterval(calculateElapsed, 1000)
-    }
-
-    // Cleanup function to clear interval
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [activeTimeEntry])
+  // Timer logic now handled by useGlobalTimer hook
 
   // Format time as HH:MM:SS
   const formatTime = (seconds) => {
