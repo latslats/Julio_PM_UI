@@ -32,7 +32,7 @@ const useGlobalTimer = (activeTimeEntries = []) => {
 
     // Remove duplicates by entry ID (with null safety)
     const uniqueEntries = allActiveEntries.reduce((acc, entry) => {
-      if (entry && entry.id && !acc.find(e => e.id === entry.id)) {
+      if (entry && entry.id && !acc.find(e => e && e.id === entry.id)) {
         acc.push(entry)
       }
       return acc

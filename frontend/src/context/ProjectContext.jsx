@@ -137,7 +137,7 @@ export const ProjectProvider = ({ children }) => {
     setLoading(true);
     try {
       // Get project name before deletion for notification
-      const projectToDelete = projects.find(p => p.id === id);
+      const projectToDelete = (projects || []).find(p => p.id === id);
       const projectName = projectToDelete?.name || 'Unknown';
 
       const result = await apiRequest(`/projects/${id}`, {

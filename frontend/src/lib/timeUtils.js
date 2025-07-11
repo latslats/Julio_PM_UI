@@ -91,6 +91,11 @@ export const calculateElapsedTime = (timeEntry) => {
  * @returns {number} Total time spent in seconds
  */
 export const calculateTotalTimeSpent = (taskId, timeEntries, activeTimeEntry = null, currentElapsedTime = 0) => {
+  // Handle case where timeEntries might be undefined
+  if (!timeEntries || !Array.isArray(timeEntries)) {
+    return currentElapsedTime
+  }
+  
   const taskTimeEntries = timeEntries.filter(entry => entry.taskId === taskId)
 
   // Sum up durations from completed time entries

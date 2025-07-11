@@ -130,7 +130,7 @@ export const TaskProvider = ({ children }) => {
   const deleteTask = async (id) => {
     setLoading(true)
     try {
-      const taskToDelete = tasks.find(t => t.id === id)
+      const taskToDelete = (tasks || []).find(t => t.id === id)
       const taskTitle = taskToDelete?.title || 'Unknown'
 
       const result = await apiRequest(`/tasks/${id}`, {

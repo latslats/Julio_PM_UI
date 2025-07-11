@@ -32,11 +32,11 @@ const TaskMenu = ({
     const grouped = {}
     
     // Filter to only include tasks that are not completed
-    const activeTasks = tasks.filter(task => task.status !== 'completed')
+    const activeTasks = (tasks || []).filter(task => task.status !== 'completed')
     
     // Group active tasks by project
     activeTasks.forEach(task => {
-      const project = projects.find(p => p.id === task.projectId)
+      const project = (projects || []).find(p => p.id === task.projectId)
       if (!project) return
       
       const projectId = project.id

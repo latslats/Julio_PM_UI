@@ -52,8 +52,8 @@ const TimeTrackingWidget = ({
 
   // Helper function to get task and project for a time entry
   const getEntryDetails = (entry) => {
-    const task = tasks.find(t => t.id === entry?.taskId);
-    const project = task ? projects.find(p => p.id === task.projectId) : null;
+    const task = (tasks || []).find(t => t.id === entry?.taskId);
+    const project = task ? (projects || []).find(p => p.id === task.projectId) : null;
     return { task, project };
   }
 

@@ -56,8 +56,8 @@ const EnhancedRecentActivity = ({
       const startTime = parseISO(entry.startTime)
       if (startTime < last7Days) return
       
-      const task = tasks.find(t => t.id === entry.taskId)
-      const project = task ? projects.find(p => p.id === task.projectId) : null
+      const task = (tasks || []).find(t => t.id === entry.taskId)
+      const project = task ? (projects || []).find(p => p.id === task.projectId) : null
       
       if (entry.endTime) {
         // Completed time entry
@@ -101,7 +101,7 @@ const EnhancedRecentActivity = ({
         const updatedTime = parseISO(task.updatedAt)
         if (updatedTime < last7Days) return
         
-        const project = projects.find(p => p.id === task.projectId)
+        const project = (projects || []).find(p => p.id === task.projectId)
         
         activities.push({
           id: `task-${task.id}-complete`,
@@ -125,7 +125,7 @@ const EnhancedRecentActivity = ({
         const createdTime = parseISO(task.createdAt)
         if (createdTime < last7Days) return
         
-        const project = projects.find(p => p.id === task.projectId)
+        const project = (projects || []).find(p => p.id === task.projectId)
         
         activities.push({
           id: `task-${task.id}-create`,

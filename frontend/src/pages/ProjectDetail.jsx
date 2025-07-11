@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useProjects } from '../context/ProjectContext'
+import { useTasks } from '../context/TaskContext'
+import { useTimeTracking } from '../context/TimeTrackingContext'
 import { useWaitingItems } from '../context/WaitingItemContext'
 import { FiEdit2, FiTrash2, FiPlus, FiClock, FiCalendar, FiCheckCircle, FiX, FiClipboard, FiCheckSquare, FiPlayCircle, FiWatch, FiList, FiSliders, FiPieChart, FiAlertCircle } from 'react-icons/fi'
 import BackButton from '../components/common/BackButton'; // Import the new BackButton
@@ -27,7 +29,9 @@ import { useToast } from "@/hooks/use-toast"; // Import useToast
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate()
-  const { projects, tasks, timeEntries, loading, updateProject, deleteProject, createTask } = useProjects()
+  const { projects, loading: projectsLoading, updateProject, deleteProject } = useProjects()
+  const { tasks, loading: tasksLoading, createTask } = useTasks()
+  const { timeEntries, loading: timeEntriesLoading } = useTimeTracking()
   const { waitingItems, loading: waitingItemsLoading, fetchWaitingItems } = useWaitingItems()
   const [project, setProject] = useState(null)
   const [projectTasks, setProjectTasks] = useState([])
@@ -52,14 +56,14 @@ const ProjectDetail = () => {
 
 
   useEffect(() => {
-    if (!loading) {
-      const foundProject = projects.find(p => p.id === id)
+    if (!projectsLoading && !tasksLoading && !timeEntriesLoading) {
+      const foundProject = (projects || []).find(p => p.id === id)
       setProject(foundProject)
       if (foundProject) {
         setEditableProject({ ...foundProject })
 
         // Get tasks for this project
-        const filteredTasks = tasks.filter(task => task.projectId === id)
+        const filteredTasks = (tasks || []).filter(task => task.projectId === id)
         setProjectTasks(filteredTasks)
 
         // Calculate stats
@@ -68,7 +72,7 @@ const ProjectDetail = () => {
         const totalHours = filteredTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
 
         // Calculate total tracked hours for this project
-        const projectTimeEntries = timeEntries.filter(entry =>
+        const projectTimeEntries = (timeEntries || []).filter(entry =>
           filteredTasks.some(task => task.id === entry.taskId) && entry.duration
         )
 
@@ -111,12 +115,12 @@ const ProjectDetail = () => {
         })
       }
     }
-  }, [id, projects, tasks, timeEntries, loading])
+  }, [id, projects, tasks, timeEntries, projectsLoading, tasksLoading, timeEntriesLoading])
 
   // Filter waiting items for this project
   useEffect(() => {
-    if (!waitingItemsLoading && waitingItems.length > 0) {
-      const filtered = waitingItems.filter(item => item.projectId === id);
+    if (!waitingItemsLoading && (waitingItems || []).length > 0) {
+      const filtered = (waitingItems || []).filter(item => item.projectId === id);
       setProjectWaitingItems(filtered);
     } else {
       setProjectWaitingItems([]);
@@ -262,13 +266,25 @@ const ProjectDetail = () => {
   };
 
   // Loading state
-  if (loading) {
+  if (projectsLoading || tasksLoading || timeEntriesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
           <p className="mt-3 text-secondary-600">Loading project details...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  const isLoading = projectsLoading || tasksLoading || timeEntriesLoading;
+  
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="text-secondary-600 mt-4">Loading project details...</p>
       </div>
     );
   }
@@ -737,7 +753,7 @@ const ProjectDetail = () => {
                    type="text"
                    value={editableProject.name}
                    onChange={(e) => setEditableProject({ ...editableProject, name: e.target.value })}
-                   disabled={loading}
+                   disabled={projectsLoading}
                    placeholder="Enter project name"
                    className="block w-full"
                  />
@@ -749,7 +765,7 @@ const ProjectDetail = () => {
                  <Select
                     value={editableProject.status || 'not-started'}
                     onValueChange={(value) => setEditableProject({...editableProject, status: value})}
-                    disabled={loading}
+                    disabled={projectsLoading}
                   >
                    <SelectTrigger id="edit-status">
                      <SelectValue placeholder="Select status" />
@@ -769,7 +785,7 @@ const ProjectDetail = () => {
                    type="text"
                    value={editableProject.client}
                    onChange={(e) => setEditableProject({ ...editableProject, client: e.target.value })}
-                   disabled={loading}
+                   disabled={projectsLoading}
                    placeholder="Enter client name"
                    className="block w-full"
                  />
@@ -781,7 +797,7 @@ const ProjectDetail = () => {
                    id="edit-description"
                    value={editableProject.description}
                    onChange={(e) => setEditableProject({ ...editableProject, description: e.target.value })}
-                   disabled={loading}
+                   disabled={projectsLoading}
                    placeholder="Enter project description"
                    className="block w-full"
                  />
@@ -795,7 +811,7 @@ const ProjectDetail = () => {
                      type="date"
                      value={editableProject.startDate}
                      onChange={(e) => setEditableProject({ ...editableProject, startDate: e.target.value })}
-                     disabled={loading}
+                     disabled={projectsLoading}
                      placeholder="Select start date"
                      className="block w-full"
                    />
@@ -808,7 +824,7 @@ const ProjectDetail = () => {
                      type="date"
                      value={editableProject.dueDate}
                      onChange={(e) => setEditableProject({ ...editableProject, dueDate: e.target.value })}
-                     disabled={loading}
+                     disabled={projectsLoading}
                      placeholder="Select due date"
                      className="block w-full"
                    />
@@ -822,7 +838,7 @@ const ProjectDetail = () => {
                    type="color"
                    value={editableProject.color}
                    onChange={(e) => setEditableProject({ ...editableProject, color: e.target.value })}
-                   disabled={loading}
+                   disabled={projectsLoading}
                    placeholder="Select color"
                    className="block w-full"
                  />
@@ -844,17 +860,17 @@ const ProjectDetail = () => {
                    setEditFormErrors({})
                    setEditableProject({ ...project })
                   }}
-                 disabled={loading}
+                 disabled={projectsLoading}
                >
                  Cancel
                </Button>
                <Button
                  variant="primary"
                  type="submit"
-                 disabled={loading}
+                 disabled={projectsLoading}
                  className="min-w-[120px]"
                >
-                 {loading ? (
+                 {projectsLoading ? (
                    <>
                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -897,7 +913,7 @@ const ProjectDetail = () => {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteError(null)} disabled={loading}>
+            <AlertDialogCancel onClick={() => setDeleteError(null)} disabled={projectsLoading}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteProject}>Continue</AlertDialogAction>

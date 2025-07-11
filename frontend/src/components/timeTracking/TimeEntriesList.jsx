@@ -126,8 +126,8 @@ const TimeEntriesList = ({ projectId, taskId }) => {
     }
     
     // Otherwise, look them up
-    const task = tasks.find(t => t.id === entry.taskId);
-    const project = task ? projects.find(p => p.id === task.projectId) : null;
+    const task = (tasks || []).find(t => t.id === entry.taskId);
+    const project = task ? (projects || []).find(p => p.id === task.projectId) : null;
     
     return {
       taskTitle: task?.title || 'Unknown Task',

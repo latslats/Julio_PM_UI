@@ -16,19 +16,21 @@ const TasksTabContent = ({ myTasks }) => {
     </div>
   )
 
-  const myTasksFlat = [...myTasks.inProgress, ...myTasks.notStarted]
+  // Handle case where myTasks might be undefined during loading
+  const safeTasks = myTasks || { inProgress: [], notStarted: [] }
+  const myTasksFlat = [...safeTasks.inProgress, ...safeTasks.notStarted]
 
   return (
     <div className="space-y-6">
       {/* In Progress Tasks Section */}
-      {myTasks.inProgress.length > 0 && (
+      {safeTasks.inProgress.length > 0 && (
         <Card className="overflow-hidden border-blue-100/80 shadow-sm">
           <CardHeader className="pb-3 pt-5 px-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                 <CardTitle className="text-base font-medium text-blue-900">
-                  In Progress ({myTasks.inProgress.length})
+                  In Progress ({safeTasks.inProgress.length})
                 </CardTitle>
               </div>
               <div className="flex items-center mt-2 sm:mt-0">
@@ -38,7 +40,7 @@ const TasksTabContent = ({ myTasks }) => {
           </CardHeader>
           <CardContent className="px-6 pb-5">
             <div className="grid gap-3">
-              {myTasks.inProgress.map(task => (
+              {safeTasks.inProgress.map(task => (
                 <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
               ))}
             </div>
@@ -47,14 +49,14 @@ const TasksTabContent = ({ myTasks }) => {
       )}
 
       {/* Fresh Tasks Section */}
-      {myTasks.notStarted.length > 0 && (
+      {safeTasks.notStarted.length > 0 && (
         <Card className="overflow-hidden border-gray-100/80 shadow-sm">
           <CardHeader className="pb-3 pt-5 px-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                 <CardTitle className="text-base font-medium text-gray-900">
-                  Fresh Tasks ({myTasks.notStarted.length})
+                  Fresh Tasks ({safeTasks.notStarted.length})
                 </CardTitle>
               </div>
               <div className="flex items-center mt-2 sm:mt-0">
@@ -64,7 +66,7 @@ const TasksTabContent = ({ myTasks }) => {
           </CardHeader>
           <CardContent className="px-6 pb-5">
             <div className="grid gap-3">
-              {myTasks.notStarted.map(task => (
+              {safeTasks.notStarted.map(task => (
                 <TaskCard key={task.id} task={task} compact={densityMode === 'compact'} />
               ))}
             </div>

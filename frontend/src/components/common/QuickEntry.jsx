@@ -56,7 +56,7 @@ const QuickEntry = ({
   // Filter tasks for time entry mode based on selected project
   useEffect(() => {
     if (currentMode === 'time' && formData.projectId) {
-      const projectTasks = tasks.filter(task => task.projectId === formData.projectId)
+      const projectTasks = (tasks || []).filter(task => task.projectId === formData.projectId)
       setFilteredTasks(projectTasks)
     } else {
       setFilteredTasks([])
@@ -216,7 +216,7 @@ const QuickEntry = ({
 
         const result = await createManualTimeEntry(timeData)
         if (result.success) {
-          const taskName = showCreateTask ? formData.title : filteredTasks.find(t => t.id === taskId)?.title || 'Task'
+          const taskName = showCreateTask ? formData.title : (filteredTasks || []).find(t => t.id === taskId)?.title || 'Task'
           showNotification('success', `Time entry for "${taskName}" created successfully`)
           resetForm()
           onClose()
@@ -386,7 +386,7 @@ const QuickEntry = ({
                       <SelectValue placeholder="Select a project" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map(project => (
+                      {(projects || []).map(project => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
                         </SelectItem>

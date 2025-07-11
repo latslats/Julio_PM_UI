@@ -148,8 +148,8 @@ export const useTaskManagement = (tasks = [], projects = []) => {
 
   // Helper function to get task with project info
   const getTasksWithProjectInfo = useMemo(() => {
-    return tasks.map(task => {
-      const project = projects.find(p => p.id === task.projectId)
+    return (tasks || []).map(task => {
+      const project = (projects || []).find(p => p.id === task.projectId)
       return {
         ...task,
         projectName: project?.name || 'Unknown Project',
