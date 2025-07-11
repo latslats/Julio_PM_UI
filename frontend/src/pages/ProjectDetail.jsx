@@ -277,6 +277,18 @@ const ProjectDetail = () => {
     );
   }
 
+  // Loading state
+  const isLoading = projectsLoading || tasksLoading || timeEntriesLoading;
+  
+  if (isLoading) {
+    return (
+      <div className="text-center py-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="text-secondary-600 mt-4">Loading project details...</p>
+      </div>
+    );
+  }
+
   // Project Not Found state
   if (!project) {
     return (

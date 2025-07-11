@@ -52,7 +52,7 @@ export const useProjectStats = (projects = [], tasks = [], timeEntries = []) => 
         case 'project':
           return `Project "${activity.name}" ${action} ${timeAgo}`
         case 'task':
-          const projectName = projects.find(p => p.id === activity.projectId)?.name || 'a project'
+          const projectName = (projects || []).find(p => p.id === activity.projectId)?.name || 'a project'
           return `Task "${activity.title}" ${action} in ${projectName} ${timeAgo}`
         default:
           return `Activity ${timeAgo}`

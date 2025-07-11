@@ -147,7 +147,7 @@ const TimeEntryEditForm = ({ timeEntry, onClose, onSave }) => {
   }
 
   // Get the task for this time entry
-  const task = tasks.find(t => t.id === editableEntry.taskId);
+  const task = (tasks || []).find(t => t.id === editableEntry.taskId);
 
   return (
     <div className="p-4">

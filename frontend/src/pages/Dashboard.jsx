@@ -160,12 +160,12 @@ const Dashboard = () => {
   useEffect(() => {
     if (!loading) {
       // Find active time entry if any
-      const active = timeEntries.find(entry => entry.endTime === null)
+      const active = (timeEntries || []).find(entry => entry.endTime === null)
       setActiveTimeEntry(active)
 
       // Calculate stats
-      const completed = tasks.filter(task => task.status === 'completed').length
-      const activeTasks = tasks.filter(task => task.status !== 'completed').length
+      const completed = (tasks || []).filter(task => task.status === 'completed').length
+      const activeTasks = (tasks || []).filter(task => task.status !== 'completed').length
 
       // Calculate hours tracked today using EXACT same logic as TimeEntriesPage
       const now = new Date()
@@ -174,7 +174,7 @@ const Dashboard = () => {
       
       console.log('🕐 Today range (using date-fns):', { todayStart, todayEnd })
       
-      const todayEntries = timeEntries.filter(entry => {
+      const todayEntries = (timeEntries || []).filter(entry => {
         if (!entry.startTime || !entry.endTime) return false // Must have both start AND end
         
         const entryStart = new Date(entry.startTime)
@@ -220,8 +220,8 @@ const Dashboard = () => {
         }
         
         if (durationHours > 8) {
-          const task = tasks.find(t => t.id === entry.taskId)
-          const project = task ? projects.find(p => p.id === task.projectId) : null
+          const task = (tasks || []).find(t => t.id === entry.taskId)
+          const project = task ? (projects || []).find(p => p.id === task.projectId) : null
           console.warn('⚠️ Ignoring suspiciously long entry (>8h):', {
             entryId: entry.id,
             duration: durationHours.toFixed(2) + ' hours',

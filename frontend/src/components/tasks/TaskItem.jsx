@@ -43,10 +43,10 @@ const TaskItem = ({ task }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Find project this task belongs to
-  const project = projects.find(p => p.id === task.projectId) || {}
+  const project = (projects || []).find(p => p.id === task.projectId) || {}
 
   // Check if task has an active time entry
-  const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
+  const activeTimeEntry = (timeEntries || []).find(entry => entry.taskId === task.id && entry.endTime === null)
 
   // Use global timer for elapsed time tracking
   const { getElapsedTime } = useGlobalTimer(activeTimeEntry ? [activeTimeEntry] : [])
@@ -57,7 +57,7 @@ const TaskItem = ({ task }) => {
 
   // Calculate total time spent on this task
   useEffect(() => {
-    const taskTimeEntries = timeEntries.filter(entry => entry.taskId === task.id)
+    const taskTimeEntries = (timeEntries || []).filter(entry => entry.taskId === task.id)
 
     // Sum up durations from completed time entries
     const completedTime = taskTimeEntries
