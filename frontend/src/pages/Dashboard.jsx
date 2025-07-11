@@ -107,7 +107,7 @@ const Dashboard = () => {
 
 
   const [activeTimeEntry, setActiveTimeEntry] = useState(null)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("main")
   
   // Modal state variables
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -530,57 +530,53 @@ const Dashboard = () => {
 
               {/* Main Content with Enhanced Tabs */}
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="mb-10 bg-muted/50 p-1.5 rounded-xl border border-border/50">
-                  <TabsTrigger value="overview" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                    Overview
+                <TabsList className="mb-12 bg-background/80 backdrop-blur-sm p-1 rounded-2xl border border-border/30 shadow-lg shadow-black/5">
+                  <TabsTrigger value="main" className="rounded-xl text-sm font-medium px-6 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200 hover:bg-muted/50">
+                    Main
                   </TabsTrigger>
-                  <TabsTrigger value="tasks" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                  <TabsTrigger value="dashboard" className="rounded-xl text-sm font-medium px-6 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200 hover:bg-muted/50">
+                    Dashboard
+                  </TabsTrigger>
+                  <TabsTrigger value="tasks" className="rounded-xl text-sm font-medium px-6 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200 hover:bg-muted/50">
                     My Tasks
                   </TabsTrigger>
-                  <TabsTrigger value="projects" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                  <TabsTrigger value="projects" className="rounded-xl text-sm font-medium px-6 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200 hover:bg-muted/50">
                     Projects
                   </TabsTrigger>
-                  <TabsTrigger value="waitingOn" className="rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                  <TabsTrigger value="waitingOn" className="rounded-xl text-sm font-medium px-6 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200 hover:bg-muted/50">
                     Waiting On
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Overview Tab - Enhanced with progress visualization and insights */}
-                <TabsContent value="overview" className="space-y-8">
-                  {/* Mini Progress Charts */}
-                  <MiniProgressCharts
-                    projects={projects}
-                    tasks={tasks}
-                    timeEntries={timeEntries}
-                  />
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Time Tracking - Enhanced with modern design */}
+                {/* Main Tab - Clean, focused work interface */}
+                <TabsContent value="main" className="space-y-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    {/* Time Tracking - Minimalist design */}
                     <div className="lg:col-span-2">
-                      <Card className="border-border/50 shadow-sm">
-                        <CardHeader className="pb-4 pt-6 px-6 border-b border-border/50">
+                      <Card className="border-border/30 shadow-xl shadow-black/5 backdrop-blur-sm">
+                        <CardHeader className="pb-6 pt-8 px-8 border-b border-border/20">
                           <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-base font-semibold tracking-tight text-foreground">Time Tracking</CardTitle>
-                              <p className="text-sm text-muted-foreground">Active work sessions</p>
+                            <div className="space-y-2">
+                              <CardTitle className="text-lg font-semibold tracking-tight text-foreground">Time Tracking</CardTitle>
+                              <p className="text-sm text-muted-foreground/80">Focus on what matters most</p>
                             </div>
-                            <div className="flex items-center gap-6 text-sm">
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                            <div className="flex items-center gap-8 text-sm">
+                              <div className="flex items-center gap-3">
+                                <div className="h-2.5 w-2.5 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50"></div>
                                 <span className="text-muted-foreground">
-                                  <span className="font-medium text-foreground">{stats.trackedHoursToday}h</span> today
+                                  <span className="font-semibold text-foreground text-base">{stats.trackedHoursToday}h</span> today
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                              <div className="flex items-center gap-3">
+                                <div className="h-2.5 w-2.5 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
                                 <span className="text-muted-foreground">
-                                  <span className="font-medium text-foreground">{activeTimeEntries.filter(entry => entry.endTime === null).length}</span> active
+                                  <span className="font-semibold text-foreground text-base">{activeTimeEntries.filter(entry => entry.endTime === null).length}</span> active
                                 </span>
                               </div>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="p-6">
+                        <CardContent className="p-8">
                           <TimeTrackingWidget
                             timeEntries={timeEntries}
                             tasks={tasks}
@@ -598,7 +594,7 @@ const Dashboard = () => {
                       </Card>
                     </div>
 
-                    {/* Task Menu with drag-and-drop */}
+                    {/* Active Tasks - Elegant task management */}
                     <div className="lg:col-span-1">
                       <TaskMenu
                         projects={projects}
@@ -607,16 +603,32 @@ const Dashboard = () => {
                       />
                     </div>
                   </div>
-                  
-                  {/* Productivity Insights */}
+                </TabsContent>
+
+                {/* Dashboard Tab - Beautiful analytics and insights */}
+                <TabsContent value="dashboard" className="space-y-12">
+                  {/* Progress Charts - Elegant visual analytics */}
                   <div className="space-y-6">
-                    <div className="border-t border-border/50 pt-8">
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold tracking-tight text-foreground mb-2">
+                    <div className="text-center">
+                      <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">Performance Analytics</h2>
+                      <p className="text-sm text-muted-foreground/80">Visual insights into your productivity patterns</p>
+                    </div>
+                    <MiniProgressCharts
+                      projects={projects}
+                      tasks={tasks}
+                      timeEntries={timeEntries}
+                    />
+                  </div>
+                  
+                  {/* Productivity Insights - AI-powered recommendations */}
+                  <div className="space-y-8">
+                    <div className="border-t border-border/20 pt-12">
+                      <div className="text-center mb-10">
+                        <h3 className="text-xl font-bold tracking-tight text-foreground mb-3">
                           Productivity Insights
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                          AI-powered analysis of your work patterns and personalized recommendations
+                        <p className="text-sm text-muted-foreground/80 max-w-2xl mx-auto">
+                          AI-powered analysis of your work patterns with personalized recommendations to optimize your workflow
                         </p>
                       </div>
                       <ProductivityInsights
