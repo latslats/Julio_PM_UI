@@ -56,11 +56,11 @@ const TaskCard = ({ task, showProject = true, compact = false }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showActions, setShowActions] = useState(!autoHideActions)
 
-  // Find project this task belongs to
-  const project = projects.find(p => p.id === task.projectId) || {}
+  // Find project this task belongs to (handle undefined projects array)
+  const project = (projects || []).find(p => p.id === task.projectId) || {}
 
-  // Check if task has an active time entry
-  const activeTimeEntry = timeEntries.find(entry => entry.taskId === task.id && entry.endTime === null)
+  // Check if task has an active time entry (handle undefined timeEntries array)
+  const activeTimeEntry = (timeEntries || []).find(entry => entry.taskId === task.id && entry.endTime === null)
 
   // Use global timer for elapsed time tracking
   const { getElapsedTime } = useGlobalTimer(activeTimeEntry ? [activeTimeEntry] : [])
