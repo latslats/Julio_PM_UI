@@ -30,6 +30,7 @@ import { useTimeCalculations } from '../hooks/useTimeCalculations'
 import { useProjectStats } from '../hooks/useProjectStats'
 import useGlobalTimer from '../hooks/useGlobalTimer'
 import { useDebounceMultiple } from '../hooks/useDebounce'
+import { DragDropContext } from 'react-beautiful-dnd'
 
 // Components
 import BulkActions from '../components/tasks/BulkActions'
@@ -41,7 +42,7 @@ import QuickEntry from '../components/common/QuickEntry'
 import EnhancedStatsCards from '../components/dashboard/EnhancedStatsCards'
 import MiniProgressCharts from '../components/dashboard/MiniProgressCharts'
 import ProductivityInsights from '../components/dashboard/ProductivityInsights'
-import EnhancedRecentActivity from '../components/dashboard/EnhancedRecentActivity'
+import TaskMenu from '../components/dashboard/TaskMenu'
 import DashboardHeader from '../components/dashboard/DashboardHeader'
 import FocusModeView from '../components/dashboard/FocusModeView'
 import ProjectsTabContent from '../components/dashboard/ProjectsTabContent'
@@ -403,6 +404,36 @@ const Dashboard = () => {
     setShowQuickEntry(false);
   };
 
+  // Drag and Drop handlers
+  const handleTaskDrop = async (taskId) => {
+    try {
+      await startTimeTracking(taskId);
+    } catch (error) {
+      console.error('Error starting time tracking for dropped task:', error);
+    }
+  };
+
+  const handleDragEnd = (result) => {
+    const { source, destination, draggableId } = result
+    
+    console.log('🎯 Drag end result:', result)
+    
+    // If no destination or dropped in the same place, do nothing
+    if (!destination) {
+      console.log('⚠️ No destination, ignoring drop')
+      return
+    }
+    
+    // Check if dropped on the active sessions area
+    if (destination.droppableId === 'active-sessions') {
+      const taskId = draggableId.replace('task-', '')
+      console.log('✅ Task dropped on active sessions:', taskId)
+      handleTaskDrop(taskId)
+    } else {
+      console.log('ℹ️ Dropped on other area:', destination.droppableId)
+    }
+  };
+
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -458,15 +489,16 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="relative">
-      {/* Background Logo - More subtle */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] z-0">
-        <img src={logo} alt="TaskFlow Logo" className="w-1/3 max-w-md" />
-      </div>
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="relative">
+        {/* Background Logo - More subtle */}
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] z-0">
+          <img src={logo} alt="TaskFlow Logo" className="w-1/3 max-w-md" />
+        </div>
 
-      {/* Main Dashboard Content */}
-      <div className="relative z-10">
-        <div className="flex flex-col space-y-10">
+        {/* Main Dashboard Content */}
+        <div className="relative z-10">
+          <div className="flex flex-col space-y-10">
           {/* Enhanced Dashboard Header */}
           <DashboardHeader
             bulkSelectMode={bulkSelectMode}
@@ -560,17 +592,17 @@ const Dashboard = () => {
                             cleanupTimeEntry={deleteTimeEntry}
                             loading={loading}
                             fetchActiveTimers={fetchActiveTimers}
+                            isDragDisabled={false}
                           />
                         </CardContent>
                       </Card>
                     </div>
 
-                    {/* Enhanced Recent Activity with timeline */}
+                    {/* Task Menu with drag-and-drop */}
                     <div className="lg:col-span-1">
-                      <EnhancedRecentActivity
+                      <TaskMenu
                         projects={projects}
                         tasks={tasks}
-                        timeEntries={timeEntries}
                         startTimeTracking={startTimeTracking}
                       />
                     </div>
@@ -878,7 +910,8 @@ const Dashboard = () => {
           </DialogContent>
         </Dialog>
 
-    </div>
+      </div>
+    </DragDropContext>
   )
 }
 

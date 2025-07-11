@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import BackButton from '../components/common/BackButton';
 import axios from 'axios';
-import { FiSettings, FiClock, FiSave, FiLoader, FiList, FiChevronRight } from 'react-icons/fi';
+import { FiSettings, FiClock, FiSave, FiLoader, FiList, FiChevronRight, FiActivity } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from "@/components/ui/input"; 
@@ -9,6 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; 
 import { useToast } from "@/hooks/use-toast"; 
 import { Link } from 'react-router-dom';
+import { useProjects } from '../context/ProjectContext';
+import { useTasks } from '../context/TaskContext';
+import { useTimeTracking } from '../context/TimeTrackingContext';
+import EnhancedRecentActivity from '../components/dashboard/EnhancedRecentActivity';
 
 // Define the API base URL (adjust if necessary)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
@@ -28,6 +32,11 @@ const SettingsPage = () => {
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false); // State for save button loading
   const { toast } = useToast(); // Get toast function
+  
+  // Context hooks for recent activity
+  const { projects } = useProjects();
+  const { tasks } = useTasks();
+  const { timeEntries, startTimeTracking } = useTimeTracking();
 
   // Fetch initial settings
   const fetchSettings = useCallback(async () => {
@@ -265,6 +274,46 @@ const SettingsPage = () => {
                     <FiChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
+              </div>
+            </div>
+          </div>
+        </CardContent> 
+      </Card>
+
+      {/* Recent Activity Card */}
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-primary-500/10 mr-3">
+              <FiActivity className="h-6 w-6 text-primary-600" />
+            </div>
+            <CardTitle className="text-lg font-medium text-secondary-900">Recent Activity</CardTitle>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-6">
+            <div className="border-b border-secondary-100 pb-6">
+              <div className="flex items-center mb-4">
+                <div className="p-2 rounded-lg bg-secondary-100 mr-3">
+                  <FiClock className="h-5 w-5 text-secondary-600" />
+                </div>
+                <h3 className="text-md font-medium text-secondary-800">Activity Timeline</h3>
+              </div>
+              
+              <div className="pl-10 mb-4">
+                <p className="text-sm text-secondary-600 mb-4">
+                  View your recent work activity including time tracking, task completions, and project updates.
+                </p>
+                
+                <div className="max-w-md">
+                  <EnhancedRecentActivity
+                    projects={projects}
+                    tasks={tasks}
+                    timeEntries={timeEntries}
+                    startTimeTracking={startTimeTracking}
+                  />
+                </div>
               </div>
             </div>
           </div>

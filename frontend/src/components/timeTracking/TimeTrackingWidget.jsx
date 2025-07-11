@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatTime, calculateElapsedTime, calculateTimeProgress, isOvertime, formatOvertime } from '@/lib/timeUtils'
 import useGlobalTimer from '@/hooks/useGlobalTimer'
+import { Droppable } from 'react-beautiful-dnd'
 
 // Accept props instead of using context directly
 const TimeTrackingWidget = ({
@@ -22,7 +23,8 @@ const TimeTrackingWidget = ({
   resumeTimeTracking = () => {},
   cleanupTimeEntry = () => {}, // Function to cleanup/clear time entries
   loading = false, // Default loading state
-  fetchActiveTimers = () => {}
+  fetchActiveTimers = () => {},
+  isDragDisabled = false // Whether dragging is disabled
 }) => {
   const { toast } = useToast()
 
@@ -444,63 +446,92 @@ const TimeTrackingWidget = ({
 
 
   return (
-    <div className="h-full flex flex-col">
-      <AnimatePresence mode="wait">
-        {activeTimeEntries.length > 0 ? (
-          <motion.div 
-            key="active-timers"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-1 flex flex-col overflow-y-auto"
-          >
-            <div className="space-y-6">
-              <AnimatePresence>
-                {Object.entries(getGroupedTimeEntries()).map(([projectId, projectGroup]) => (
-                  <motion.div
-                    key={projectId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {/* Project header */}
-                    {renderProjectHeader(projectGroup)}
-                    
-                    {/* Tasks under this project */}
-                    <div className="space-y-2">
-                      {projectGroup.entries.map((entry, index) => 
-                        renderTimerCard(entry, index === 0)
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="empty-state"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-          >
-            <div className="text-center py-8 px-2">
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <motion.div
-                  animate={{ rotate: [0, 10, -10, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <FiClock className="h-6 w-6 text-muted-foreground" />
-                </motion.div>
-              </div>
-              <h3 className="text-sm font-medium text-foreground mb-1">No active timers</h3>
-              <p className="text-xs text-muted-foreground">Start tracking time from a project task.</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <Droppable droppableId="active-sessions" isDropDisabled={isDragDisabled}>
+      {(provided, snapshot) => (
+        <div 
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className={cn(
+            "h-full flex flex-col transition-all duration-200",
+            snapshot.isDraggingOver && "bg-blue-50/50 border-2 border-blue-200 border-dashed rounded-lg"
+          )}
+        >
+          <AnimatePresence mode="wait">
+            {activeTimeEntries.length > 0 ? (
+              <motion.div 
+                key="active-timers"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 flex flex-col overflow-y-auto"
+              >
+                <div className="space-y-6">
+                  <AnimatePresence>
+                    {Object.entries(getGroupedTimeEntries()).map(([projectId, projectGroup]) => (
+                      <motion.div
+                        key={projectId}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {/* Project header */}
+                        {renderProjectHeader(projectGroup)}
+                        
+                        {/* Tasks under this project */}
+                        <div className="space-y-2">
+                          {projectGroup.entries.map((entry, index) => 
+                            renderTimerCard(entry, index === 0)
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty-state"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <div className="text-center py-8 px-2">
+                  <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <FiClock className="h-6 w-6 text-muted-foreground" />
+                    </motion.div>
+                  </div>
+                  <h3 className="text-sm font-medium text-foreground mb-1">No active timers</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {snapshot.isDraggingOver ? "Drop task here to start tracking" : "Start tracking time from a project task."}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            
+            {/* Drop indicator when dragging over */}
+            {snapshot.isDraggingOver && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="absolute inset-0 flex items-center justify-center bg-blue-50/80 rounded-lg border-2 border-blue-300 border-dashed"
+              >
+                <div className="text-center">
+                  <FiClock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-blue-700">Drop to start tracking</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {provided.placeholder}
+        </div>
+      )}
+    </Droppable>
   )
 }
 
